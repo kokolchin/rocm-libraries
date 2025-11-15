@@ -67,11 +67,11 @@ struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
     void SetUp() override
     {
         // Simple 3D tensor: batch=4, channels=2, depth=3, height=8, width=8
-        n = 4;
-        c = 2;
-        d = 3;
-        h = 8;
-        w = 8;
+        n        = 4;
+        c        = 2;
+        d        = 3;
+        h        = 8;
+        w        = 8;
 
 <<<<<<< HEAD
         auto&& h = get_handle();
@@ -106,7 +106,7 @@ struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
 <<<<<<< HEAD
         runVar  = tensor<float>{ssn, ssc, ssd, ssh, ssw};
 =======
-        runVar = tensor<float>{ssn, ssc, ssd, ssh, ssw};
+        runVar        = tensor<float>{ssn, ssc, ssd, ssh, ssw};
 >>>>>>> 08e645df25 (Fix gtest naming convention: use TEST_P with GPU_Bn3dPerAct_FP32)
 
         for(std::size_t i = 0; i < runMean.desc.GetElementSize(); i++)
@@ -130,39 +130,38 @@ struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
 =======
 >>>>>>> 08e645df25 (Fix gtest naming convention: use TEST_P with GPU_Bn3dPerAct_FP32)
 
-        // Allocate GPU memory
-        in_dev = handle.Write(input.data);
-        scale_dev = handle.Write(scale.data);
-        shift_dev = handle.Write(shift.data);
-        runMean_dev = handle.Write(runMean.data);
-        runVar_dev = handle.Write(runVar.data);
-        out_dev = handle.Write(output.data);
-    }
-    std::size_t n, c, d, h, w;
-    tensor<float> input;
-    tensor<float> output;
-    tensor<float> scale;
-    tensor<float> shift;
-    tensor<float> runMean;
-    tensor<float> runVar;
-    miopen::TensorDescriptor derivedBnDesc;
-    miopen::Allocator::ManageDataPtr in_dev;
-    miopen::Allocator::ManageDataPtr scale_dev;
-    miopen::Allocator::ManageDataPtr shift_dev;
-    miopen::Allocator::ManageDataPtr runMean_dev;
-    miopen::Allocator::ManageDataPtr runVar_dev;
-    miopen::Allocator::ManageDataPtr out_dev;
+    // Allocate GPU memory
+    in_dev      = handle.Write(input.data);
+    scale_dev   = handle.Write(scale.data);
+    shift_dev   = handle.Write(shift.data);
+    runMean_dev = handle.Write(runMean.data);
+    runVar_dev  = handle.Write(runVar.data);
+    out_dev     = handle.Write(output.data);
+} std::size_t n, c, d, h, w;
+tensor<float> input;
+tensor<float> output;
+tensor<float> scale;
+tensor<float> shift;
+tensor<float> runMean;
+tensor<float> runVar;
+miopen::TensorDescriptor derivedBnDesc;
+miopen::Allocator::ManageDataPtr in_dev;
+miopen::Allocator::ManageDataPtr scale_dev;
+miopen::Allocator::ManageDataPtr shift_dev;
+miopen::Allocator::ManageDataPtr runMean_dev;
+miopen::Allocator::ManageDataPtr runVar_dev;
+miopen::Allocator::ManageDataPtr out_dev;
 
 <<<<<<< HEAD
-    float alpha         = 1.0f;
-    float beta          = 0.0f;
-    double epsilon      = MIO_BN_TEST_EPSILON;
+float alpha         = 1.0f;
+float beta          = 0.0f;
+double epsilon      = MIO_BN_TEST_EPSILON;
 =======
     float alpha = 1.0f;
     float beta = 0.0f;
     double epsilon = MIO_BN_TEST_EPSILON;
 >>>>>>> 08e645df25 (Fix gtest naming convention: use TEST_P with GPU_Bn3dPerAct_FP32)
-    double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
+double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
 };
 
 TEST_P(GPU_Bn3dPerAct_FP32, Test)
@@ -206,153 +205,153 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto savedInvVar_dev = handle.Write(savedInvVar.data);
 >>>>>>> 08e645df25 (Fix gtest naming convention: use TEST_P with GPU_Bn3dPerAct_FP32)
 
-        miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
-                                                               miopenBNPerActivation,
-                                                               &alpha,
-                                                               &beta,
-                                                               &input.desc,
-                                                               in_dev.get(),
-                                                               &output.desc,
-                                                               out_dev.get(),
-                                                               &derivedBnDesc,
-                                                               scale_dev.get(),
-                                                               shift_dev.get(),
-                                                               expAvgFactor,
-                                                               runMean_dev.get(),
-                                                               runVar_dev.get(),
-                                                               epsilon,
-                                                               savedMean_dev.get(),
-                                                               savedInvVar_dev.get());
+    miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
+                                                           miopenBNPerActivation,
+                                                           &alpha,
+                                                           &beta,
+                                                           &input.desc,
+                                                           in_dev.get(),
+                                                           &output.desc,
+                                                           out_dev.get(),
+                                                           &derivedBnDesc,
+                                                           scale_dev.get(),
+                                                           shift_dev.get(),
+                                                           expAvgFactor,
+                                                           runMean_dev.get(),
+                                                           runVar_dev.get(),
+                                                           epsilon,
+                                                           savedMean_dev.get(),
+                                                           savedInvVar_dev.get());
 
-        EXPECT_EQ(status, miopenStatusSuccess);
-        break;
-    }
-    case BN3DPerActTestType::ForwardInferenceRecalc:
-    case BN3DPerActTestType::ForwardInferenceUseEstimated: {
-        miopenStatus_t status = miopenBatchNormForwardInference(&handle,
-                                                                 miopenBNPerActivation,
-                                                                 &alpha,
-                                                                 &beta,
-                                                                 &input.desc,
-                                                                 in_dev.get(),
-                                                                 &output.desc,
-                                                                 out_dev.get(),
-                                                                 &derivedBnDesc,
-                                                                 scale_dev.get(),
-                                                                 shift_dev.get(),
-                                                                 runMean_dev.get(),
-                                                                 runVar_dev.get(),
-                                                                 epsilon);
+    EXPECT_EQ(status, miopenStatusSuccess);
+    break;
+}
+case BN3DPerActTestType::ForwardInferenceRecalc:
+case BN3DPerActTestType::ForwardInferenceUseEstimated: {
+    miopenStatus_t status = miopenBatchNormForwardInference(&handle,
+                                                            miopenBNPerActivation,
+                                                            &alpha,
+                                                            &beta,
+                                                            &input.desc,
+                                                            in_dev.get(),
+                                                            &output.desc,
+                                                            out_dev.get(),
+                                                            &derivedBnDesc,
+                                                            scale_dev.get(),
+                                                            shift_dev.get(),
+                                                            runMean_dev.get(),
+                                                            runVar_dev.get(),
+                                                            epsilon);
 
-        EXPECT_EQ(status, miopenStatusSuccess);
-        break;
-    }
-    case BN3DPerActTestType::BackwardRecalc: {
-        // Create dy input (gradient from next layer)
-        tensor<float> dy_input{n, c, d, h, w};
-        dy_input.generate([](int n, int c, int d, int h, int w) {
-            return static_cast<float>((n * 50 + c * 5 + d + h + w) % 13) * 0.01f;
-        });
-        auto dy_dev = handle.Write(dy_input.data);
+    EXPECT_EQ(status, miopenStatusSuccess);
+    break;
+}
+case BN3DPerActTestType::BackwardRecalc: {
+    // Create dy input (gradient from next layer)
+    tensor<float> dy_input{n, c, d, h, w};
+    dy_input.generate([](int n, int c, int d, int h, int w) {
+        return static_cast<float>((n * 50 + c * 5 + d + h + w) % 13) * 0.01f;
+    });
+    auto dy_dev = handle.Write(dy_input.data);
 
-        // Outputs for backward
-        tensor<float> dx_output{n, c, d, h, w};
-        tensor<float> dscale{1, c, d, h, w};
-        tensor<float> dshift{1, c, d, h, w};
-        auto dx_dev = handle.Write(dx_output.data);
-        auto dscale_dev = handle.Write(dscale.data);
-        auto dshift_dev = handle.Write(dshift.data);
+    // Outputs for backward
+    tensor<float> dx_output{n, c, d, h, w};
+    tensor<float> dscale{1, c, d, h, w};
+    tensor<float> dshift{1, c, d, h, w};
+    auto dx_dev     = handle.Write(dx_output.data);
+    auto dscale_dev = handle.Write(dscale.data);
+    auto dshift_dev = handle.Write(dshift.data);
 
-        miopenStatus_t status = miopenBatchNormBackward(&handle,
-                                                         miopenBNPerActivation,
-                                                         &alpha,
-                                                         &beta,
-                                                         &alpha,
-                                                         &beta,
-                                                         &input.desc,
-                                                         in_dev.get(),
-                                                         &dy_input.desc,
-                                                         dy_dev.get(),
-                                                         &dx_output.desc,
-                                                         dx_dev.get(),
-                                                         &derivedBnDesc,
-                                                         scale_dev.get(),
-                                                         dscale_dev.get(),
-                                                         dshift_dev.get(),
-                                                         epsilon,
-                                                         nullptr, // savedMean - nullptr means recalc
-                                                         nullptr  // savedInvVar - nullptr means recalc
-        );
+    miopenStatus_t status = miopenBatchNormBackward(&handle,
+                                                    miopenBNPerActivation,
+                                                    &alpha,
+                                                    &beta,
+                                                    &alpha,
+                                                    &beta,
+                                                    &input.desc,
+                                                    in_dev.get(),
+                                                    &dy_input.desc,
+                                                    dy_dev.get(),
+                                                    &dx_output.desc,
+                                                    dx_dev.get(),
+                                                    &derivedBnDesc,
+                                                    scale_dev.get(),
+                                                    dscale_dev.get(),
+                                                    dshift_dev.get(),
+                                                    epsilon,
+                                                    nullptr, // savedMean - nullptr means recalc
+                                                    nullptr  // savedInvVar - nullptr means recalc
+    );
 
-        EXPECT_EQ(status, miopenStatusSuccess);
-        break;
-    }
-    case BN3DPerActTestType::BackwardUseSaved: {
-        // First do forward training to get saved values
-        tensor<float> savedMean{1, c, d, h, w};
-        tensor<float> savedInvVar{1, c, d, h, w};
-        auto savedMean_dev = handle.Write(savedMean.data);
-        auto savedInvVar_dev = handle.Write(savedInvVar.data);
+    EXPECT_EQ(status, miopenStatusSuccess);
+    break;
+}
+case BN3DPerActTestType::BackwardUseSaved: {
+    // First do forward training to get saved values
+    tensor<float> savedMean{1, c, d, h, w};
+    tensor<float> savedInvVar{1, c, d, h, w};
+    auto savedMean_dev   = handle.Write(savedMean.data);
+    auto savedInvVar_dev = handle.Write(savedInvVar.data);
 
-        miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
-                                                               miopenBNPerActivation,
-                                                               &alpha,
-                                                               &beta,
-                                                               &input.desc,
-                                                               in_dev.get(),
-                                                               &output.desc,
-                                                               out_dev.get(),
-                                                               &derivedBnDesc,
-                                                               scale_dev.get(),
-                                                               shift_dev.get(),
-                                                               expAvgFactor,
-                                                               runMean_dev.get(),
-                                                               runVar_dev.get(),
-                                                               epsilon,
-                                                               savedMean_dev.get(),
-                                                               savedInvVar_dev.get());
+    miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
+                                                           miopenBNPerActivation,
+                                                           &alpha,
+                                                           &beta,
+                                                           &input.desc,
+                                                           in_dev.get(),
+                                                           &output.desc,
+                                                           out_dev.get(),
+                                                           &derivedBnDesc,
+                                                           scale_dev.get(),
+                                                           shift_dev.get(),
+                                                           expAvgFactor,
+                                                           runMean_dev.get(),
+                                                           runVar_dev.get(),
+                                                           epsilon,
+                                                           savedMean_dev.get(),
+                                                           savedInvVar_dev.get());
 
-        EXPECT_EQ(status, miopenStatusSuccess);
+    EXPECT_EQ(status, miopenStatusSuccess);
 
-        // Now do backward using saved values
-        tensor<float> dy_input{n, c, d, h, w};
-        dy_input.generate([](int n, int c, int d, int h, int w) {
-            return static_cast<float>((n * 50 + c * 5 + d + h + w) % 13) * 0.01f;
-        });
-        auto dy_dev = handle.Write(dy_input.data);
+    // Now do backward using saved values
+    tensor<float> dy_input{n, c, d, h, w};
+    dy_input.generate([](int n, int c, int d, int h, int w) {
+        return static_cast<float>((n * 50 + c * 5 + d + h + w) % 13) * 0.01f;
+    });
+    auto dy_dev = handle.Write(dy_input.data);
 
-        tensor<float> dx_output{n, c, d, h, w};
-        tensor<float> dscale{1, c, d, h, w};
-        tensor<float> dshift{1, c, d, h, w};
-        auto dx_dev = handle.Write(dx_output.data);
-        auto dscale_dev = handle.Write(dscale.data);
-        auto dshift_dev = handle.Write(dshift.data);
+    tensor<float> dx_output{n, c, d, h, w};
+    tensor<float> dscale{1, c, d, h, w};
+    tensor<float> dshift{1, c, d, h, w};
+    auto dx_dev     = handle.Write(dx_output.data);
+    auto dscale_dev = handle.Write(dscale.data);
+    auto dshift_dev = handle.Write(dshift.data);
 
-        status = miopenBatchNormBackward(&handle,
-                                         miopenBNPerActivation,
-                                         &alpha,
-                                         &beta,
-                                         &alpha,
-                                         &beta,
-                                         &input.desc,
-                                         in_dev.get(),
-                                         &dy_input.desc,
-                                         dy_dev.get(),
-                                         &dx_output.desc,
-                                         dx_dev.get(),
-                                         &derivedBnDesc,
-                                         scale_dev.get(),
-                                         dscale_dev.get(),
-                                         dshift_dev.get(),
-                                         epsilon,
-                                         savedMean_dev.get(), // use saved mean
-                                         savedInvVar_dev.get() // use saved inv var
-        );
+    status = miopenBatchNormBackward(&handle,
+                                     miopenBNPerActivation,
+                                     &alpha,
+                                     &beta,
+                                     &alpha,
+                                     &beta,
+                                     &input.desc,
+                                     in_dev.get(),
+                                     &dy_input.desc,
+                                     dy_dev.get(),
+                                     &dx_output.desc,
+                                     dx_dev.get(),
+                                     &derivedBnDesc,
+                                     scale_dev.get(),
+                                     dscale_dev.get(),
+                                     dshift_dev.get(),
+                                     epsilon,
+                                     savedMean_dev.get(),  // use saved mean
+                                     savedInvVar_dev.get() // use saved inv var
+    );
 
-        EXPECT_EQ(status, miopenStatusSuccess);
-        break;
-    }
-    }
+    EXPECT_EQ(status, miopenStatusSuccess);
+    break;
+}
+}
 }
 
 <<<<<<< HEAD
