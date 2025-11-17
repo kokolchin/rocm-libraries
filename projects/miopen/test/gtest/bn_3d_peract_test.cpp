@@ -154,7 +154,7 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto savedMean_dev   = handle.Write(savedMean.data);
         auto savedInvVar_dev = handle.Write(savedInvVar.data);
 
-        miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
+        miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,
                                                                miopenBNPerActivation,
                                                                &alpha,
                                                                &beta,
@@ -177,7 +177,7 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
     }
     case BN3DPerActTestType::ForwardInferenceRecalc:
     case BN3DPerActTestType::ForwardInferenceUseEstimated: {
-        miopenStatus_t status = miopenBatchNormForwardInference(&handle,
+        miopenStatus_t status = miopenBatchNormalizationForwardInference(&handle,
                                                                 miopenBNPerActivation,
                                                                 &alpha,
                                                                 &beta,
@@ -211,7 +211,7 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto dscale_dev = handle.Write(dscale.data);
         auto dshift_dev = handle.Write(dshift.data);
 
-        miopenStatus_t status = miopenBatchNormBackward(&handle,
+        miopenStatus_t status = miopenBatchNormalizationBackward(&handle,
                                                         miopenBNPerActivation,
                                                         &alpha,
                                                         &beta,
@@ -242,7 +242,7 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto savedMean_dev   = handle.Write(savedMean.data);
         auto savedInvVar_dev = handle.Write(savedInvVar.data);
 
-        miopenStatus_t status = miopenBatchNormForwardTraining(&handle,
+        miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,
                                                                miopenBNPerActivation,
                                                                &alpha,
                                                                &beta,
@@ -276,7 +276,7 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto dscale_dev = handle.Write(dscale.data);
         auto dshift_dev = handle.Write(dshift.data);
 
-        status = miopenBatchNormBackward(&handle,
+        status = miopenBatchNormalizationBackward(&handle,
                                          miopenBNPerActivation,
                                          &alpha,
                                          &beta,
