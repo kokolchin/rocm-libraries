@@ -1,28 +1,5 @@
-/*******************************************************************************
- *
- * MIT License
- *
- * Copyright (c) 2024 Advanced Micro Devices, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- *******************************************************************************/
+// Copyright © Advanced Micro Devices, Inc., or its affiliates.
+// SPDX-License-Identifier:  MIT
 
 #include <miopen/batch_norm.hpp>
 #include <miopen/miopen.h>
@@ -33,8 +10,6 @@
 
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
-
-namespace {
 
 #define MIO_BN_TEST_EPSILON 1e-5
 #define MIO_BN_TEST_EXPAVGFACTOR 0.1
@@ -67,11 +42,11 @@ struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
     void SetUp() override
     {
         // Simple 3D tensor: batch=4, channels=2, depth=3, height=8, width=8
-        n        = 4;
-        c        = 2;
-        d        = 3;
-        h        = 8;
-        w        = 8;
+        n = 4;
+        c = 2;
+        d = 3;
+        h = 8;
+        w = 8;
 
         auto&& handle = get_handle();
 
@@ -155,22 +130,22 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto savedInvVar_dev = handle.Write(savedInvVar.data);
 
         miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,
-                                                               miopenBNPerActivation,
-                                                               &alpha,
-                                                               &beta,
-                                                               &input.desc,
-                                                               in_dev.get(),
-                                                               &output.desc,
-                                                               out_dev.get(),
-                                                               &derivedBnDesc,
-                                                               scale_dev.get(),
-                                                               shift_dev.get(),
-                                                               expAvgFactor,
-                                                               runMean_dev.get(),
-                                                               runVar_dev.get(),
-                                                               epsilon,
-                                                               savedMean_dev.get(),
-                                                               savedInvVar_dev.get());
+                                                                        miopenBNPerActivation,
+                                                                        &alpha,
+                                                                        &beta,
+                                                                        &input.desc,
+                                                                        in_dev.get(),
+                                                                        &output.desc,
+                                                                        out_dev.get(),
+                                                                        &derivedBnDesc,
+                                                                        scale_dev.get(),
+                                                                        shift_dev.get(),
+                                                                        expAvgFactor,
+                                                                        runMean_dev.get(),
+                                                                        runVar_dev.get(),
+                                                                        epsilon,
+                                                                        savedMean_dev.get(),
+                                                                        savedInvVar_dev.get());
 
         EXPECT_EQ(status, miopenStatusSuccess);
         break;
@@ -178,19 +153,19 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
     case BN3DPerActTestType::ForwardInferenceRecalc:
     case BN3DPerActTestType::ForwardInferenceUseEstimated: {
         miopenStatus_t status = miopenBatchNormalizationForwardInference(&handle,
-                                                                miopenBNPerActivation,
-                                                                &alpha,
-                                                                &beta,
-                                                                &input.desc,
-                                                                in_dev.get(),
-                                                                &output.desc,
-                                                                out_dev.get(),
-                                                                &derivedBnDesc,
-                                                                scale_dev.get(),
-                                                                shift_dev.get(),
-                                                                runMean_dev.get(),
-                                                                runVar_dev.get(),
-                                                                epsilon);
+                                                                         miopenBNPerActivation,
+                                                                         &alpha,
+                                                                         &beta,
+                                                                         &input.desc,
+                                                                         in_dev.get(),
+                                                                         &output.desc,
+                                                                         out_dev.get(),
+                                                                         &derivedBnDesc,
+                                                                         scale_dev.get(),
+                                                                         shift_dev.get(),
+                                                                         runMean_dev.get(),
+                                                                         runVar_dev.get(),
+                                                                         epsilon);
 
         EXPECT_EQ(status, miopenStatusSuccess);
         break;
@@ -211,26 +186,27 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto dscale_dev = handle.Write(dscale.data);
         auto dshift_dev = handle.Write(dshift.data);
 
-        miopenStatus_t status = miopenBatchNormalizationBackward(&handle,
-                                                        miopenBNPerActivation,
-                                                        &alpha,
-                                                        &beta,
-                                                        &alpha,
-                                                        &beta,
-                                                        &input.desc,
-                                                        in_dev.get(),
-                                                        &dy_input.desc,
-                                                        dy_dev.get(),
-                                                        &dx_output.desc,
-                                                        dx_dev.get(),
-                                                        &derivedBnDesc,
-                                                        scale_dev.get(),
-                                                        dscale_dev.get(),
-                                                        dshift_dev.get(),
-                                                        epsilon,
-                                                        nullptr, // savedMean - nullptr means recalc
-                                                        nullptr  // savedInvVar - nullptr means recalc
-        );
+        miopenStatus_t status =
+            miopenBatchNormalizationBackward(&handle,
+                                             miopenBNPerActivation,
+                                             &alpha,
+                                             &beta,
+                                             &alpha,
+                                             &beta,
+                                             &input.desc,
+                                             in_dev.get(),
+                                             &dy_input.desc,
+                                             dy_dev.get(),
+                                             &dx_output.desc,
+                                             dx_dev.get(),
+                                             &derivedBnDesc,
+                                             scale_dev.get(),
+                                             dscale_dev.get(),
+                                             dshift_dev.get(),
+                                             epsilon,
+                                             nullptr, // savedMean - nullptr means recalc
+                                             nullptr  // savedInvVar - nullptr means recalc
+            );
 
         EXPECT_EQ(status, miopenStatusSuccess);
         break;
@@ -243,22 +219,22 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto savedInvVar_dev = handle.Write(savedInvVar.data);
 
         miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,
-                                                               miopenBNPerActivation,
-                                                               &alpha,
-                                                               &beta,
-                                                               &input.desc,
-                                                               in_dev.get(),
-                                                               &output.desc,
-                                                               out_dev.get(),
-                                                               &derivedBnDesc,
-                                                               scale_dev.get(),
-                                                               shift_dev.get(),
-                                                               expAvgFactor,
-                                                               runMean_dev.get(),
-                                                               runVar_dev.get(),
-                                                               epsilon,
-                                                               savedMean_dev.get(),
-                                                               savedInvVar_dev.get());
+                                                                        miopenBNPerActivation,
+                                                                        &alpha,
+                                                                        &beta,
+                                                                        &input.desc,
+                                                                        in_dev.get(),
+                                                                        &output.desc,
+                                                                        out_dev.get(),
+                                                                        &derivedBnDesc,
+                                                                        scale_dev.get(),
+                                                                        shift_dev.get(),
+                                                                        expAvgFactor,
+                                                                        runMean_dev.get(),
+                                                                        runVar_dev.get(),
+                                                                        epsilon,
+                                                                        savedMean_dev.get(),
+                                                                        savedInvVar_dev.get());
 
         EXPECT_EQ(status, miopenStatusSuccess);
 
@@ -277,32 +253,30 @@ TEST_P(GPU_Bn3dPerAct_FP32, Test)
         auto dshift_dev = handle.Write(dshift.data);
 
         status = miopenBatchNormalizationBackward(&handle,
-                                         miopenBNPerActivation,
-                                         &alpha,
-                                         &beta,
-                                         &alpha,
-                                         &beta,
-                                         &input.desc,
-                                         in_dev.get(),
-                                         &dy_input.desc,
-                                         dy_dev.get(),
-                                         &dx_output.desc,
-                                         dx_dev.get(),
-                                         &derivedBnDesc,
-                                         scale_dev.get(),
-                                         dscale_dev.get(),
-                                         dshift_dev.get(),
-                                         epsilon,
-                                         savedMean_dev.get(),  // use saved mean
-                                         savedInvVar_dev.get() // use saved inv var
+                                                  miopenBNPerActivation,
+                                                  &alpha,
+                                                  &beta,
+                                                  &alpha,
+                                                  &beta,
+                                                  &input.desc,
+                                                  in_dev.get(),
+                                                  &dy_input.desc,
+                                                  dy_dev.get(),
+                                                  &dx_output.desc,
+                                                  dx_dev.get(),
+                                                  &derivedBnDesc,
+                                                  scale_dev.get(),
+                                                  dscale_dev.get(),
+                                                  dshift_dev.get(),
+                                                  epsilon,
+                                                  savedMean_dev.get(),  // use saved mean
+                                                  savedInvVar_dev.get() // use saved inv var
         );
 
         EXPECT_EQ(status, miopenStatusSuccess);
         break;
     }
-}
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases()));
-
-} // namespace
