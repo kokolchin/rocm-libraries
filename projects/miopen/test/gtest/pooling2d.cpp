@@ -1,38 +1,29 @@
-<<<<<<< HEAD
 // Copyright © Advanced Micro Devices, Inc., or its affiliates.
 // SPDX-License-Identifier:  MIT
 
+#include <fstream>
+#include <iostream>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
-// network_data.hpp provides get_inputs() function used when TEST_GET_INPUT_TENSOR = 1
-// (currently TEST_GET_INPUT_TENSOR = 0, but include is needed to support both cases)
 #include "../network_data.hpp"
 #include "pooling2d_common.hpp"
 
-using PoolingTestCase = pooling2d_gtest::PoolingTestCase;
-
-// TEST_GET_INPUT_TENSOR is defined in pooling2d_common.hpp
-// When 0: uses all 18 predefined input shapes (matching ctest with --all)
-// When 1: uses get_inputs() function to generate input shapes from network_data
+// Configuration define matching the original ctest behavior
+// These can be overridden at compile time via -D flags
+// TEST_GET_INPUT_TENSOR: When 0, uses all 18 predefined input shapes (matching ctest with --all).
+//                        When 1, uses get_inputs() function to generate input shapes from
+//                        network_data.
+#ifndef TEST_GET_INPUT_TENSOR
+#define TEST_GET_INPUT_TENSOR 0
+#endif
 
 namespace {
 
-using namespace pooling2d_gtest;
-
-std::vector<PoolingTestCase> GetPooling2dTestCases()
+std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 {
-    // Cache results to avoid duplicate generation when called multiple times
-    // (e.g., for both FP32 and FP16 test instantiations)
-    static std::vector<PoolingTestCase> cached_test_cases;
-    static bool cached = false;
-
-    if(cached)
-    {
-        return cached_test_cases;
-    }
-
-    std::vector<PoolingTestCase> test_cases;
+    std::vector<Pooling2dTestCase> test_cases;
+    IndexTypeCounters counters;
 
     // Dataset 0: Default dataset (various tensor sizes)
     std::vector<std::vector<int>> dataset0_inputs;
@@ -64,8 +55,7 @@ std::vector<PoolingTestCase> GetPooling2dTestCases()
                        {1, 2048, 11, 11},    // Shape 17
                        {1, 16, 4096, 4096}}; // Shape 18
 #endif
-    std::vector<std::vector<int>> dataset0_lens = {{2, 2}, {3, 3}};
-    // Note: Order matters for index type limits! CTest processes stride (2,2) before (1,1)
+    std::vector<std::vector<int>> dataset0_lens         = {{2, 2}, {3, 3}};
     std::vector<std::vector<int>> dataset0_strides      = {{2, 2}, {1, 1}};
     std::vector<std::vector<int>> dataset0_pads         = {{0, 0}, {1, 1}};
     std::vector<miopenIndexType_t> dataset0_index_types = {
@@ -76,82 +66,98 @@ std::vector<PoolingTestCase> GetPooling2dTestCases()
 
     // Generate cartesian product for dataset 0
     // This matches the original ctest test_pooling2d behavior (default dataset, dataset_id=0)
-    // IMPORTANT: Order must match ctest exactly: index_type -> mode -> input_shape -> lens ->
-    // strides -> pads -> wsidx This is the order in which test_driver processes test cases (based
-    // on add() call order)
-    for(const auto& index_type : dataset0_index_types)
+    // Filter invalid combinations at generation time instead of skipping at runtime
+    for(const auto& input_dims : dataset0_inputs)
     {
-        for(const auto& mode : modes)
-        {
-            for(const auto& input_dims : dataset0_inputs)
-            {
-                AddTestCasesForInput(input_dims,
-                                     dataset0_lens,
-                                     dataset0_strides,
-                                     dataset0_pads,
-                                     {index_type}, // Single index_type for this iteration
-                                     {mode},       // Single mode for this iteration
-                                     wsidx_values,
-                                     test_cases,
-                                     false,  // skip_wide_check=false for Dataset 0
-                                     true,   // apply_index_type_limits=true for Dataset 0
-                                     false); // is_wide_dataset=false for Dataset 0
-            }
-        }
+        AddTestCasesForInput(input_dims,
+                             dataset0_lens,
+                             dataset0_strides,
+                             dataset0_pads,
+                             dataset0_index_types,
+                             modes,
+                             wsidx_values,
+                             counters,
+                             test_cases,
+                             false,  // skip_wide_check=false for Dataset 0
+                             true);  // apply_index_type_limits=true for Dataset 0
     }
 
     // Note: Dataset 1 (asymmetric) and Dataset 2 (wide window) are tested separately
     // via pooling2d_asymmetric.cpp and pooling2d_wide.cpp to maintain the same
     // structure as the original ctest implementation.
 
-    // Cache the results
-    cached_test_cases = test_cases;
-    cached            = true;
-=======
-/*******************************************************************************
- *
- * MIT License
- *
- * Copyright (c) 2024 Advanced Micro Devices, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- *******************************************************************************/
+    std::cerr << "\n=== Dataset 0 (Standard) Test Case Generation Summary ===\n";
+    std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
+    std::cerr << "Input shapes: " << dataset0_inputs.size() << "\n";
+    std::cerr << "===========================================================\n\n";
 
-#include <gtest/gtest.h>
+    // Log all test configurations to a file for comparison with ctest
+    // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
+    std::ofstream log_file("pooling2d_gtest_configs.txt");
+    if(log_file.is_open())
+    {
+        log_file << "# Total test cases: " << test_cases.size() << "\n";
+        log_file << "# Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx\n";
+        for(const auto& tc : test_cases)
+        {
+            log_file << tc.input_dims[0] << " " << tc.input_dims[1] << " " << tc.input_dims[2]
+                     << " " << tc.input_dims[3] << " ";
+            log_file << tc.lens[0] << " " << tc.lens[1] << " ";
+            log_file << tc.pads[0] << " " << tc.pads[1] << " ";
+            log_file << tc.strides[0] << " " << tc.strides[1] << " ";
+            log_file << static_cast<int>(tc.index_type) << " " << static_cast<int>(tc.mode) << " "
+                     << tc.wsidx << "\n";
+        }
+        log_file.close();
+    }
+
+    return test_cases;
+}
+
+} // anonymous namespace
+
+// Derived classes for Dataset 0 (standard pooling)
+class GPU_Pooling2d_FP32 : public Pooling2dCommon<float>
+{
+};
+
+class GPU_Pooling2d_FP16 : public Pooling2dCommon<half_float::half>
+{
+};
+
+TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d) { RunTest(); }
+
+TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d) { RunTest(); }
+
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Pooling2d_FP32,
+                         testing::ValuesIn(GetPooling2dTestCases()),
+                         GetPooling2dTestCaseName);
+
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Pooling2d_FP16,
+                         testing::ValuesIn(GetPooling2dTestCases()),
+                         GetPooling2dTestCaseName);
+// -----------------------------------------------------------------------------
+// Driver-based Full tests (kept from conversion commit).
+// These are namespaced and renamed to avoid symbol collisions with the Smoke tests.
+// -----------------------------------------------------------------------------
+
 #include <miopen/env.hpp>
 #include "get_handle.hpp"
-#include "gtest_common.hpp"
-#include "pooling2d.hpp"
 
 MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
 
+namespace pooling2d_driver_ns {
+
 namespace env = miopen::env;
 
-namespace pooling2d {
-
-class GPU_Pooling2d_FP32 : public testing::TestWithParam<std::string>
+class GPU_Pooling2dDriver_FP32 : public testing::TestWithParam<std::string>
 {
     MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
 };
 
-class GPU_Pooling2d_FP16 : public testing::TestWithParam<std::string>
+class GPU_Pooling2dDriver_FP16 : public testing::TestWithParam<std::string>
 {
     MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
 };
@@ -170,21 +176,9 @@ void Run2dDriver(miopenDataType_t prec)
     std::string param;
     switch(prec)
     {
-    case miopenFloat: param = GPU_Pooling2d_FP32::GetParam(); break;
-    case miopenHalf: param = GPU_Pooling2d_FP16::GetParam(); break;
-    case miopenBFloat16:
-    case miopenInt8:
-    case miopenFloat8_fnuz:
-    case miopenBFloat8_fnuz:
-    case miopenInt32:
-    case miopenInt64:
-    case miopenDouble:
-        FAIL() << "miopenBFloat16, miopenInt8, miopenInt32, miopenDouble, miopenFloat8_fnuz, "
-                  "miopenBFloat8_fnuz "
-                  "data type not supported by "
-                  "pooling2d test";
-
-    default: param = GPU_Pooling2d_FP32::GetParam();
+    case miopenFloat: param = GPU_Pooling2dDriver_FP32::GetParam(); break;
+    case miopenHalf: param = GPU_Pooling2dDriver_FP16::GetParam(); break;
+    default: param = GPU_Pooling2dDriver_FP32::GetParam();
     }
 
     std::vector<std::string> tokens;
@@ -199,7 +193,7 @@ void Run2dDriver(miopenDataType_t prec)
     test_drive<pooling2d_driver>(ptrs.size(), ptrs.data());
     auto capture = testing::internal::GetCapturedStderr();
     std::cout << capture;
-};
+}
 
 bool IsTestSupportedForDevice(const miopen::Handle& handle) { return true; }
 
@@ -209,39 +203,18 @@ std::vector<std::string> GetTestCases(const std::string& precision)
 
     const std::vector<std::string> test_cases = {
         // clang-format off
-    {"test_pooling2d " + precision + " --all --limit 0 " + flag_arg}
+        {"test_pooling2d " + precision + " --all --limit 0 " + flag_arg}
         // clang-format on
     };
->>>>>>> f992f34d7e (Convert pooling2d.cpp from ctest to Google Test)
 
     return test_cases;
 }
 
-<<<<<<< HEAD
-} // namespace
+} // namespace pooling2d_driver_ns
 
-// Derived classes for Dataset 0 (standard pooling)
-using GPU_Pooling2d_FP32 = Pooling2dCommon<float>;
-using GPU_Pooling2d_FP16 = Pooling2dCommon<half_float::half>;
+using namespace pooling2d_driver_ns;
 
-TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d) { RunTest(); }
-
-TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d) { RunTest(); }
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_Pooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dTestCases()),
-                         GetPoolingTestCaseName);
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_Pooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dTestCases()),
-                         GetPoolingTestCaseName);
-=======
-} // namespace pooling2d
-using namespace pooling2d;
-
-TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d)
+TEST_P(GPU_Pooling2dDriver_FP32, FloatTest_pooling2d)
 {
     const auto& handle = get_handle();
     if(IsTestSupportedForDevice(handle))
@@ -252,9 +225,9 @@ TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d)
     {
         GTEST_SKIP();
     }
-};
+}
 
-TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d)
+TEST_P(GPU_Pooling2dDriver_FP16, HalfTest_pooling2d)
 {
     const auto& handle = get_handle();
     if(IsTestSupportedForDevice(handle))
@@ -265,10 +238,8 @@ TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d)
     {
         GTEST_SKIP();
     }
-};
+}
 
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2d_FP32, testing::ValuesIn(GetTestCases("--float")));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2dDriver_FP32, testing::ValuesIn(GetTestCases("--float")));
 
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2d_FP16, testing::ValuesIn(GetTestCases("--half")));
-
->>>>>>> f992f34d7e (Convert pooling2d.cpp from ctest to Google Test)
+INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2dDriver_FP16, testing::ValuesIn(GetTestCases("--half")));
