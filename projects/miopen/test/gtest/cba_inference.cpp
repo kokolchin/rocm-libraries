@@ -462,9 +462,9 @@ template <typename T>
 void RunCbaInferenceTests()
 {
     cba_fusion_driver<T> driver;
-    driver.type = miopen_type<T>{};
-    driver.full_set = false;
-    driver.dataset_id = 0;
+    driver.type              = miopen_type<T>{};
+    driver.full_set          = false;
+    driver.dataset_id        = 0;
     driver.config_iter_start = 0;
 
     std::vector<typename cba_fusion_driver<T>::argument*> data_args;
@@ -549,4 +549,3 @@ TEST_F(GPU_CbaInference_FP16, HalfTest_cba_inference)
         GTEST_SKIP();
     }
 }
-
