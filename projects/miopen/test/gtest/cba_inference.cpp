@@ -541,17 +541,10 @@ class GPU_CbaInference_FP16 : public testing::TestWithParam<miopenDataType_t>
     }
 };
 
-TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference)
-{
-    RunCbaInferenceDriver(GetParam());
-}
+TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference) { RunCbaInferenceDriver(GetParam()); }
 
-TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
-{
-    RunCbaInferenceDriver(GetParam());
-}
+TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference) { RunCbaInferenceDriver(GetParam()); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::Values(miopenFloat));
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::Values(miopenHalf));
-
