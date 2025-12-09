@@ -224,7 +224,7 @@ struct verify_forward_conv_bias_activ
     }
 };
 
-namespace cba_inference {
+namespace {
 
 template <class T>
 struct cba_fusion_driver : test_driver
@@ -513,39 +513,45 @@ void RunCbaInferenceDriver(miopenDataType_t prec)
 
 bool IsTestSupportedForDevice(const miopen::Handle& handle) { return true; }
 
-} // namespace cba_inference
-using namespace cba_inference;
+} // namespace
 
-class GPU_CbaInference_FP32 : public testing::Test
+class GPU_CbaInference_FP32 : public testing::TestWithParam<miopenDataType_t>
 {
+    void SetUp() override
+    {
+        prng::reset_seed();
+        const auto& handle = get_handle();
+        if(!IsTestSupportedForDevice(handle))
+        {
+            GTEST_SKIP();
+        }
+    }
 };
 
-class GPU_CbaInference_FP16 : public testing::Test
+class GPU_CbaInference_FP16 : public testing::TestWithParam<miopenDataType_t>
 {
+    void SetUp() override
+    {
+        prng::reset_seed();
+        const auto& handle = get_handle();
+        if(!IsTestSupportedForDevice(handle))
+        {
+            GTEST_SKIP();
+        }
+    }
 };
 
-TEST_F(GPU_CbaInference_FP32, FloatTest_cba_inference)
+TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference)
 {
-    const auto& handle = get_handle();
-    if(IsTestSupportedForDevice(handle))
-    {
-        RunCbaInferenceDriver(miopenFloat);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
+    RunCbaInferenceDriver(GetParam());
 }
 
-TEST_F(GPU_CbaInference_FP16, HalfTest_cba_inference)
+TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
 {
-    const auto& handle = get_handle();
-    if(IsTestSupportedForDevice(handle))
-    {
-        RunCbaInferenceDriver(miopenHalf);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
+    RunCbaInferenceDriver(GetParam());
 }
+
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::Values(miopenFloat));
+
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::Values(miopenHalf));
+
