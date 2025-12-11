@@ -544,4 +544,3 @@ TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference) { RunCbaInferenceDriver(Ge
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn({miopenFloat}));
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn({miopenHalf}));
-
