@@ -4,11 +4,13 @@
 #include <gtest/gtest.h>
 #include "get_handle.hpp"
 #include "gtest_common.hpp"
-#include "../driver.hpp"
+#include "../conv_common.hpp"
 #include "../fusionHost.hpp"
 #include "../random.hpp"
 #include <miopen/stringutils.hpp>
 #include <half/half.hpp>
+#include <vector>
+#include <limits>
 
 using ptr_FusionPlanDesc = MIOPEN_MANAGE_PTR(miopenFusionPlanDescriptor_t, miopenDestroyFusionPlan);
 using ptr_FusionPlanArgs = MIOPEN_MANAGE_PTR(miopenOperatorArgs_t, miopenDestroyOperatorArgs);
@@ -226,69 +228,165 @@ struct verify_forward_conv_bias_activ
 
 namespace {
 
-template <class T>
-struct cba_fusion_driver : test_driver
+struct CbaTestCase
 {
-    tensor<T> input;
-    tensor<T> weights;
-    tensor<T> bias;
-    miopen::ConvolutionDescriptor filter;
-    std::vector<int> pads_strides_dilations;
-    ptr_ActivationDesc ptr_activdesc  = nullptr;
-    miopenActivationMode_t activ_mode = miopenActivationRELU;
-    int amode                         = 0;
-    bool tactiv{};
-    bool bias_mode = true;
-    std::string conv_mode;
+    std::vector<int> input_dims;        // [N, C, H, W]
+    std::vector<int> weights_dims;      // [K, C, H, W]
+    std::vector<int> pads_strides_dilations; // [pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w]
+    bool bias_mode;
     std::string pad_mode;
-    bool enable_backward_weights = false;
-    bool do_backward_data        = true;
-    int search                   = 0;
-    uint64_t max_value           = miopen_type<T>{} == miopenHalf ? 5 : 17;
-    double alpha = 0., beta = 0., gamma = 0.;
+    bool test_activ;
+    int activ_mode; // 0-9 mapping to activation modes
+    double alpha;
+    double beta;
+    double gamma;
 
+    friend std::ostream& operator<<(std::ostream& os, const CbaTestCase& tc)
+    {
+        return os << "input: [" << tc.input_dims[0] << "," << tc.input_dims[1] << ","
+                  << tc.input_dims[2] << "," << tc.input_dims[3] << "] weights: ["
+                  << tc.weights_dims[0] << "," << tc.weights_dims[1] << "," << tc.weights_dims[2]
+                  << "," << tc.weights_dims[3] << "] bias:" << tc.bias_mode
+                  << " pad_mode:" << tc.pad_mode << " activ:" << tc.test_activ;
+    }
+};
+
+template <typename T>
+std::vector<CbaTestCase> GetCbaTestCases()
+{
+    return {
+        // input_dims, weights_dims, pads_strides_dilations, bias_mode, pad_mode, test_activ, activ_mode, alpha, beta, gamma
+        {{16, 32, 8, 8}, {64, 32, 5, 5}, {0, 0, 1, 1, 1, 1}, true, "default", true, 3, 0.5, 0.5, 0.5},
+        {{16, 32, 8, 8}, {64, 32, 5, 5}, {1, 1, 2, 2, 1, 1}, true, "default", true, 3, 0.5, 0.5, 0.5},
+    };
+}
+
+template <typename T>
+void RunCbaInferenceTest(const CbaTestCase& test_case)
+{
+    uint64_t max_value = miopen_type<T>{} == miopenHalf ? 5 : 17;
+
+    // Create input tensor
+    tensor<T> input{static_cast<size_t>(test_case.input_dims[0]),
+                    static_cast<size_t>(test_case.input_dims[1]),
+                    static_cast<size_t>(test_case.input_dims[2]),
+                    static_cast<size_t>(test_case.input_dims[3])};
+    input.generate(tensor_elem_gen_integer{max_value});
+
+    // Create weights tensor
+    tensor<T> weights{static_cast<size_t>(test_case.weights_dims[0]),
+                      static_cast<size_t>(test_case.weights_dims[1]),
+                      static_cast<size_t>(test_case.weights_dims[2]),
+                      static_cast<size_t>(test_case.weights_dims[3])};
+    weights.generate(tensor_elem_gen_integer{max_value});
+
+    int input_c, input_h, input_w, wei_c, wei_k, wei_h, wei_w;
+    std::tie(wei_k, wei_c, wei_h, wei_w) = miopen::tien<4>(weights.desc.GetLengths());
+    std::tie(std::ignore, input_c, input_h, input_w) = miopen::tien<4>(input.desc.GetLengths());
+
+    miopen::ConvolutionDescriptor filter;
     std::unordered_map<std::string, miopenConvolutionMode_t> cmode_lookup = {
-        {"CONV", miopenConvolution}}; //, {"TRANS", miopenTranspose}};
-
+        {"CONV", miopenConvolution}};
     std::unordered_map<std::string, miopenPaddingMode_t> pmode_lookup = {
         {"SAME", miopenPaddingSame},
         {"VALID", miopenPaddingValid},
         {"DEFAULT", miopenPaddingDefault}};
 
-    cba_fusion_driver()
-    {
-        add(input, "input", get_input_tensor(tensor_elem_gen_integer{max_value}));
-        add(weights, "weights", get_weights_tensor(tensor_elem_gen_integer{max_value}));
-        add(pads_strides_dilations,
-            "pads_strides_dilations",
-            generate_data(get_pads_strides_dilations()));
-        add(alpha, "alpha", generate_data({/*1. , */ 0.5}));
-        add(beta, "beta", generate_data({/*0. , */ 0.5}));
-        add(gamma, "gamma", generate_data({/*1. ,*/ 0.5}));
-        add(bias_mode, "bmode", generate_data({true /*, false*/}));
-        // \todo dlowell: fusion can't handle transpose right now.
-        //       add(conv_mode, "cmode", generate_data({"conv"}/*, "trans"}*/));
-        add(pad_mode, "pmode", generate_data({"default" /*, "same", "valid"*/}));
-        add(tactiv, "test_activ", generate_data({/*false, */ true}));
-        add(amode, "amode", generate_data({3 /*, 6*/}));
-    }
+    filter.mode         = cmode_lookup["CONV"];
+    filter.paddingMode  = pmode_lookup[miopen::ToUpper(test_case.pad_mode)];
+    filter.pads[0]      = test_case.pads_strides_dilations[0];
+    filter.pads[1]      = test_case.pads_strides_dilations[1];
+    filter.strides[0]   = test_case.pads_strides_dilations[2];
+    filter.strides[1]   = test_case.pads_strides_dilations[3];
+    filter.dilations[0] = test_case.pads_strides_dilations[4];
+    filter.dilations[1] = test_case.pads_strides_dilations[5];
 
-    std::vector<std::vector<int>> get_pads_strides_dilations()
-    {
-        return {
-            {0, 0, 1, 1, 1, 1},
-            //       {1, 1, 1, 1, 1, 1},
-            //       {0, 0, 2, 2, 1, 1},
-            {1, 1, 2, 2, 1, 1},
-            //       {2, 2, 1, 1, 1, 1},
-            //       {2, 2, 2, 2, 1, 1},
-            //       {3, 3, 2, 2, 1, 1}
-        };
-    };
+    auto stride_h     = filter.strides[0];
+    auto stride_w     = filter.strides[1];
+    auto fpad_h       = filter.pads[0];
+    auto fpad_w       = filter.pads[1];
+    auto fpaddingMode = filter.paddingMode;
 
-    void run()
+    if(((filter.mode == miopenTranspose) && (input_c == wei_k)) ||
+       ((filter.mode == miopenConvolution) && (input_c == wei_c)))
     {
-        switch(amode)
+        if(fpaddingMode == miopenPaddingSame)
+        {
+            if(stride_h == 0 || stride_w == 0)
+            {
+                GTEST_SKIP() << "Invalid stride for SAME padding";
+            }
+            auto _pad_h = (input_h % stride_h == 0)
+                              ? (std::max(static_cast<int>(wei_h - stride_h), 0))
+                              : (std::max(static_cast<int>(wei_h - (input_h % stride_h)), 0));
+            auto _pad_w = (input_w % stride_w == 0)
+                              ? (std::max(static_cast<int>(wei_w - stride_w), 0))
+                              : (std::max(static_cast<int>(wei_w - (input_w % stride_w)), 0));
+
+            filter.pads[0] = _pad_h / 2;
+            filter.pads[1] = _pad_w / 2;
+
+            int out_h = std::ceil(static_cast<double>(input_h) / stride_h);
+            int out_w = std::ceil(static_cast<double>(input_w) / stride_w);
+
+            if(out_h <= 0 || out_w <= 0)
+            {
+                GTEST_SKIP() << "Invalid output dimensions for SAME padding";
+            }
+        }
+        else if(fpaddingMode == miopenPaddingValid)
+        {
+            if(stride_h == 0 || stride_w == 0)
+            {
+                GTEST_SKIP() << "Invalid stride for VALID padding";
+            }
+            filter.pads[0] = 0;
+            filter.pads[1] = 0;
+
+            int out_h = std::ceil(static_cast<double>(input_h - wei_h + 1) / stride_h);
+            int out_w = std::ceil(static_cast<double>(input_w - wei_w + 1) / stride_w);
+
+            if(out_h <= 0 || out_w <= 0)
+            {
+                GTEST_SKIP() << "Invalid output dimensions for VALID padding";
+            }
+        }
+
+        auto&& handle       = get_handle();
+        auto ptr_fusionplan = GetManagedFusionPlanDesc(&input.desc);
+        miopenFusionOpDescriptor_t convoOp = nullptr;
+        miopenFusionOpDescriptor_t biasOp  = nullptr;
+        miopenFusionOpDescriptor_t activOp = nullptr;
+
+        miopenCreateOpConvForward(ptr_fusionplan.get(), &convoOp, &filter, &weights.desc);
+
+        auto output = get_output_tensor(filter, input, weights);
+        tensor<T> bias;
+        if(test_case.bias_mode)
+        {
+            if(input.desc.GetType() == miopenFloat)
+            {
+                bias = tensor<T>{1, output.desc.GetLengths()[1], 1, 1};
+                bias.generate(tensor_elem_gen_integer{17});
+            }
+            else
+            {
+                bias = tensor<T>{1, output.desc.GetLengths()[1], 1, 1};
+                for(std::size_t i = 0; i < bias.desc.GetElementSize(); i++)
+                {
+                    bias[i] = prng::gen_descreet_uniform_sign<T>(0.1, 100);
+                }
+            }
+            miopenCreateOpBiasForward(ptr_fusionplan.get(), &biasOp, &bias.desc);
+        }
+        else
+        {
+            bias = tensor<T>{1, 1, 1, 1};
+        }
+
+        ptr_ActivationDesc ptr_activdesc = nullptr;
+        miopenActivationMode_t activ_mode = miopenActivationRELU;
+        switch(test_case.activ_mode)
         {
         case 0: activ_mode = miopenActivationPASTHRU; break;
         case 1: activ_mode = miopenActivationLOGISTIC; break;
@@ -299,221 +397,154 @@ struct cba_fusion_driver : test_driver
         case 6: activ_mode = miopenActivationPOWER; break;
         case 7: activ_mode = miopenActivationCLIPPEDRELU; break;
         case 8: activ_mode = miopenActivationLEAKYRELU; break;
-        case 9: activ_mode = miopenActivationELU;
+        case 9: activ_mode = miopenActivationELU; break;
         }
 
-        int input_c, input_h, input_w, wei_c, wei_k, wei_h, wei_w;
-        std::tie(wei_k, wei_c, wei_h, wei_w) = miopen::tien<4>(weights.desc.GetLengths());
-
-        std::tie(std::ignore, input_c, input_h, input_w) = miopen::tien<4>(input.desc.GetLengths());
-
-        filter.mode         = cmode_lookup[miopen::ToUpper(conv_mode)];
-        filter.paddingMode  = pmode_lookup[miopen::ToUpper(pad_mode)];
-        filter.pads[0]      = pads_strides_dilations[0];
-        filter.pads[1]      = pads_strides_dilations[1];
-        filter.strides[0]   = pads_strides_dilations[2];
-        filter.strides[1]   = pads_strides_dilations[3];
-        filter.dilations[0] = pads_strides_dilations[4];
-        filter.dilations[1] = pads_strides_dilations[5];
-
-        auto stride_h     = filter.strides[0];
-        auto stride_w     = filter.strides[1];
-        auto fpad_h       = filter.pads[0];
-        auto fpad_w       = filter.pads[1];
-        auto fpaddingMode = filter.paddingMode;
-
-        auto&& handle = get_handle();
-
-        miopenFusionOpDescriptor_t convoOp = nullptr;
-        miopenFusionOpDescriptor_t biasOp  = nullptr;
-        miopenFusionOpDescriptor_t activOp = nullptr;
-
-        if(((filter.mode == miopenTranspose) && (input_c == wei_k)) ||
-           ((filter.mode == miopenConvolution) && (input_c == wei_c)))
+        if(test_case.test_activ)
         {
-            if(fpaddingMode == miopenPaddingSame)
+            ptr_activdesc = GetManagedActivDesc();
+            miopenSetActivationDescriptor(ptr_activdesc.get(),
+                                          activ_mode,
+                                          test_case.alpha,
+                                          test_case.beta,
+                                          test_case.gamma);
+            miopenCreateOpActivationForward(ptr_fusionplan.get(), &activOp, activ_mode);
+        }
+
+        miopenStatus_t miopenError = miopenCompileFusionPlan(&handle, ptr_fusionplan.get());
+
+        size_t workspace_size = 0;
+        if(miopenError == miopenStatusSuccess)
+        {
+            miopenFusionPlanGetWorkSpaceSize(&handle,
+                                             ptr_fusionplan.get(),
+                                             &workspace_size,
+                                             miopenConvolutionFwdAlgoImplicitGEMM);
+        }
+
+        if(miopenError != miopenStatusSuccess)
+        {
+            GTEST_SKIP() << "CBA Inference plan not supported";
+        }
+        else if(input.desc.GetLengths().at(1) == weights.desc.GetLengths().at(1) &&
+                wei_h > 2 * fpad_h && wei_w > 2 * fpad_w && input_h >= (2 * fpad_h + wei_h) &&
+                input_w >= (2 * fpad_w + wei_w))
+        {
+            // Run verification
+            if(test_case.bias_mode)
             {
-
-                if(stride_h == 0 || stride_w == 0)
-                    return;
-                auto _pad_h = (input_h % stride_h == 0)
-                                  ? (std::max(static_cast<int>(wei_h - stride_h), 0))
-                                  : (std::max(static_cast<int>(wei_h - (input_h % stride_h)), 0));
-                auto _pad_w = (input_w % stride_w == 0)
-                                  ? (std::max(static_cast<int>(wei_w - stride_w), 0))
-                                  : (std::max(static_cast<int>(wei_w - (input_w % stride_w)), 0));
-
-                filter.pads[0] = _pad_h / 2;
-                filter.pads[1] = _pad_w / 2;
-
-                int out_h = std::ceil(static_cast<double>(input_h) / stride_h);
-                int out_w = std::ceil(static_cast<double>(input_w) / stride_w);
-
-                if(out_h <= 0 || out_w <= 0)
-                    return;
-            }
-            else if(fpaddingMode == miopenPaddingValid)
-            {
-                if(stride_h == 0 || stride_w == 0)
-                    return;
-                filter.pads[0] = 0;
-                filter.pads[1] = 0;
-
-                int out_h = std::ceil(static_cast<double>(input_h - wei_h + 1) / stride_h);
-                int out_w = std::ceil(static_cast<double>(input_w - wei_w + 1) / stride_w);
-
-                if(out_h <= 0 || out_w <= 0)
-                    return;
-            }
-
-            auto ptr_fusionplan = GetManagedFusionPlanDesc(&input.desc);
-            miopenCreateOpConvForward(ptr_fusionplan.get(), &convoOp, &filter, &weights.desc);
-
-            auto output = get_output_tensor(filter, input, weights);
-            if(bias_mode)
-            {
-                if(input.desc.GetType() == miopenFloat)
+                if(test_case.test_activ)
                 {
-                    bias = tensor<T>{1, output.desc.GetLengths()[1], 1, 1}.generate(
-                        tensor_elem_gen_integer{17});
+                    verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
+                                                                input,
+                                                                weights,
+                                                                filter,
+                                                                test_case.bias_mode,
+                                                                bias,
+                                                                ptr_activdesc.get(),
+                                                                workspace_size};
+
+                    auto cpu_result = verifier.cpu();
+                    auto gpu_result = verifier.gpu();
+
+                    // Compare results
+                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+
+                    using value_type = T;
+                    const double tolerance = 80.0;
+                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
+
+                    EXPECT_LE(rms_error, threshold)
+                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
+
+                    if(rms_error > threshold)
+                    {
+                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
+                        std::cout << "Max diff: " << mxdiff << std::endl;
+                        const auto idx = miopen::mismatch_idx(cpu_result, gpu_result, miopen::float_equal);
+                        if(idx < miopen::range_distance(cpu_result))
+                        {
+                            std::cout << "Mismatch at " << idx << ": " << cpu_result[idx]
+                                      << " != " << gpu_result[idx] << std::endl;
+                        }
+                    }
                 }
                 else
                 {
-                    bias = tensor<T>{1, output.desc.GetLengths()[1], 1, 1};
-                    for(std::size_t i = 0; i < bias.desc.GetElementSize(); i++)
+                    verify_forward_conv_bias<T> verifier{
+                        ptr_fusionplan.get(), input, weights, filter, bias, workspace_size};
+
+                    auto cpu_result = verifier.cpu();
+                    auto gpu_result = verifier.gpu();
+
+                    // Compare results
+                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+
+                    using value_type = T;
+                    const double tolerance = 80.0;
+                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
+
+                    EXPECT_LE(rms_error, threshold)
+                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
+
+                    if(rms_error > threshold)
                     {
-                        bias[i] = prng::gen_descreet_uniform_sign<T>(0.1, 100);
+                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
+                        std::cout << "Max diff: " << mxdiff << std::endl;
                     }
                 }
-
-                miopenCreateOpBiasForward(ptr_fusionplan.get(), &biasOp, &bias.desc);
             }
             else
             {
-                bias = tensor<T>{1, 1, 1, 1};
-            }
-
-            if(tactiv)
-            {
-                ptr_activdesc = GetManagedActivDesc();
-                miopenSetActivationDescriptor(ptr_activdesc.get(), activ_mode, alpha, beta, gamma);
-                miopenCreateOpActivationForward(ptr_fusionplan.get(), &activOp, activ_mode);
-            }
-            miopenStatus_t miopenError = miopenCompileFusionPlan(&handle, ptr_fusionplan.get());
-
-            size_t workspace_size = 0;
-            if(miopenError == miopenStatusSuccess)
-            {
-                miopenFusionPlanGetWorkSpaceSize(&handle,
-                                                 ptr_fusionplan.get(),
-                                                 &workspace_size,
-                                                 miopenConvolutionFwdAlgoImplicitGEMM);
-            }
-
-            if(miopenError != miopenStatusSuccess)
-            {
-                std::cerr << "CBA Inference plan not supported." << std::endl;
-            }
-            else if(input.desc.GetLengths().at(1) == weights.desc.GetLengths().at(1) &&
-                    wei_h > 2 * fpad_h && wei_w > 2 * fpad_w && input_h >= (2 * fpad_h + wei_h) &&
-                    input_w >= (2 * fpad_w + wei_w))
-            {
-
-                if(bias_mode)
+                if(test_case.test_activ)
                 {
-                    // create activation descriptor here
-                    if(tactiv)
+                    verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
+                                                                input,
+                                                                weights,
+                                                                filter,
+                                                                test_case.bias_mode,
+                                                                bias,
+                                                                ptr_activdesc.get(),
+                                                                workspace_size};
+
+                    auto cpu_result = verifier.cpu();
+                    auto gpu_result = verifier.gpu();
+
+                    // Compare results
+                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+
+                    using value_type = T;
+                    const double tolerance = 80.0;
+                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
+
+                    EXPECT_LE(rms_error, threshold)
+                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
+
+                    if(rms_error > threshold)
                     {
-                        verify(verify_forward_conv_bias_activ<T>{ptr_fusionplan.get(),
-                                                                 input,
-                                                                 weights,
-                                                                 filter,
-                                                                 bias_mode,
-                                                                 bias,
-                                                                 ptr_activdesc.get(),
-                                                                 workspace_size});
-                    }
-                    else
-                    {
-                        verify(verify_forward_conv_bias<T>{
-                            ptr_fusionplan.get(), input, weights, filter, bias, workspace_size});
-                    }
-                }
-                else
-                {
-                    if(tactiv)
-                    {
-                        verify(verify_forward_conv_bias_activ<T>{ptr_fusionplan.get(),
-                                                                 input,
-                                                                 weights,
-                                                                 filter,
-                                                                 bias_mode,
-                                                                 bias,
-                                                                 ptr_activdesc.get(),
-                                                                 workspace_size});
+                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
+                        std::cout << "Max diff: " << mxdiff << std::endl;
                     }
                 }
             }
         }
+        else
+        {
+            GTEST_SKIP() << "Test case dimensions do not meet requirements";
+        }
     }
-};
-
-template <typename T>
-void RunCbaInferenceTests()
-{
-    cba_fusion_driver<T> driver;
-    driver.type              = miopen_type<T>{};
-    driver.full_set          = false;
-    driver.dataset_id        = 0;
-    driver.config_iter_start = 0;
-
-    std::vector<typename cba_fusion_driver<T>::argument*> data_args;
-    for(auto&& arg : driver.arguments)
+    else
     {
-        data_args.push_back(&arg);
-    }
-
-    prng::reset_seed();
-    driver.iteration = 0;
-    try
-    {
-        run_data(data_args.begin(), data_args.end(), [&] { driver.run(); });
-    }
-    catch(const std::exception& e)
-    {
-        FAIL() << "Exception in cba_inference test: " << e.what();
-    }
-    catch(...)
-    {
-        FAIL() << "Unknown exception in cba_inference test";
+        GTEST_SKIP() << "Input channels mismatch";
     }
 }
 
-void RunCbaInferenceDriver(miopenDataType_t prec)
-{
-    switch(prec)
-    {
-    case miopenFloat: RunCbaInferenceTests<float>(); break;
-    case miopenHalf: RunCbaInferenceTests<half_float::half>(); break;
-    case miopenBFloat16:
-    case miopenInt8:
-    case miopenFloat8_fnuz:
-    case miopenBFloat8_fnuz:
-    case miopenInt32:
-    case miopenInt64:
-    case miopenDouble:
-        FAIL() << "miopenBFloat16, miopenInt8, miopenInt32, miopenDouble, miopenFloat8_fnuz, "
-                  "miopenBFloat8_fnuz "
-                  "data type not supported by "
-                  "cba_inference test";
-
-    default: RunCbaInferenceTests<float>();
-    }
-};
-
 } // namespace
 
-class GPU_CbaInference_FP32 : public testing::TestWithParam<miopenDataType_t>
+class GPU_CbaInference_FP32 : public testing::TestWithParam<CbaTestCase>
 {
     void SetUp() override
     {
@@ -525,7 +556,7 @@ class GPU_CbaInference_FP32 : public testing::TestWithParam<miopenDataType_t>
     }
 };
 
-class GPU_CbaInference_FP16 : public testing::TestWithParam<miopenDataType_t>
+class GPU_CbaInference_FP16 : public testing::TestWithParam<CbaTestCase>
 {
     void SetUp() override
     {
@@ -537,10 +568,16 @@ class GPU_CbaInference_FP16 : public testing::TestWithParam<miopenDataType_t>
     }
 };
 
-TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference) { RunCbaInferenceDriver(GetParam()); }
+TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference)
+{
+    RunCbaInferenceTest<float>(GetParam());
+}
 
-TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference) { RunCbaInferenceDriver(GetParam()); }
+TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
+{
+    RunCbaInferenceTest<half_float::half>(GetParam());
+}
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn({miopenFloat}));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn(GetCbaTestCases<float>()));
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn({miopenHalf}));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn(GetCbaTestCases<half_float::half>()));
