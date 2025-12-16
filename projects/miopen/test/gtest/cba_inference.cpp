@@ -230,9 +230,10 @@ namespace {
 
 struct CbaTestCase
 {
-    std::vector<int> input_dims;        // [N, C, H, W]
-    std::vector<int> weights_dims;      // [K, C, H, W]
-    std::vector<int> pads_strides_dilations; // [pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w]
+    std::vector<int> input_dims;   // [N, C, H, W]
+    std::vector<int> weights_dims; // [K, C, H, W]
+    std::vector<int>
+        pads_strides_dilations; // [pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w]
     bool bias_mode;
     std::string pad_mode;
     bool test_activ;
@@ -255,9 +256,28 @@ template <typename T>
 std::vector<CbaTestCase> GetCbaTestCases()
 {
     return {
-        // input_dims, weights_dims, pads_strides_dilations, bias_mode, pad_mode, test_activ, activ_mode, alpha, beta, gamma
-        {{16, 32, 8, 8}, {64, 32, 5, 5}, {0, 0, 1, 1, 1, 1}, true, "default", true, 3, 0.5, 0.5, 0.5},
-        {{16, 32, 8, 8}, {64, 32, 5, 5}, {1, 1, 2, 2, 1, 1}, true, "default", true, 3, 0.5, 0.5, 0.5},
+        // input_dims, weights_dims, pads_strides_dilations, bias_mode, pad_mode, test_activ,
+        // activ_mode, alpha, beta, gamma
+        {{16, 32, 8, 8},
+         {64, 32, 5, 5},
+         {0, 0, 1, 1, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{16, 32, 8, 8},
+         {64, 32, 5, 5},
+         {1, 1, 2, 2, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
     };
 }
 
@@ -281,7 +301,7 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
     weights.generate(tensor_elem_gen_integer{max_value});
 
     int input_c, input_h, input_w, wei_c, wei_k, wei_h, wei_w;
-    std::tie(wei_k, wei_c, wei_h, wei_w) = miopen::tien<4>(weights.desc.GetLengths());
+    std::tie(wei_k, wei_c, wei_h, wei_w)             = miopen::tien<4>(weights.desc.GetLengths());
     std::tie(std::ignore, input_c, input_h, input_w) = miopen::tien<4>(input.desc.GetLengths());
 
     miopen::ConvolutionDescriptor filter;
@@ -352,8 +372,8 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
             }
         }
 
-        auto&& handle       = get_handle();
-        auto ptr_fusionplan = GetManagedFusionPlanDesc(&input.desc);
+        auto&& handle                      = get_handle();
+        auto ptr_fusionplan                = GetManagedFusionPlanDesc(&input.desc);
         miopenFusionOpDescriptor_t convoOp = nullptr;
         miopenFusionOpDescriptor_t biasOp  = nullptr;
         miopenFusionOpDescriptor_t activOp = nullptr;
@@ -384,7 +404,7 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
             bias = tensor<T>{1, 1, 1, 1};
         }
 
-        ptr_ActivationDesc ptr_activdesc = nullptr;
+        ptr_ActivationDesc ptr_activdesc  = nullptr;
         miopenActivationMode_t activ_mode = miopenActivationRELU;
         switch(test_case.activ_mode)
         {
@@ -403,11 +423,8 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
         if(test_case.test_activ)
         {
             ptr_activdesc = GetManagedActivDesc();
-            miopenSetActivationDescriptor(ptr_activdesc.get(),
-                                          activ_mode,
-                                          test_case.alpha,
-                                          test_case.beta,
-                                          test_case.gamma);
+            miopenSetActivationDescriptor(
+                ptr_activdesc.get(), activ_mode, test_case.alpha, test_case.beta, test_case.gamma);
             miopenCreateOpActivationForward(ptr_fusionplan.get(), &activOp, activ_mode);
         }
 
@@ -436,21 +453,22 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
                 if(test_case.test_activ)
                 {
                     verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
-                                                                input,
-                                                                weights,
-                                                                filter,
-                                                                test_case.bias_mode,
-                                                                bias,
-                                                                ptr_activdesc.get(),
-                                                                workspace_size};
+                                                               input,
+                                                               weights,
+                                                               filter,
+                                                               test_case.bias_mode,
+                                                               bias,
+                                                               ptr_activdesc.get(),
+                                                               workspace_size};
 
                     auto cpu_result = verifier.cpu();
                     auto gpu_result = verifier.gpu();
 
                     // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+                    EXPECT_EQ(miopen::range_distance(cpu_result),
+                              miopen::range_distance(gpu_result));
 
-                    using value_type = T;
+                    using value_type       = T;
                     const double tolerance = 80.0;
                     const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
                     const double rms_error = miopen::rms_range(cpu_result, gpu_result);
@@ -462,7 +480,8 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
                     {
                         const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
                         std::cout << "Max diff: " << mxdiff << std::endl;
-                        const auto idx = miopen::mismatch_idx(cpu_result, gpu_result, miopen::float_equal);
+                        const auto idx =
+                            miopen::mismatch_idx(cpu_result, gpu_result, miopen::float_equal);
                         if(idx < miopen::range_distance(cpu_result))
                         {
                             std::cout << "Mismatch at " << idx << ": " << cpu_result[idx]
@@ -479,9 +498,10 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
                     auto gpu_result = verifier.gpu();
 
                     // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+                    EXPECT_EQ(miopen::range_distance(cpu_result),
+                              miopen::range_distance(gpu_result));
 
-                    using value_type = T;
+                    using value_type       = T;
                     const double tolerance = 80.0;
                     const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
                     const double rms_error = miopen::rms_range(cpu_result, gpu_result);
@@ -501,21 +521,22 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
                 if(test_case.test_activ)
                 {
                     verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
-                                                                input,
-                                                                weights,
-                                                                filter,
-                                                                test_case.bias_mode,
-                                                                bias,
-                                                                ptr_activdesc.get(),
-                                                                workspace_size};
+                                                               input,
+                                                               weights,
+                                                               filter,
+                                                               test_case.bias_mode,
+                                                               bias,
+                                                               ptr_activdesc.get(),
+                                                               workspace_size};
 
                     auto cpu_result = verifier.cpu();
                     auto gpu_result = verifier.gpu();
 
                     // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+                    EXPECT_EQ(miopen::range_distance(cpu_result),
+                              miopen::range_distance(gpu_result));
 
-                    using value_type = T;
+                    using value_type       = T;
                     const double tolerance = 80.0;
                     const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
                     const double rms_error = miopen::rms_range(cpu_result, gpu_result);
@@ -568,10 +589,7 @@ class GPU_CbaInference_FP16 : public testing::TestWithParam<CbaTestCase>
     }
 };
 
-TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference)
-{
-    RunCbaInferenceTest<float>(GetParam());
-}
+TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference) { RunCbaInferenceTest<float>(GetParam()); }
 
 TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
 {
@@ -580,4 +598,6 @@ TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn(GetCbaTestCases<float>()));
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn(GetCbaTestCases<half_float::half>()));
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_CbaInference_FP16,
+                         testing::ValuesIn(GetCbaTestCases<half_float::half>()));
