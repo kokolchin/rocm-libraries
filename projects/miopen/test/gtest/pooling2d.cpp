@@ -128,7 +128,16 @@ bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case)
         return false;
     }
 
-    // Check 4: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
+    // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D
+    // The original ctest skips these when full_set is true (with --all flag)
+    // because uint8/uint16 index range is insufficient for output spatial dimensions
+    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
+       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
+    {
+        return false;
+    }
+
+    // Check 5: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
     // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
     // tested
     if(test_case.wsidx == 0 &&
@@ -137,7 +146,7 @@ bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case)
         return false;
     }
 
-    // Check 5: Index range validation for max pooling
+    // Check 6: Index range validation for max pooling
     if(test_case.mode == miopenPoolingMax)
     {
         size_t index_max = GetIndexMax(test_case.index_type);
