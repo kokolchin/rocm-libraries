@@ -27,8 +27,13 @@
 #ifndef GUARD_MIOPEN_TEST_POOLING_COMMON_HPP
 #define GUARD_MIOPEN_TEST_POOLING_COMMON_HPP
 
+// To enable configuration logging for comparison with gtest, compile with:
+// -DENABLE_CONFIG_LOGGING
+// This will write all tested configurations to pooling2d_ctest_configs.txt
+
 #include "test.hpp"
 #include <array>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -775,6 +780,54 @@ struct pooling_driver : test_driver
                 return;
         }
 #endif
+
+#ifdef ENABLE_CONFIG_LOGGING
+        // Log configuration for comparison with gtest
+        // Using static to ensure file is opened once and reused across all test cases
+        static bool log_file_initialized = false;
+        static std::ofstream log_file;
+        if(!log_file_initialized)
+        {
+            log_file.open("pooling2d_ctest_configs.txt", std::ios::trunc); // Clear file on first use
+            log_file_initialized = true;
+        }
+        if(log_file.is_open())
+        {
+            log_file << "input_dims: [";
+            for(size_t i = 0; i < in_shape.size(); ++i)
+            {
+                log_file << in_shape[i];
+                if(i < in_shape.size() - 1) log_file << ",";
+            }
+            log_file << "] ";
+            log_file << "lens: [";
+            for(size_t i = 0; i < lens.size(); ++i)
+            {
+                log_file << lens[i];
+                if(i < lens.size() - 1) log_file << ",";
+            }
+            log_file << "] ";
+            log_file << "pads: [";
+            for(size_t i = 0; i < pads.size(); ++i)
+            {
+                log_file << pads[i];
+                if(i < pads.size() - 1) log_file << ",";
+            }
+            log_file << "] ";
+            log_file << "strides: [";
+            for(size_t i = 0; i < strides.size(); ++i)
+            {
+                log_file << strides[i];
+                if(i < strides.size() - 1) log_file << ",";
+            }
+            log_file << "] ";
+            log_file << "index_type: " << idx_typ << " ";
+            log_file << "mode: " << filter.GetMode() << " ";
+            log_file << "wsidx: " << wsidx << "\n";
+            log_file.flush();
+        }
+#endif
+
         switch(filter.GetIndexType())
         {
         case miopenIndexUint8: {
