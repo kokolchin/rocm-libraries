@@ -128,14 +128,7 @@ bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case)
         return false;
     }
 
-    // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D
-    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
-       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
-    {
-        return false;
-    }
-
-    // Check 5: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
+    // Check 4: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
     // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
     // tested
     if(test_case.wsidx == 0 &&
