@@ -86,6 +86,7 @@ set_var_to_condition(MIOPEN_TEST_WITH_MIOPENDRIVER_DEFAULT MIOPEN_BUILD_DRIVER)
 option( MIOPEN_TEST_WITH_MIOPENDRIVER "Use MIOpenDriver in tests" ${MIOPEN_TEST_WITH_MIOPENDRIVER_DEFAULT})
 
 option( WORKAROUND_ISSUE_936 "" ON)
+option( ENABLE_POOLING2D_CONFIG_LOGGING "Enable configuration logging for pooling2d test" OFF)
 
 # Run the test suite to a depth limit
 #limit greater than 2 leads to prolonged testing more than 5hrs per stage.
