@@ -363,6 +363,10 @@ function(add_test_executable TEST_NAME)
     if(WIN32)
         target_compile_definitions(${TEST_NAME} PRIVATE NOMINMAX)
     endif()
+    # Enable configuration logging for pooling2d test when requested
+    if(${TEST_NAME} STREQUAL "test_pooling2d" AND DEFINED ENABLE_POOLING2D_CONFIG_LOGGING)
+        target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_CONFIG_LOGGING)
+    endif()
     clang_tidy_check(${TEST_NAME})
     target_link_libraries(${TEST_NAME} Threads::Threads)
     # Cmake does not add flags correctly for gcc
