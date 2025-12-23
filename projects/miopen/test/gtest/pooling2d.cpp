@@ -196,39 +196,42 @@ struct IndexTypeCounters
         switch(index_type)
         {
         case miopenIndexUint16:
-            // Only test 5 uint16 cases total
-            if(num_uint16_case >= 5)
+            // Only test 5 uint16 cases total (but ctest uses > 5, allowing 6 cases)
+            // Match ctest behavior exactly: if(num_uint16_case > 5) return false;
+            if(num_uint16_case > 5)
                 return false;
             ++num_uint16_case;
             return true;
         case miopenIndexUint32:
-            // Only test 5 uint32 cases for each wsidx mode
+            // Only test 5 uint32 cases for each wsidx mode (but ctest uses > 5, allowing 6)
+            // Match ctest behavior exactly
             if(wsidx == 0)
             {
-                if(num_uint32_case >= 5)
+                if(num_uint32_case > 5)
                     return false;
                 ++num_uint32_case;
             }
             else
             {
-                if(num_uint32_case_imgidx >= 5)
+                if(num_uint32_case_imgidx > 5)
                     return false;
                 ++num_uint32_case_imgidx;
             }
             return true;
         case miopenIndexUint64:
-            // Only test 5 uint64 cases for wsidx=0
+            // Only test 5 uint64 cases for wsidx=0 (but ctest uses > 5, allowing 6)
             // For wsidx=1, limit to 5 cases for 2D (spt_dim == 2)
+            // Match ctest behavior exactly
             if(wsidx == 0)
             {
-                if(num_uint64_case >= 5)
+                if(num_uint64_case > 5)
                     return false;
                 ++num_uint64_case;
             }
             else
             {
-                // For 2D pooling (spt_dim == 2), limit to 5 cases
-                if(num_uint64_case_imgidx >= 5)
+                // For 2D pooling (spt_dim == 2), limit to 5 cases (but ctest uses > 5)
+                if(num_uint64_case_imgidx > 5)
                     return false;
                 ++num_uint64_case_imgidx;
             }
