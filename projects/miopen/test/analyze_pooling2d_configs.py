@@ -5,11 +5,17 @@ about test case configurations.
 """
 
 import sys
+import re
 from collections import defaultdict
 
 
 def parse_config_file(filename):
-    """Parse the config file and return test cases and statistics."""
+    """Parse the config file and return test cases and statistics.
+    
+    Supports two formats:
+    1. GTest format: space-separated values (N C H W lens_H lens_W pad_H pad_W stride_H stride_W index_type mode wsidx)
+    2. CTest format: input_dims: [N,C,H,W] lens: [H,W] pads: [H,W] strides: [H,W] index_type: X mode: Y wsidx: Z
+    """
     test_cases = []
 
     with open(filename, "r") as f:
@@ -19,24 +25,68 @@ def parse_config_file(filename):
             if not line or line.startswith("#"):
                 continue
 
-            # Parse: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
-            # Format: N C H W lens_H lens_W pad_H pad_W stride_H stride_W index_type mode wsidx
-            # Total: 13 values
-            parts = line.split()
-            if len(parts) != 13:
-                print(
-                    f"Warning: Skipping malformed line (expected 13 values, got {len(parts)}): {line}"
-                )
-                continue
-
             try:
-                input_dims = [int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])]
-                lens = [int(parts[4]), int(parts[5])]
-                pads = [int(parts[6]), int(parts[7])]
-                strides = [int(parts[8]), int(parts[9])]
-                index_type = int(parts[10])
-                mode = int(parts[11])
-                wsidx = int(parts[12])
+                # Try to detect format: if line contains "input_dims:" it's ctest format
+                if "input_dims:" in line:
+                    # CTest format: input_dims: [N,C,H,W] lens: [H,W] pads: [H,W] strides: [H,W] index_type: X mode: Y wsidx: Z
+                    # Extract input_dims
+                    input_dims_match = re.search(r'input_dims:\s*\[([^\]]+)\]', line)
+                    if not input_dims_match:
+                        print(f"Warning: Could not parse input_dims from line: {line}")
+                        continue
+                    input_dims = [int(x.strip()) for x in input_dims_match.group(1).split(',')]
+                    
+                    # Extract lens
+                    lens_match = re.search(r'lens:\s*\[([^\]]+)\]', line)
+                    if not lens_match:
+                        print(f"Warning: Could not parse lens from line: {line}")
+                        continue
+                    lens = [int(x.strip()) for x in lens_match.group(1).split(',')]
+                    
+                    # Extract pads
+                    pads_match = re.search(r'pads:\s*\[([^\]]+)\]', line)
+                    if not pads_match:
+                        print(f"Warning: Could not parse pads from line: {line}")
+                        continue
+                    pads = [int(x.strip()) for x in pads_match.group(1).split(',')]
+                    
+                    # Extract strides
+                    strides_match = re.search(r'strides:\s*\[([^\]]+)\]', line)
+                    if not strides_match:
+                        print(f"Warning: Could not parse strides from line: {line}")
+                        continue
+                    strides = [int(x.strip()) for x in strides_match.group(1).split(',')]
+                    
+                    # Extract index_type, mode, wsidx
+                    index_type_match = re.search(r'index_type:\s*(\d+)', line)
+                    mode_match = re.search(r'mode:\s*(\d+)', line)
+                    wsidx_match = re.search(r'wsidx:\s*(\d+)', line)
+                    
+                    if not index_type_match or not mode_match or not wsidx_match:
+                        print(f"Warning: Could not parse index_type/mode/wsidx from line: {line}")
+                        continue
+                    
+                    index_type = int(index_type_match.group(1))
+                    mode = int(mode_match.group(1))
+                    wsidx = int(wsidx_match.group(1))
+                else:
+                    # GTest format: space-separated values
+                    # Format: N C H W lens_H lens_W pad_H pad_W stride_H stride_W index_type mode wsidx
+                    # Total: 13 values
+                    parts = line.split()
+                    if len(parts) != 13:
+                        print(
+                            f"Warning: Skipping malformed line (expected 13 values, got {len(parts)}): {line}"
+                        )
+                        continue
+                    
+                    input_dims = [int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])]
+                    lens = [int(parts[4]), int(parts[5])]
+                    pads = [int(parts[6]), int(parts[7])]
+                    strides = [int(parts[8]), int(parts[9])]
+                    index_type = int(parts[10])
+                    mode = int(parts[11])
+                    wsidx = int(parts[12])
 
                 test_cases.append(
                     {
