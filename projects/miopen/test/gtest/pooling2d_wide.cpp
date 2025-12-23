@@ -113,7 +113,6 @@ std::vector<std::string> GetTestCases(const std::string& precision)
 } // namespace pooling2d_wide
 using namespace pooling2d_wide;
 
-/*
 TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
 {
     const auto& handle = get_handle();
@@ -126,7 +125,6 @@ TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
         GTEST_SKIP();
     }
 };
-*/
 
 TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
 {
@@ -141,6 +139,6 @@ TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
     }
 };
 
-// INSTANTIATE_TEST_SUITE_P(Full, GPU_WidePooling2d_FP32, testing::Values(GetTestCases("--float")));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_WidePooling2d_FP32, testing::Values(GetTestCases("--float")));
 
 INSTANTIATE_TEST_SUITE_P(Full, GPU_WidePooling2d_FP16, testing::Values(GetTestCases("--half")));

@@ -113,7 +113,6 @@ std::vector<std::string> GetTestCases(const std::string& precision)
 } // namespace pooling2d_asymmetric
 using namespace pooling2d_asymmetric;
 
-/*
 TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
 {
     const auto& handle = get_handle();
@@ -126,7 +125,6 @@ TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
         GTEST_SKIP();
     }
 };
-*/
 
 TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
 {
@@ -141,6 +139,6 @@ TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
     }
 };
 
-// INSTANTIATE_TEST_SUITE_P(Full, GPU_AsymPooling2d_FP32, testing::Values(GetTestCases("--float")));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_AsymPooling2d_FP32, testing::Values(GetTestCases("--float")));
 
 INSTANTIATE_TEST_SUITE_P(Full, GPU_AsymPooling2d_FP16, testing::Values(GetTestCases("--half")));
