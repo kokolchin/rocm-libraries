@@ -788,7 +788,8 @@ struct pooling_driver : test_driver
         static std::ofstream log_file;
         if(!log_file_initialized)
         {
-            log_file.open("pooling2d_ctest_configs.txt", std::ios::trunc); // Clear file on first use
+            log_file.open("pooling2d_ctest_configs.txt",
+                          std::ios::trunc); // Clear file on first use
             log_file_initialized = true;
         }
         if(log_file.is_open())
@@ -797,28 +798,32 @@ struct pooling_driver : test_driver
             for(size_t i = 0; i < in_shape.size(); ++i)
             {
                 log_file << in_shape[i];
-                if(i < in_shape.size() - 1) log_file << ",";
+                if(i < in_shape.size() - 1)
+                    log_file << ",";
             }
             log_file << "] ";
             log_file << "lens: [";
             for(size_t i = 0; i < lens.size(); ++i)
             {
                 log_file << lens[i];
-                if(i < lens.size() - 1) log_file << ",";
+                if(i < lens.size() - 1)
+                    log_file << ",";
             }
             log_file << "] ";
             log_file << "pads: [";
             for(size_t i = 0; i < pads.size(); ++i)
             {
                 log_file << pads[i];
-                if(i < pads.size() - 1) log_file << ",";
+                if(i < pads.size() - 1)
+                    log_file << ",";
             }
             log_file << "] ";
             log_file << "strides: [";
             for(size_t i = 0; i < strides.size(); ++i)
             {
                 log_file << strides[i];
-                if(i < strides.size() - 1) log_file << ",";
+                if(i < strides.size() - 1)
+                    log_file << ",";
             }
             log_file << "] ";
             log_file << "index_type: " << idx_typ << " ";
