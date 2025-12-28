@@ -56,7 +56,8 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             true); // skip_wide_check=true for Dataset 1 (asymmetric)
+                             true,  // skip_wide_check=true for Dataset 1 (asymmetric)
+                             false); // apply_index_type_limits=false for Dataset 1 (matching ctest)
     }
 
 #if ENABLE_CONFIG_LOGGING

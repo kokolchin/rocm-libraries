@@ -82,7 +82,8 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             false); // skip_wide_check=false for Dataset 0
+                             false,  // skip_wide_check=false for Dataset 0
+                             true);  // apply_index_type_limits=true for Dataset 0
     }
 
     // Note: Dataset 1 (asymmetric) and Dataset 2 (wide window) are tested separately

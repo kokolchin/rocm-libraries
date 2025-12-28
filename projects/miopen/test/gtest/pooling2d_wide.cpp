@@ -53,7 +53,8 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             false); // skip_wide_check=false for Dataset 2 (wide window)
+                             false, // skip_wide_check=false for Dataset 2 (wide window)
+                             false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
     }
 
 #if ENABLE_CONFIG_LOGGING

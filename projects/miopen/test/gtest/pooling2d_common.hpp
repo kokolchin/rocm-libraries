@@ -133,14 +133,12 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         }
     }
 
-    // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D
+    // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D when full_set is true
     // The original ctest skips these when full_set is true (with --all flag)
-    // because uint8/uint16 index range is insufficient for output spatial dimensions
-    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
-       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
-    {
-        return false;
-    }
+    // However, the ctest configs show that some uint16 with wsidx=1 ARE included,
+    // which suggests the ctest is checking actual index range rather than blanket skipping.
+    // We rely on Check 6 (index range validation) to handle this properly.
+    // REMOVED: Blanket skip - let Check 6 handle index range validation
 
     // Check 5: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
     // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
@@ -259,7 +257,8 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  const std::vector<int>& wsidx_values,
                                  IndexTypeCounters& counters,
                                  std::vector<Pooling2dTestCase>& test_cases,
-                                 bool skip_wide_check = false)
+                                 bool skip_wide_check = false,
+                                 bool apply_index_type_limits = true)
 {
     for(const auto& lens : lens_list)
     {
@@ -284,7 +283,10 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                             if(ShouldIncludeTestCase(test_case, skip_wide_check))
                             {
                                 // Apply original ctest limits for non-uint8 index types
-                                if(counters.ShouldAddBasedOnIndexType(index_type, wsidx))
+                                // Only apply limits for Dataset 0 (matching ctest behavior:
+                                // skip_many_configs_with_non_int8_index = (dataset_id == 0) && full_set)
+                                if(!apply_index_type_limits || 
+                                   counters.ShouldAddBasedOnIndexType(index_type, wsidx))
                                 {
                                     test_cases.push_back(test_case);
                                 }
