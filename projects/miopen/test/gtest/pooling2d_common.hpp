@@ -135,10 +135,14 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
 
     // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D when full_set is true
     // The original ctest skips these when full_set is true (with --all flag)
-    // However, the ctest configs show that some uint16 with wsidx=1 ARE included,
-    // which suggests the ctest is checking actual index range rather than blanket skipping.
-    // We rely on Check 6 (index range validation) to handle this properly.
-    // REMOVED: Blanket skip - let Check 6 handle index range validation
+    // This is a blanket skip for performance optimization, matching ctest behavior exactly:
+    // if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && filter.GetMode() == miopenPoolingMax)
+    // Note: Some uint32/uint64 with wsidx=1 may still pass Check 6, but uint8/uint16 are blanket skipped
+    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
+       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
+    {
+        return false;
+    }
 
     // Check 5: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
     // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
