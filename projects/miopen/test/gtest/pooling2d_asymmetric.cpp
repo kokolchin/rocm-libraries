@@ -1,10 +1,16 @@
 // Copyright © Advanced Micro Devices, Inc., or its affiliates.
 // SPDX-License-Identifier:  MIT
 
+#include <fstream>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
 #include "pooling2d_common.hpp"
+
+// Temporary: Enable configuration logging for comparison with ctest
+// Set to 1 to generate a file with all test configurations
+// This should be reverted after reviewer verification
+#define ENABLE_CONFIG_LOGGING 1
 
 using namespace pooling2d_gtest;
 
@@ -52,6 +58,28 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
                              test_cases,
                              true); // skip_wide_check=true for Dataset 1 (asymmetric)
     }
+
+#if ENABLE_CONFIG_LOGGING
+    // Temporary: Log all test configurations to a file for comparison with ctest
+    // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
+    std::ofstream log_file("pooling2d_asymmetric_gtest_configs.txt");
+    if(log_file.is_open())
+    {
+        log_file << "# Total test cases: " << test_cases.size() << "\n";
+        log_file << "# Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx\n";
+        for(const auto& tc : test_cases)
+        {
+            log_file << tc.input_dims[0] << " " << tc.input_dims[1] << " " << tc.input_dims[2]
+                     << " " << tc.input_dims[3] << " ";
+            log_file << tc.lens[0] << " " << tc.lens[1] << " ";
+            log_file << tc.pads[0] << " " << tc.pads[1] << " ";
+            log_file << tc.strides[0] << " " << tc.strides[1] << " ";
+            log_file << static_cast<int>(tc.index_type) << " " << static_cast<int>(tc.mode) << " "
+                     << tc.wsidx << "\n";
+        }
+        log_file.close();
+    }
+#endif
 
     return test_cases;
 }
