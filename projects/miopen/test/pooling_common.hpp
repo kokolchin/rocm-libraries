@@ -783,53 +783,44 @@ struct pooling_driver : test_driver
 
 #ifdef ENABLE_CONFIG_LOGGING
         // Log configuration for comparison with gtest
-        // Using static to ensure file is opened once and reused across all test cases
-        static bool log_file_initialized = false;
-        static std::ofstream log_file;
-        if(!log_file_initialized)
+        // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
+        // Using static to ensure files are opened once and reused across all test cases
+        static bool log_files_initialized[3] = {false, false, false};
+        static std::ofstream log_files[3];
+        const char* log_filenames[3] = {
+            "pooling2d_ctest_configs.txt",
+            "pooling2d_asymmetric_ctest_configs.txt",
+            "pooling2d_wide_ctest_configs.txt"};
+        
+        int dataset_idx = dataset_id;
+        if(dataset_idx >= 0 && dataset_idx < 3)
         {
-            log_file.open("pooling2d_ctest_configs.txt",
-                          std::ios::trunc); // Clear file on first use
-            log_file_initialized = true;
-        }
-        if(log_file.is_open())
-        {
-            log_file << "input_dims: [";
-            for(size_t i = 0; i < in_shape.size(); ++i)
+            if(!log_files_initialized[dataset_idx])
             {
-                log_file << in_shape[i];
-                if(i < in_shape.size() - 1)
-                    log_file << ",";
+                log_files[dataset_idx].open(log_filenames[dataset_idx],
+                                          std::ios::trunc); // Clear file on first use
+                if(log_files[dataset_idx].is_open())
+                {
+                    log_files[dataset_idx] << "# Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx\n";
+                }
+                log_files_initialized[dataset_idx] = true;
             }
-            log_file << "] ";
-            log_file << "lens: [";
-            for(size_t i = 0; i < lens.size(); ++i)
+            if(log_files[dataset_idx].is_open())
             {
-                log_file << lens[i];
-                if(i < lens.size() - 1)
-                    log_file << ",";
+                // Write input_dims (4 values): N C H W
+                log_files[dataset_idx] << in_shape[0] << " " << in_shape[1] << " " << in_shape[2]
+                                       << " " << in_shape[3] << " ";
+                // Write lens (2 values): H W
+                log_files[dataset_idx] << lens[0] << " " << lens[1] << " ";
+                // Write pads (2 values): H W
+                log_files[dataset_idx] << pads[0] << " " << pads[1] << " ";
+                // Write strides (2 values): H W
+                log_files[dataset_idx] << strides[0] << " " << strides[1] << " ";
+                // Write index_type, mode, wsidx
+                log_files[dataset_idx] << static_cast<int>(idx_typ) << " "
+                                      << static_cast<int>(filter.GetMode()) << " " << wsidx << "\n";
+                log_files[dataset_idx].flush();
             }
-            log_file << "] ";
-            log_file << "pads: [";
-            for(size_t i = 0; i < pads.size(); ++i)
-            {
-                log_file << pads[i];
-                if(i < pads.size() - 1)
-                    log_file << ",";
-            }
-            log_file << "] ";
-            log_file << "strides: [";
-            for(size_t i = 0; i < strides.size(); ++i)
-            {
-                log_file << strides[i];
-                if(i < strides.size() - 1)
-                    log_file << ",";
-            }
-            log_file << "] ";
-            log_file << "index_type: " << idx_typ << " ";
-            log_file << "mode: " << filter.GetMode() << " ";
-            log_file << "wsidx: " << wsidx << "\n";
-            log_file.flush();
         }
 #endif
 
