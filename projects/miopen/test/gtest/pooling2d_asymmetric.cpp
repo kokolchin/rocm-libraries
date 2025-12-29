@@ -115,9 +115,15 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 using GPU_AsymPooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_AsymPooling2d_FP16 = Pooling2dCommon<half_float::half>;
 
-TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric) { RunTest(); }
+TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
+{
+    this->RunTest();
+}
 
-TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { RunTest(); }
+TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
+{
+    this->RunTest();
+}
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP32,

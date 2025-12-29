@@ -112,9 +112,15 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 using GPU_WidePooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_WidePooling2d_FP16 = Pooling2dCommon<half_float::half>;
 
-TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide) { RunTest(); }
+TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
+{
+    this->RunTest();
+}
 
-TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { RunTest(); }
+TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
+{
+    this->RunTest();
+}
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP32,
