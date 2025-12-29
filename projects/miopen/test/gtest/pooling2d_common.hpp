@@ -96,7 +96,6 @@ inline size_t GetIndexMax(miopenIndexType_t index_type)
 }
 
 // Statistics structure for tracking filtering
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
 struct FilteringStats
 {
     size_t total_checked = 0;
@@ -126,28 +125,23 @@ struct FilteringStats
 
 // Global stats (per input shape)
 static std::map<std::string, FilteringStats> g_filtering_stats;
-#endif
 
 // Helper function to check if a test case should be included
 // This matches the original ctest filtering logic
 // skip_wide_check: if true, skips the wide dataset check (for Dataset 1 - asymmetric)
 inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_wide_check = false)
 {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     // Create key for this input shape
     std::ostringstream key;
     key << "(" << test_case.input_dims[0] << "," << test_case.input_dims[1] << ","
         << test_case.input_dims[2] << "," << test_case.input_dims[3] << ")";
     std::string input_key = key.str();
     g_filtering_stats[input_key].total_checked++;
-#endif
     // Check 1: Validate dimensions (spt_dim == 2 for 2D pooling)
     int spt_dim = static_cast<int>(test_case.input_dims.size()) - 2;
     if(spt_dim != 2)
     {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
         g_filtering_stats[input_key].filtered_check1++;
-#endif
         return false;
     }
 
@@ -157,9 +151,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         if(test_case.lens[i] >
            (test_case.input_dims[i + 2] + static_cast<int>(2) * test_case.pads[i]))
         {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
             g_filtering_stats[input_key].filtered_check2++;
-#endif
             return false;
         }
     }
@@ -178,9 +170,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         }
         if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
         {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
             g_filtering_stats[input_key].filtered_check3++;
-#endif
             return false;
         }
     }
@@ -193,9 +183,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
        (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
     {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
         g_filtering_stats[input_key].filtered_check4++;
-#endif
         return false;
     }
 
@@ -205,9 +193,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.wsidx == 0 &&
        (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
     {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
         g_filtering_stats[input_key].filtered_check5++;
-#endif
         return false;
     }
 
@@ -226,9 +212,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
             }
             if(index_max <= lens_product)
             {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                 g_filtering_stats[input_key].filtered_check6++;
-#endif
                 return false;
             }
         }
@@ -241,9 +225,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
                 static_cast<size_t>(output_dims[2]) * static_cast<size_t>(output_dims[3]);
             if(index_max <= output_spatial_product)
             {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                 g_filtering_stats[input_key].filtered_check6++;
-#endif
                 return false;
             }
         }
@@ -253,17 +235,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     // The ctest performs this check at runtime, but we approximate it here at generation time
     // to match the test case counts. We use FP32 (4 bytes) as a conservative estimate.
     // This matches: if(full_set) { ... if(total_mem >= device_mem) return; }
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     bool memory_check_applied = false;
     bool memory_check_failed = false;
-#endif
     try
     {
         auto& handle = get_handle();
         size_t device_mem = handle.GetGlobalMemorySize();
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
         memory_check_applied = true;
-#endif
         
         // Calculate tensor sizes manually (approximating FP32 = 4 bytes per element)
         constexpr size_t element_size = 4; // FP32, conservative estimate
@@ -296,16 +274,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         
         if(total_mem >= device_mem)
         {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
             memory_check_failed = true;
             std::cerr << "DEBUG: Memory check FAILED for config: " << test_case
                       << " total_mem=" << total_mem << " device_mem=" << device_mem << "\n";
             g_filtering_stats[input_key].filtered_check7++;
-#endif
             return false; // Skip config that would exceed GPU memory
         }
     }
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     catch(const std::exception& e)
     {
         // If we can't get the handle (e.g., at test case generation time),
@@ -328,11 +303,8 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         // skip the memory check. This allows test cases to be generated even
         // when the handle is not available.
     }
-#endif
 
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     g_filtering_stats[input_key].passed_all++;
-#endif
     return true;
 }
 
@@ -412,12 +384,10 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool skip_wide_check = false,
                                  bool apply_index_type_limits = true)
 {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     size_t total_generated = 0;
     size_t filtered_by_should_include = 0;
     size_t filtered_by_index_limits = 0;
     size_t added = 0;
-#endif
     for(const auto& lens : lens_list)
     {
         for(const auto& strides : strides_list)
@@ -430,9 +400,7 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                     {
                         for(int wsidx : wsidx_values)
                         {
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                             total_generated++;
-#endif
                             Pooling2dTestCase test_case = {
                                 {input_dims[0], input_dims[1], input_dims[2], input_dims[3]},
                                 {lens[0], lens[1]},
@@ -450,30 +418,23 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                    counters.ShouldAddBasedOnIndexType(index_type, wsidx))
                                 {
                                     test_cases.push_back(test_case);
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                                     added++;
-#endif
                                 }
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                                 else
                                 {
                                     filtered_by_index_limits++;
                                 }
-#endif
                             }
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
                             else
                             {
                                 filtered_by_should_include++;
                             }
-#endif
                         }
                     }
                 }
             }
         }
     }
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     std::ostringstream input_key_stream;
     input_key_stream << "(" << input_dims[0] << "," << input_dims[1] << ","
                      << input_dims[2] << "," << input_dims[3] << ")";
@@ -511,7 +472,6 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
     }
     std::cerr << std::string(60, '=') << "\n\n";
     std::cerr.flush();
-#endif
 }
 
 template <typename T, typename Index>
