@@ -28,9 +28,10 @@
 #include <miopen/env.hpp>
 #include "get_handle.hpp"
 #include "gtest_common.hpp"
-#include "pooling2d.hpp"
 
 MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
+
+#include "pooling2d.hpp"
 
 namespace env = miopen::env;
 
