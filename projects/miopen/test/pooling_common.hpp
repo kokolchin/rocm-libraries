@@ -834,6 +834,7 @@ struct pooling_driver : test_driver
             if(std::any_of(out_dim.begin(), out_dim.end(), [](int i) { return i <= 0; }))
                 return;
         }
+#endif
 
         // Log configuration for comparison with gtest
         // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
@@ -942,3 +943,5 @@ inline void PrintPooling2dFilteringStats()
     }
     std::cerr << "\n" << std::string(60, '=') << "\n";
 }
+
+#endif // GUARD_MIOPEN_TEST_POOLING_COMMON_HPP
