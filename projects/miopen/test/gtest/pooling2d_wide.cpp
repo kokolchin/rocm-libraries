@@ -11,6 +11,15 @@
 
 using namespace pooling2d_gtest;
 
+// Derived classes for Dataset 2 (wide window pooling)
+struct GPU_WidePooling2d_FP32 : Pooling2dCommon<float>
+{
+};
+
+struct GPU_WidePooling2d_FP16 : Pooling2dCommon<half_float::half>
+{
+};
+
 std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 {
     std::vector<Pooling2dTestCase> test_cases;
@@ -54,7 +63,6 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
                              false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
     }
 
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
     std::cerr << "Expected ctest count: 33\n";
@@ -81,10 +89,8 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     }
     
     std::cerr << "=============================================================\n\n";
-#endif
 
-#if ENABLE_CONFIG_LOGGING
-    // Temporary: Log all test configurations to a file for comparison with ctest
+    // Log all test configurations to a file for comparison with ctest
     // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
     std::ofstream log_file("pooling2d_wide_gtest_configs.txt");
     if(log_file.is_open())
@@ -103,19 +109,9 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
         }
         log_file.close();
     }
-#endif
 
     return test_cases;
 }
-
-// Derived classes for Dataset 2 (wide window pooling)
-struct GPU_WidePooling2d_FP32 : Pooling2dCommon<float>
-{
-};
-
-struct GPU_WidePooling2d_FP16 : Pooling2dCommon<half_float::half>
-{
-};
 
 TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
 {

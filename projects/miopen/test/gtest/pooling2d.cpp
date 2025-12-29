@@ -9,11 +9,6 @@
 #include "../network_data.hpp"
 #include "pooling2d_common.hpp"
 
-// Temporary: Enable configuration logging for comparison with ctest
-// Set to 1 to generate a file with all test configurations
-// This should be reverted after reviewer verification
-#define ENABLE_CONFIG_LOGGING 1
-
 // Configuration define matching the original ctest behavior
 // These can be overridden at compile time via -D flags
 // TEST_GET_INPUT_TENSOR: When 0, uses all 18 predefined input shapes (matching ctest with --all).
@@ -91,15 +86,12 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
     // via pooling2d_asymmetric.cpp and pooling2d_wide.cpp to maintain the same
     // structure as the original ctest implementation.
 
-#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
     std::cerr << "\n=== Dataset 0 (Standard) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
     std::cerr << "Input shapes: " << dataset0_inputs.size() << "\n";
     std::cerr << "===========================================================\n\n";
-#endif
 
-#if ENABLE_CONFIG_LOGGING
-    // Temporary: Log all test configurations to a file for comparison with ctest
+    // Log all test configurations to a file for comparison with ctest
     // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
     std::ofstream log_file("pooling2d_gtest_configs.txt");
     if(log_file.is_open())
@@ -118,7 +110,6 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
         }
         log_file.close();
     }
-#endif
 
     return test_cases;
 }
