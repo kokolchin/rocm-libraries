@@ -185,6 +185,55 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         }
     }
 
+    // Check 7: Memory check (matching ctest behavior when full_set is true)
+    // The ctest performs this check at runtime, but we approximate it here at generation time
+    // to match the test case counts. We use FP32 (4 bytes) as a conservative estimate.
+    // This matches: if(full_set) { ... if(total_mem >= device_mem) return; }
+    try
+    {
+        auto& handle = get_handle();
+        size_t device_mem = handle.GetGlobalMemorySize();
+        
+        // Calculate tensor sizes manually (approximating FP32 = 4 bytes per element)
+        constexpr size_t element_size = 4; // FP32, conservative estimate
+        size_t input_size = static_cast<size_t>(test_case.input_dims[0]) *
+                           static_cast<size_t>(test_case.input_dims[1]) *
+                           static_cast<size_t>(test_case.input_dims[2]) *
+                           static_cast<size_t>(test_case.input_dims[3]) * element_size;
+        
+        auto output_dims = CalculateOutputDims(
+            test_case.input_dims, test_case.lens, test_case.strides, test_case.pads);
+        size_t output_size = static_cast<size_t>(output_dims[0]) *
+                            static_cast<size_t>(output_dims[1]) *
+                            static_cast<size_t>(output_dims[2]) *
+                            static_cast<size_t>(output_dims[3]) * element_size;
+        
+        // Calculate index size
+        size_t idx_sz = 0;
+        switch(test_case.index_type)
+        {
+        case miopenIndexUint8: idx_sz = sizeof(uint8_t); break;
+        case miopenIndexUint16: idx_sz = sizeof(uint16_t); break;
+        case miopenIndexUint32: idx_sz = sizeof(uint32_t); break;
+        case miopenIndexUint64: idx_sz = sizeof(uint64_t); break;
+        default: idx_sz = sizeof(uint8_t); break;
+        }
+        
+        // Memory estimate: 3 * input + output + idx_sz * output (matching ctest formula)
+        size_t total_mem = 3 * input_size + output_size + idx_sz * output_size;
+        
+        if(total_mem >= device_mem)
+        {
+            return false; // Skip config that would exceed GPU memory
+        }
+    }
+    catch(...)
+    {
+        // If we can't get the handle (e.g., at test case generation time),
+        // skip the memory check. This allows test cases to be generated even
+        // when the handle is not available.
+    }
+
     return true;
 }
 
