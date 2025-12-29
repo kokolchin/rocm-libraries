@@ -486,9 +486,20 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
               << "  Added to test_cases: " << added << "\n";
     
     // Print detailed filtering breakdown
+    std::cerr << "DEBUG: Looking for stats with key: '" << input_key << "'\n";
+    std::cerr << "DEBUG: g_filtering_stats size: " << g_filtering_stats.size() << "\n";
+    for(const auto& pair : g_filtering_stats)
+    {
+        std::cerr << "DEBUG: Found key in stats: '" << pair.first << "'\n";
+    }
     if(g_filtering_stats.find(input_key) != g_filtering_stats.end())
     {
+        std::cerr << "DEBUG: Found matching key, printing summary...\n";
         g_filtering_stats[input_key].PrintSummary();
+    }
+    else
+    {
+        std::cerr << "DEBUG: WARNING - No stats found for key '" << input_key << "'\n";
     }
 #endif
 }
