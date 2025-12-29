@@ -26,4 +26,9 @@
 
 #include "pooling2d.hpp"
 
-int main(int argc, const char* argv[]) { test_drive<pooling2d_driver>(argc, argv); }
+int main(int argc, const char* argv[])
+{
+    test_drive<pooling2d_driver>(argc, argv);
+    PrintPooling2dFilteringStats();
+    return 0;
+}
