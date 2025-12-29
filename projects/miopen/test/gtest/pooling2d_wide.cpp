@@ -109,8 +109,13 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 }
 
 // Derived classes for Dataset 2 (wide window pooling)
-using GPU_WidePooling2d_FP32 = Pooling2dCommon<float>;
-using GPU_WidePooling2d_FP16 = Pooling2dCommon<half_float::half>;
+struct GPU_WidePooling2d_FP32 : Pooling2dCommon<float>
+{
+};
+
+struct GPU_WidePooling2d_FP16 : Pooling2dCommon<half_float::half>
+{
+};
 
 TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
 {
