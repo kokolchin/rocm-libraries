@@ -1,0 +1,68 @@
+{
+    "name": "MIOpen Development Container",
+    "image": "rocm/miopen:ci_bbedc1",
+    
+    // Working directory matches your Docker command
+    "workspaceFolder": "/data",
+    
+    // Mount workspace to /data (matching your -v $HOME:/data)
+    "workspaceMount": "source=${localWorkspaceFolder},target=/data,type=bind",
+    
+    // Additional mounts matching your Docker command
+    "mounts": [
+        "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached",
+        "source=/var/lib/docker,target=/var/lib/docker,type=bind,consistency=cached"
+    ],
+    
+    // Docker run arguments matching your command
+    "runArgs": [
+        "--privileged",
+        "--device=/dev/kfd",
+        "--device=/dev/dri:/dev/dri:rw",
+        "--group-add=video",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt=seccomp=unconfined",
+        "--workdir=/data"
+    ],
+    
+    // Set remote user (adjust if needed)
+    "remoteUser": "root",
+    
+    "remoteEnv": {
+        "PATH": "/opt/rocm/bin:${containerEnv:PATH}"
+    },
+    
+    // VS Code extensions to install in container
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cmake-tools"
+            ],
+            "settings": {
+                "C_Cpp.default.includePath": [
+                    "${workspaceFolder}/**",
+                    "/opt/rocm/include/**"
+                ],
+                "C_Cpp.default.defines": [
+                    "ENABLE_POOLING2D_DEBUG_LOGGING=1"
+                ],
+                "files.associations": {
+                    "*.hpp": "cpp",
+                    "*.cpp": "cpp"
+                }
+            }
+        }
+    },
+    
+    // Post-create commands (run after container is created)
+    "postCreateCommand": "echo 'Container ready for MIOpen development'",
+    
+    // Features to install
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    }
+}
+
