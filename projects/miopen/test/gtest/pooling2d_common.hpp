@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <vector>
 #include <gtest/gtest.h>
@@ -94,15 +95,59 @@ inline size_t GetIndexMax(miopenIndexType_t index_type)
     }
 }
 
+// Statistics structure for tracking filtering
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+struct FilteringStats
+{
+    size_t total_checked = 0;
+    size_t passed_all = 0;
+    size_t filtered_check1 = 0; // spt_dim != 2
+    size_t filtered_check2 = 0; // kernel size exceeds input+padding
+    size_t filtered_check3 = 0; // wide dataset with wsidx=0 and max pooling
+    size_t filtered_check4 = 0; // uint8/uint16 max pooling with wsidx=1
+    size_t filtered_check5 = 0; // average pooling with wsidx=0
+    size_t filtered_check6 = 0; // index range validation for max pooling
+    size_t filtered_check7 = 0; // memory check
+    
+    void PrintSummary() const
+    {
+        std::cerr << "\n  Filtering breakdown:\n";
+        std::cerr << "    Total checked: " << total_checked << "\n";
+        std::cerr << "    Passed all checks: " << passed_all << "\n";
+        std::cerr << "    Filtered by Check 1 (spt_dim): " << filtered_check1 << "\n";
+        std::cerr << "    Filtered by Check 2 (kernel size): " << filtered_check2 << "\n";
+        std::cerr << "    Filtered by Check 3 (wide dataset): " << filtered_check3 << "\n";
+        std::cerr << "    Filtered by Check 4 (uint8/uint16 max wsidx=1): " << filtered_check4 << "\n";
+        std::cerr << "    Filtered by Check 5 (average wsidx=0): " << filtered_check5 << "\n";
+        std::cerr << "    Filtered by Check 6 (index range): " << filtered_check6 << "\n";
+        std::cerr << "    Filtered by Check 7 (memory): " << filtered_check7 << "\n";
+    }
+};
+
+// Global stats (per input shape)
+static std::map<std::string, FilteringStats> g_filtering_stats;
+#endif
+
 // Helper function to check if a test case should be included
 // This matches the original ctest filtering logic
 // skip_wide_check: if true, skips the wide dataset check (for Dataset 1 - asymmetric)
 inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_wide_check = false)
 {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    // Create key for this input shape
+    std::ostringstream key;
+    key << "(" << test_case.input_dims[0] << "," << test_case.input_dims[1] << ","
+        << test_case.input_dims[2] << "," << test_case.input_dims[3] << ")";
+    std::string input_key = key.str();
+    g_filtering_stats[input_key].total_checked++;
+#endif
     // Check 1: Validate dimensions (spt_dim == 2 for 2D pooling)
     int spt_dim = static_cast<int>(test_case.input_dims.size()) - 2;
     if(spt_dim != 2)
     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        g_filtering_stats[input_key].filtered_check1++;
+#endif
         return false;
     }
 
@@ -112,6 +157,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         if(test_case.lens[i] >
            (test_case.input_dims[i + 2] + static_cast<int>(2) * test_case.pads[i]))
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check2++;
+#endif
             return false;
         }
     }
@@ -130,6 +178,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         }
         if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check3++;
+#endif
             return false;
         }
     }
@@ -142,6 +193,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
        (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        g_filtering_stats[input_key].filtered_check4++;
+#endif
         return false;
     }
 
@@ -151,6 +205,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.wsidx == 0 &&
        (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        g_filtering_stats[input_key].filtered_check5++;
+#endif
         return false;
     }
 
@@ -169,6 +226,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
             }
             if(index_max <= lens_product)
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check6++;
+#endif
                 return false;
             }
         }
@@ -181,6 +241,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
                 static_cast<size_t>(output_dims[2]) * static_cast<size_t>(output_dims[3]);
             if(index_max <= output_spatial_product)
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check6++;
+#endif
                 return false;
             }
         }
@@ -237,6 +300,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
             memory_check_failed = true;
             std::cerr << "DEBUG: Memory check FAILED for config: " << test_case
                       << " total_mem=" << total_mem << " device_mem=" << device_mem << "\n";
+            g_filtering_stats[input_key].filtered_check7++;
 #endif
             return false; // Skip config that would exceed GPU memory
         }
@@ -266,6 +330,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     }
 #endif
 
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    g_filtering_stats[input_key].passed_all++;
+#endif
     return true;
 }
 
@@ -407,12 +474,22 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
         }
     }
 #ifdef ENABLE_POOLING2D_DEBUG_LOGGING
-    std::cerr << "DEBUG: AddTestCasesForInput stats for input (" 
-              << input_dims[0] << "," << input_dims[1] << "," << input_dims[2] << "," << input_dims[3] << "):\n"
+    std::ostringstream input_key_stream;
+    input_key_stream << "(" << input_dims[0] << "," << input_dims[1] << ","
+                     << input_dims[2] << "," << input_dims[3] << ")";
+    std::string input_key = input_key_stream.str();
+    
+    std::cerr << "DEBUG: AddTestCasesForInput stats for input " << input_key << ":\n"
               << "  Total generated: " << total_generated << "\n"
               << "  Filtered by ShouldIncludeTestCase: " << filtered_by_should_include << "\n"
               << "  Filtered by index type limits: " << filtered_by_index_limits << "\n"
               << "  Added to test_cases: " << added << "\n";
+    
+    // Print detailed filtering breakdown
+    if(g_filtering_stats.find(input_key) != g_filtering_stats.end())
+    {
+        g_filtering_stats[input_key].PrintSummary();
+    }
 #endif
 }
 
