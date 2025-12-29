@@ -479,28 +479,38 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                      << input_dims[2] << "," << input_dims[3] << ")";
     std::string input_key = input_key_stream.str();
     
+    std::cerr << "\n" << std::string(60, '=') << "\n";
     std::cerr << "DEBUG: AddTestCasesForInput stats for input " << input_key << ":\n"
               << "  Total generated: " << total_generated << "\n"
               << "  Filtered by ShouldIncludeTestCase: " << filtered_by_should_include << "\n"
               << "  Filtered by index type limits: " << filtered_by_index_limits << "\n"
               << "  Added to test_cases: " << added << "\n";
+    std::cerr.flush();
     
     // Print detailed filtering breakdown
-    std::cerr << "DEBUG: Looking for stats with key: '" << input_key << "'\n";
+    std::cerr << "\nDEBUG: Looking for stats with key: '" << input_key << "'\n";
     std::cerr << "DEBUG: g_filtering_stats size: " << g_filtering_stats.size() << "\n";
+    std::cerr.flush();
     for(const auto& pair : g_filtering_stats)
     {
         std::cerr << "DEBUG: Found key in stats: '" << pair.first << "'\n";
     }
+    std::cerr.flush();
     if(g_filtering_stats.find(input_key) != g_filtering_stats.end())
     {
         std::cerr << "DEBUG: Found matching key, printing summary...\n";
+        std::cerr.flush();
         g_filtering_stats[input_key].PrintSummary();
+        std::cerr.flush();
     }
     else
     {
         std::cerr << "DEBUG: WARNING - No stats found for key '" << input_key << "'\n";
+        std::cerr << "DEBUG: This means ShouldIncludeTestCase was never called for this input shape!\n";
+        std::cerr.flush();
     }
+    std::cerr << std::string(60, '=') << "\n\n";
+    std::cerr.flush();
 #endif
 }
 
