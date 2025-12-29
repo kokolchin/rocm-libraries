@@ -37,7 +37,9 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <memory>
+#include <sstream>
 #include <miopen/logger.hpp>
 #include <miopen/miopen.h>
 #include <miopen/pooling.hpp>
@@ -64,6 +66,43 @@ static int num_uint32_case_imgidx = 0;
 static int num_uint64_case = 0;
 // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
 static int num_uint64_case_imgidx = 0;
+
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+// Statistics structure for tracking filtering (matching gtest)
+struct FilteringStats
+{
+    size_t total_checked = 0;
+    size_t passed_all = 0;
+    size_t filtered_check1 = 0; // 3D max pooling with wsidx=0
+    size_t filtered_check2 = 0; // wide dataset with wsidx=0 and max pooling
+    size_t filtered_check3 = 0; // average pooling with wsidx=0
+    size_t filtered_check4 = 0; // uint8 max pooling with wsidx=1
+    size_t filtered_check5 = 0; // uint16 max pooling with wsidx=1
+    size_t filtered_check6 = 0; // index type limits (uint16/uint32/uint64)
+    size_t filtered_check7 = 0; // spt_dim validation
+    size_t filtered_check8 = 0; // kernel size validation
+    size_t filtered_check9 = 0; // memory check
+    
+    void PrintSummary() const
+    {
+        std::cerr << "\n  Filtering breakdown:\n";
+        std::cerr << "    Total checked: " << total_checked << "\n";
+        std::cerr << "    Passed all checks: " << passed_all << "\n";
+        std::cerr << "    Filtered by Check 1 (3D max wsidx=0): " << filtered_check1 << "\n";
+        std::cerr << "    Filtered by Check 2 (wide dataset): " << filtered_check2 << "\n";
+        std::cerr << "    Filtered by Check 3 (average wsidx=0): " << filtered_check3 << "\n";
+        std::cerr << "    Filtered by Check 4 (uint8 max wsidx=1): " << filtered_check4 << "\n";
+        std::cerr << "    Filtered by Check 5 (uint16 max wsidx=1): " << filtered_check5 << "\n";
+        std::cerr << "    Filtered by Check 6 (index type limits): " << filtered_check6 << "\n";
+        std::cerr << "    Filtered by Check 7 (spt_dim): " << filtered_check7 << "\n";
+        std::cerr << "    Filtered by Check 8 (kernel size): " << filtered_check8 << "\n";
+        std::cerr << "    Filtered by Check 9 (memory): " << filtered_check9 << "\n";
+    }
+};
+
+// Global stats (per input shape and dataset)
+static std::map<std::string, FilteringStats> g_filtering_stats;
+#endif
 
 static inline void print(const miopen::PoolingDescriptor& filter)
 {
@@ -531,6 +570,14 @@ struct pooling_driver : test_driver
 
     void run()
     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        // Create key for this input shape and dataset
+        std::ostringstream key;
+        key << "dataset" << dataset_id << "_(" << in_shape[0] << "," << in_shape[1] << ","
+            << in_shape[2] << "," << in_shape[3] << ")";
+        std::string input_key = key.str();
+        g_filtering_stats[input_key].total_checked++;
+#endif
         auto idx_typ = index_type_lookup.at(miopen::ToUpper(index_type));
         auto idx_sz  = sizeof(uint8_t);
         int spt_dim  = in_shape.size() - 2;
@@ -554,6 +601,9 @@ struct pooling_driver : test_driver
 
         if(wsidx == 0 && spt_dim == 3 && filter.GetMode() == miopenPoolingMax && full_set)
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check1++;
+#endif
             show_command();
             std::cout << "Warning: Config skipped. Workspace index mask mode is not implemented "
                          "yet in 3D max pooling solvers."
@@ -563,6 +613,9 @@ struct pooling_driver : test_driver
 
         if(wsidx == 0 && spt_dim == 2 && filter.GetMode() == miopenPoolingMax && wide_dataset)
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check2++;
+#endif
             show_command();
             std::cout << "Warning: Config skipped. Workspace index mask mode is not implemented "
                          "yet in 2D max backward solvers that support wide pooling window."
@@ -575,6 +628,9 @@ struct pooling_driver : test_driver
             filter.GetMode() == miopenPoolingAverageInclusive) &&
            full_set)
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check3++;
+#endif
             show_command();
             std::cout << "Warning: Config skipped. Workspace index modes are irrelevant for "
                          "Average pooling. "
@@ -595,6 +651,9 @@ struct pooling_driver : test_driver
             if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set &&
                filter.GetMode() == miopenPoolingMax)
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check4++;
+#endif
                 show_command();
                 std::cout << "Warning: Config skipped: uint8 index is too small "
                              "(spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) "
@@ -608,6 +667,9 @@ struct pooling_driver : test_driver
             if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set &&
                filter.GetMode() == miopenPoolingMax)
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check5++;
+#endif
                 show_command();
                 std::cout << "Warning: Config skipped: uint16 index is too small "
                              "(spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) "
@@ -620,6 +682,9 @@ struct pooling_driver : test_driver
                 // test_pooling_test --all only test 5 uint16 cases
                 if(num_uint16_case > 5)
                 {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                    g_filtering_stats[input_key].filtered_check6++;
+#endif
                     show_command();
                     std::cout << "Warning: Config skipped for the default dataset to speed "
                                  "up testing (num_uint16_case > 5)"
@@ -639,6 +704,9 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint32_case > 5)
                     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                        g_filtering_stats[input_key].filtered_check6++;
+#endif
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
                                      "testing (wsidx == 0 && num_uint32_case > 5)"
@@ -651,6 +719,9 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint32_case_imgidx > 5)
                     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                        g_filtering_stats[input_key].filtered_check6++;
+#endif
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
                                      "testing (wsidx != 0 && num_uint32_case_imgidx > 5)"
@@ -670,6 +741,9 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint64_case > 5)
                     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                        g_filtering_stats[input_key].filtered_check6++;
+#endif
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
                                      "testing (wsidx == 0) && (num_uint64_case > 5)"
@@ -682,6 +756,9 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint64_case_imgidx > 5 && spt_dim == 2)
                     {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                        g_filtering_stats[input_key].filtered_check6++;
+#endif
                         show_command();
                         std::cout << "Warning: Config skipped to speed up testing of the "
                                      "default dataset (wsidx != 0) && (num_uint64_case_imgidx > 5 "
@@ -701,6 +778,9 @@ struct pooling_driver : test_driver
 
         if(spt_dim != 2 && spt_dim != 3)
         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            g_filtering_stats[input_key].filtered_check7++;
+#endif
             show_command();
             std::cout << "Warning: Config skipped becuse it is not supported " //
                          "(spt_dim != 2 && spt_dim != 3)"
@@ -712,6 +792,9 @@ struct pooling_driver : test_driver
         {
             if(lens[i] > (input_desc.GetLengths()[i + 2] + static_cast<uint64_t>(2) * pads[i]))
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check8++;
+#endif
                 show_command();
                 std::cout << "Warning: Config skipped becuse it is invalid "
                              "(lens[i] > (input_desc.GetLengths()[i + 2] + 2 * pads[i]))"
@@ -730,6 +813,9 @@ struct pooling_driver : test_driver
             size_t device_mem = get_handle().GetGlobalMemorySize();
             if(total_mem >= device_mem)
             {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                g_filtering_stats[input_key].filtered_check9++;
+#endif
                 show_command();
                 std::cout << "Config skipped because it requires " << total_mem
                           << " Bytes to write all necessary tensors to GPU. GPU has " << device_mem
@@ -824,6 +910,11 @@ struct pooling_driver : test_driver
         }
 #endif
 
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        // Config passed all checks and will be executed
+        g_filtering_stats[input_key].passed_all++;
+#endif
+
         switch(filter.GetIndexType())
         {
         case miopenIndexUint8: {
@@ -873,5 +964,21 @@ struct pooling_driver : test_driver
         }
     }
 };
+
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+// Function to print filtering statistics (call at end of test run)
+inline void PrintPooling2dFilteringStats()
+{
+    std::cerr << "\n" << std::string(60, '=') << "\n";
+    std::cerr << "CTEST FILTERING STATISTICS SUMMARY\n";
+    std::cerr << std::string(60, '=') << "\n";
+    for(const auto& pair : g_filtering_stats)
+    {
+        std::cerr << "\nInput shape: " << pair.first << "\n";
+        pair.second.PrintSummary();
+    }
+    std::cerr << "\n" << std::string(60, '=') << "\n";
+}
+#endif
 
 #endif
