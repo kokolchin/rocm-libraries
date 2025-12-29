@@ -86,7 +86,6 @@ set_var_to_condition(MIOPEN_TEST_WITH_MIOPENDRIVER_DEFAULT MIOPEN_BUILD_DRIVER)
 option( MIOPEN_TEST_WITH_MIOPENDRIVER "Use MIOpenDriver in tests" ${MIOPEN_TEST_WITH_MIOPENDRIVER_DEFAULT})
 
 option( WORKAROUND_ISSUE_936 "" ON)
-option( ENABLE_POOLING2D_CONFIG_LOGGING "Enable configuration logging for pooling2d test" ON)
 
 # Run the test suite to a depth limit
 #limit greater than 2 leads to prolonged testing more than 5hrs per stage.
@@ -364,10 +363,7 @@ function(add_test_executable TEST_NAME)
     if(WIN32)
         target_compile_definitions(${TEST_NAME} PRIVATE NOMINMAX)
     endif()
-    # Enable configuration logging for pooling2d test when requested
-    if(${TEST_NAME} STREQUAL "test_pooling2d" AND DEFINED ENABLE_POOLING2D_CONFIG_LOGGING)
-        target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_CONFIG_LOGGING)
-    endif()
+    # Logging is always enabled in analysis branches (no defines needed)
     clang_tidy_check(${TEST_NAME})
     target_link_libraries(${TEST_NAME} Threads::Threads)
     # Cmake does not add flags correctly for gcc
