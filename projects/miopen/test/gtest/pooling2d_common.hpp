@@ -221,7 +221,6 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         
         // Memory estimate: 3 * input + output + idx_sz * element_size (matching ctest formula exactly)
         // Note: ctest uses idx_sz * output_desc.GetElementSize(), not idx_sz * output_desc.GetNumBytes()
-        constexpr size_t element_size = 4; // FP32 element size (matches output_desc.GetElementSize())
         size_t total_mem = 3 * input_size + output_size + idx_sz * element_size;
         
         if(total_mem >= device_mem)
