@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <vector>
@@ -189,10 +190,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     // The ctest performs this check at runtime, but we approximate it here at generation time
     // to match the test case counts. We use FP32 (4 bytes) as a conservative estimate.
     // This matches: if(full_set) { ... if(total_mem >= device_mem) return; }
+    bool memory_check_applied = false;
+    bool memory_check_failed = false;
     try
     {
         auto& handle = get_handle();
         size_t device_mem = handle.GetGlobalMemorySize();
+        memory_check_applied = true;
         
         // Calculate tensor sizes manually (approximating FP32 = 4 bytes per element)
         constexpr size_t element_size = 4; // FP32, conservative estimate
@@ -225,15 +229,35 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         
         if(total_mem >= device_mem)
         {
+            memory_check_failed = true;
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+            std::cerr << "DEBUG: Memory check FAILED for config: " << test_case
+                      << " total_mem=" << total_mem << " device_mem=" << device_mem << "\n";
+#endif
             return false; // Skip config that would exceed GPU memory
         }
     }
-    catch(...)
+    catch(const std::exception& e)
     {
         // If we can't get the handle (e.g., at test case generation time),
         // skip the memory check. This allows test cases to be generated even
         // when the handle is not available.
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        std::cerr << "DEBUG: Memory check SKIPPED (exception: " << e.what() << ") for config: " << test_case << "\n";
+#endif
     }
+    catch(...)
+    {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+        std::cerr << "DEBUG: Memory check SKIPPED (unknown exception) for config: " << test_case << "\n";
+#endif
+    }
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    if(memory_check_applied && !memory_check_failed)
+    {
+        std::cerr << "DEBUG: Memory check PASSED for config: " << test_case << "\n";
+    }
+#endif
 
     return true;
 }
@@ -314,6 +338,12 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool skip_wide_check = false,
                                  bool apply_index_type_limits = true)
 {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    size_t total_generated = 0;
+    size_t filtered_by_should_include = 0;
+    size_t filtered_by_index_limits = 0;
+    size_t added = 0;
+#endif
     for(const auto& lens : lens_list)
     {
         for(const auto& strides : strides_list)
@@ -326,6 +356,9 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                     {
                         for(int wsidx : wsidx_values)
                         {
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                            total_generated++;
+#endif
                             Pooling2dTestCase test_case = {
                                 {input_dims[0], input_dims[1], input_dims[2], input_dims[3]},
                                 {lens[0], lens[1]},
@@ -343,14 +376,37 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                    counters.ShouldAddBasedOnIndexType(index_type, wsidx))
                                 {
                                     test_cases.push_back(test_case);
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                                    added++;
+#endif
                                 }
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                                else
+                                {
+                                    filtered_by_index_limits++;
+                                }
+#endif
                             }
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+                            else
+                            {
+                                filtered_by_should_include++;
+                            }
+#endif
                         }
                     }
                 }
             }
         }
     }
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    std::cerr << "DEBUG: AddTestCasesForInput stats for input (" 
+              << input_dims[0] << "," << input_dims[1] << "," << input_dims[2] << "," << input_dims[3] << "):\n"
+              << "  Total generated: " << total_generated << "\n"
+              << "  Filtered by ShouldIncludeTestCase: " << filtered_by_should_include << "\n"
+              << "  Filtered by index type limits: " << filtered_by_index_limits << "\n"
+              << "  Added to test_cases: " << added << "\n";
+#endif
 }
 
 template <typename T, typename Index>

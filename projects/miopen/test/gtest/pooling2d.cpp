@@ -2,6 +2,7 @@
 // SPDX-License-Identifier:  MIT
 
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
@@ -89,6 +90,13 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
     // Note: Dataset 1 (asymmetric) and Dataset 2 (wide window) are tested separately
     // via pooling2d_asymmetric.cpp and pooling2d_wide.cpp to maintain the same
     // structure as the original ctest implementation.
+
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    std::cerr << "\n=== Dataset 0 (Standard) Test Case Generation Summary ===\n";
+    std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
+    std::cerr << "Input shapes: " << dataset0_inputs.size() << "\n";
+    std::cerr << "===========================================================\n\n";
+#endif
 
 #if ENABLE_CONFIG_LOGGING
     // Temporary: Log all test configurations to a file for comparison with ctest

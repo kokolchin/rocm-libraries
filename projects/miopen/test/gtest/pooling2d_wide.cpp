@@ -2,6 +2,7 @@
 // SPDX-License-Identifier:  MIT
 
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
@@ -56,6 +57,13 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
                              false, // skip_wide_check=false for Dataset 2 (wide window)
                              false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
     }
+
+#ifdef ENABLE_POOLING2D_DEBUG_LOGGING
+    std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
+    std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
+    std::cerr << "Expected ctest count: 33\n";
+    std::cerr << "=============================================================\n\n";
+#endif
 
 #if ENABLE_CONFIG_LOGGING
     // Temporary: Log all test configurations to a file for comparison with ctest
