@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
@@ -67,6 +68,28 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
     std::cerr << "Expected ctest count: 33\n";
+    
+    // Analyze by mode and wsidx to identify the pattern
+    std::map<int, std::map<int, int>> mode_wsidx_counts;
+    for(const auto& tc : test_cases)
+    {
+        mode_wsidx_counts[static_cast<int>(tc.mode)][tc.wsidx]++;
+    }
+    
+    std::cerr << "\nBreakdown by mode and wsidx:\n";
+    const char* mode_names[] = {"Max", "Average", "AverageInclusive"};
+    for(int mode = 0; mode < 3; mode++)
+    {
+        int total_for_mode = 0;
+        for(int wsidx = 0; wsidx < 2; wsidx++)
+        {
+            int count = mode_wsidx_counts[mode][wsidx];
+            total_for_mode += count;
+            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count << "\n";
+        }
+        std::cerr << "  " << mode_names[mode] << " mode TOTAL: " << total_for_mode << "\n";
+    }
+    
     std::cerr << "=============================================================\n\n";
 #endif
 
