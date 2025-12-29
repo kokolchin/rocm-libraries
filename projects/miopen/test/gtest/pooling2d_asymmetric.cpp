@@ -13,6 +13,11 @@
 // This should be reverted after reviewer verification
 #define ENABLE_CONFIG_LOGGING 1
 
+// Temporary: Enable debug logging for troubleshooting test case generation
+// Set to 1 to enable detailed debug output to stderr
+// This should be reverted after debugging is complete
+#define ENABLE_POOLING2D_DEBUG_LOGGING 1
+
 using namespace pooling2d_gtest;
 
 std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
