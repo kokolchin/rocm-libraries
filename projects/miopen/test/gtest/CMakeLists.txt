@@ -48,10 +48,7 @@ function(add_gtest TEST_NAME TEST_CPP)
   if(WIN32)
     target_compile_definitions(${TEST_NAME} PRIVATE NOMINMAX)
   endif()
-  # Enable configuration logging for pooling2d gtest wrappers when requested
-  if(ENABLE_POOLING2D_CONFIG_LOGGING AND (${TEST_NAME} STREQUAL "test_pooling2d_asymmetric" OR ${TEST_NAME} STREQUAL "test_pooling2d_wide"))
-    target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_CONFIG_LOGGING)
-  endif()
+  # Note: pooling2d gtest wrappers removed from ctest-analysis branch
 
   add_dependencies(tests ${TEST_NAME})
   add_dependencies(check ${TEST_NAME})
