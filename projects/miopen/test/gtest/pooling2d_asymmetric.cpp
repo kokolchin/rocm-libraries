@@ -106,6 +106,13 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
     return test_cases;
 }
 
+// Cache the test cases to avoid regenerating them twice (once for FP32, once for FP16)
+static const std::vector<Pooling2dTestCase>& GetCachedPooling2dAsymmetricTestCases()
+{
+    static const std::vector<Pooling2dTestCase> cached = GetPooling2dAsymmetricTestCases();
+    return cached;
+}
+
 // Derived classes for Dataset 1 (asymmetric pooling)
 using GPU_AsymPooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_AsymPooling2d_FP16 = Pooling2dCommon<half_float::half>;
