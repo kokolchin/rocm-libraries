@@ -96,8 +96,8 @@ inline size_t GetIndexMax(miopenIndexType_t index_type)
 // Statistics structure for tracking filtering
 struct FilteringStats
 {
-    size_t total_checked = 0;
-    size_t passed_all = 0;
+    size_t total_checked   = 0;
+    size_t passed_all      = 0;
     size_t filtered_check1 = 0; // spt_dim != 2
     size_t filtered_check2 = 0; // kernel size exceeds input+padding
     size_t filtered_check3 = 0; // wide dataset with wsidx=0 and max pooling
@@ -105,7 +105,7 @@ struct FilteringStats
     size_t filtered_check5 = 0; // average pooling with wsidx=0
     size_t filtered_check6 = 0; // index range validation for max pooling
     size_t filtered_check7 = 0; // memory check
-    
+
     void PrintSummary() const
     {
         std::cerr << "\n  Filtering breakdown:\n";
@@ -114,7 +114,8 @@ struct FilteringStats
         std::cerr << "    Filtered by Check 1 (spt_dim): " << filtered_check1 << "\n";
         std::cerr << "    Filtered by Check 2 (kernel size): " << filtered_check2 << "\n";
         std::cerr << "    Filtered by Check 3 (wide dataset): " << filtered_check3 << "\n";
-        std::cerr << "    Filtered by Check 4 (uint8/uint16 max wsidx=1): " << filtered_check4 << "\n";
+        std::cerr << "    Filtered by Check 4 (uint8/uint16 max wsidx=1): " << filtered_check4
+                  << "\n";
         std::cerr << "    Filtered by Check 5 (average wsidx=0): " << filtered_check5 << "\n";
         std::cerr << "    Filtered by Check 6 (index range): " << filtered_check6 << "\n";
         std::cerr << "    Filtered by Check 7 (memory): " << filtered_check7 << "\n";
@@ -176,8 +177,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     // Check 4: Skip uint8/uint16 max pooling with wsidx=1 in 2D when full_set is true
     // The original ctest skips these when full_set is true (with --all flag)
     // This is a blanket skip for performance optimization, matching ctest behavior exactly:
-    // if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && filter.GetMode() == miopenPoolingMax)
-    // Note: Some uint32/uint64 with wsidx=1 may still pass Check 6, but uint8/uint16 are blanket skipped
+    // if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && filter.GetMode() ==
+    // miopenPoolingMax) Note: Some uint32/uint64 with wsidx=1 may still pass Check 6, but
+    // uint8/uint16 are blanket skipped
     if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
        (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
     {
@@ -234,27 +236,27 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     // to match the test case counts. We use FP32 (4 bytes) as a conservative estimate.
     // This matches: if(full_set) { ... if(total_mem >= device_mem) return; }
     bool memory_check_applied = false;
-    bool memory_check_failed = false;
+    bool memory_check_failed  = false;
     try
     {
-        auto& handle = get_handle();
-        size_t device_mem = handle.GetGlobalMemorySize();
+        auto& handle         = get_handle();
+        size_t device_mem    = handle.GetGlobalMemorySize();
         memory_check_applied = true;
-        
+
         // Calculate tensor sizes manually (approximating FP32 = 4 bytes per element)
         constexpr size_t element_size = 4; // FP32, conservative estimate
-        size_t input_size = static_cast<size_t>(test_case.input_dims[0]) *
-                           static_cast<size_t>(test_case.input_dims[1]) *
-                           static_cast<size_t>(test_case.input_dims[2]) *
-                           static_cast<size_t>(test_case.input_dims[3]) * element_size;
-        
+        size_t input_size             = static_cast<size_t>(test_case.input_dims[0]) *
+                            static_cast<size_t>(test_case.input_dims[1]) *
+                            static_cast<size_t>(test_case.input_dims[2]) *
+                            static_cast<size_t>(test_case.input_dims[3]) * element_size;
+
         auto output_dims = CalculateOutputDims(
             test_case.input_dims, test_case.lens, test_case.strides, test_case.pads);
         size_t output_size = static_cast<size_t>(output_dims[0]) *
-                            static_cast<size_t>(output_dims[1]) *
-                            static_cast<size_t>(output_dims[2]) *
-                            static_cast<size_t>(output_dims[3]) * element_size;
-        
+                             static_cast<size_t>(output_dims[1]) *
+                             static_cast<size_t>(output_dims[2]) *
+                             static_cast<size_t>(output_dims[3]) * element_size;
+
         // Calculate index size
         size_t idx_sz = 0;
         switch(test_case.index_type)
@@ -265,11 +267,12 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         case miopenIndexUint64: idx_sz = sizeof(uint64_t); break;
         default: idx_sz = sizeof(uint8_t); break;
         }
-        
-        // Memory estimate: 3 * input + output + idx_sz * element_size (matching ctest formula exactly)
-        // Note: ctest uses idx_sz * output_desc.GetElementSize(), not idx_sz * output_desc.GetNumBytes()
+
+        // Memory estimate: 3 * input + output + idx_sz * element_size (matching ctest formula
+        // exactly) Note: ctest uses idx_sz * output_desc.GetElementSize(), not idx_sz *
+        // output_desc.GetNumBytes()
         size_t total_mem = 3 * input_size + output_size + idx_sz * element_size;
-        
+
         if(total_mem >= device_mem)
         {
             memory_check_failed = true;
@@ -284,11 +287,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         // If we can't get the handle (e.g., at test case generation time),
         // skip the memory check. This allows test cases to be generated even
         // when the handle is not available.
-        std::cerr << "DEBUG: Memory check SKIPPED (exception: " << e.what() << ") for config: " << test_case << "\n";
+        std::cerr << "DEBUG: Memory check SKIPPED (exception: " << e.what()
+                  << ") for config: " << test_case << "\n";
     }
     catch(...)
     {
-        std::cerr << "DEBUG: Memory check SKIPPED (unknown exception) for config: " << test_case << "\n";
+        std::cerr << "DEBUG: Memory check SKIPPED (unknown exception) for config: " << test_case
+                  << "\n";
     }
     if(memory_check_applied && !memory_check_failed)
     {
@@ -372,13 +377,13 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  const std::vector<int>& wsidx_values,
                                  IndexTypeCounters& counters,
                                  std::vector<Pooling2dTestCase>& test_cases,
-                                 bool skip_wide_check = false,
+                                 bool skip_wide_check         = false,
                                  bool apply_index_type_limits = true)
 {
-    size_t total_generated = 0;
+    size_t total_generated            = 0;
     size_t filtered_by_should_include = 0;
-    size_t filtered_by_index_limits = 0;
-    size_t added = 0;
+    size_t filtered_by_index_limits   = 0;
+    size_t added                      = 0;
     for(const auto& lens : lens_list)
     {
         for(const auto& strides : strides_list)
@@ -404,8 +409,9 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                             {
                                 // Apply original ctest limits for non-uint8 index types
                                 // Only apply limits for Dataset 0 (matching ctest behavior:
-                                // skip_many_configs_with_non_int8_index = (dataset_id == 0) && full_set)
-                                if(!apply_index_type_limits || 
+                                // skip_many_configs_with_non_int8_index = (dataset_id == 0) &&
+                                // full_set)
+                                if(!apply_index_type_limits ||
                                    counters.ShouldAddBasedOnIndexType(index_type, wsidx))
                                 {
                                     test_cases.push_back(test_case);
@@ -427,10 +433,10 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
         }
     }
     std::ostringstream input_key_stream;
-    input_key_stream << "(" << input_dims[0] << "," << input_dims[1] << ","
-                     << input_dims[2] << "," << input_dims[3] << ")";
+    input_key_stream << "(" << input_dims[0] << "," << input_dims[1] << "," << input_dims[2] << ","
+                     << input_dims[3] << ")";
     std::string input_key = input_key_stream.str();
-    
+
     std::cerr << "\n" << std::string(60, '=') << "\n";
     std::cerr << "DEBUG: AddTestCasesForInput stats for input " << input_key << ":\n"
               << "  Total generated: " << total_generated << "\n"
@@ -438,7 +444,7 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
               << "  Filtered by index type limits: " << filtered_by_index_limits << "\n"
               << "  Added to test_cases: " << added << "\n";
     std::cerr.flush();
-    
+
     // Print detailed filtering breakdown
     std::cerr << "\nDEBUG: Looking for stats with key: '" << input_key << "'\n";
     std::cerr << "DEBUG: g_filtering_stats size: " << g_filtering_stats.size() << "\n";
@@ -458,7 +464,8 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
     else
     {
         std::cerr << "DEBUG: WARNING - No stats found for key '" << input_key << "'\n";
-        std::cerr << "DEBUG: This means ShouldIncludeTestCase was never called for this input shape!\n";
+        std::cerr
+            << "DEBUG: This means ShouldIncludeTestCase was never called for this input shape!\n";
         std::cerr.flush();
     }
     std::cerr << std::string(60, '=') << "\n\n";

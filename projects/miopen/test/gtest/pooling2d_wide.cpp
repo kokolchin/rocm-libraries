@@ -48,21 +48,21 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             false, // skip_wide_check=false for Dataset 2 (wide window)
+                             false,  // skip_wide_check=false for Dataset 2 (wide window)
                              false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
     }
 
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
     std::cerr << "Expected ctest count: 33\n";
-    
+
     // Analyze by mode and wsidx to identify the pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;
     for(const auto& tc : test_cases)
     {
         mode_wsidx_counts[static_cast<int>(tc.mode)][tc.wsidx]++;
     }
-    
+
     std::cerr << "\nBreakdown by mode and wsidx:\n";
     const char* mode_names[] = {"Max", "Average", "AverageInclusive"};
     for(int mode = 0; mode < 3; mode++)
@@ -72,11 +72,12 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
         {
             int count = mode_wsidx_counts[mode][wsidx];
             total_for_mode += count;
-            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count << "\n";
+            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count
+                      << "\n";
         }
         std::cerr << "  " << mode_names[mode] << " mode TOTAL: " << total_for_mode << "\n";
     }
-    
+
     std::cerr << "=============================================================\n\n";
 
     // Log all test configurations to a file for comparison with ctest
@@ -106,15 +107,9 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 using GPU_WidePooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_WidePooling2d_FP16 = Pooling2dCommon<half_float::half>;
 
-TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
-{
-    this->RunTest();
-}
+TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide) { this->RunTest(); }
 
-TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
-{
-    this->RunTest();
-}
+TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { this->RunTest(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP32,

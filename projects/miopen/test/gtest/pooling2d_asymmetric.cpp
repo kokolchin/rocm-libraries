@@ -51,21 +51,21 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             true,  // skip_wide_check=true for Dataset 1 (asymmetric)
+                             true,   // skip_wide_check=true for Dataset 1 (asymmetric)
                              false); // apply_index_type_limits=false for Dataset 1 (matching ctest)
     }
 
     std::cerr << "\n=== Dataset 1 (Asymmetric) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
     std::cerr << "Expected ctest count: 84\n";
-    
+
     // Analyze by mode and wsidx to identify the 2x pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;
     for(const auto& tc : test_cases)
     {
         mode_wsidx_counts[static_cast<int>(tc.mode)][tc.wsidx]++;
     }
-    
+
     std::cerr << "\nBreakdown by mode and wsidx:\n";
     const char* mode_names[] = {"Max", "Average", "AverageInclusive"};
     for(int mode = 0; mode < 3; mode++)
@@ -75,11 +75,12 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
         {
             int count = mode_wsidx_counts[mode][wsidx];
             total_for_mode += count;
-            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count << "\n";
+            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count
+                      << "\n";
         }
         std::cerr << "  " << mode_names[mode] << " mode TOTAL: " << total_for_mode << "\n";
     }
-    
+
     std::cerr << "=============================================================\n\n";
 
     // Log all test configurations to a file for comparison with ctest
@@ -109,15 +110,9 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 using GPU_AsymPooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_AsymPooling2d_FP16 = Pooling2dCommon<half_float::half>;
 
-TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
-{
-    this->RunTest();
-}
+TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric) { this->RunTest(); }
 
-TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
-{
-    this->RunTest();
-}
+TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { this->RunTest(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP32,

@@ -18,8 +18,6 @@
 #define TEST_GET_INPUT_TENSOR 0
 #endif
 
-using namespace pooling2d_gtest;
-
 std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 {
     std::vector<Pooling2dTestCase> test_cases;
@@ -78,8 +76,8 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
                              wsidx_values,
                              counters,
                              test_cases,
-                             false,  // skip_wide_check=false for Dataset 0
-                             true);  // apply_index_type_limits=true for Dataset 0
+                             false, // skip_wide_check=false for Dataset 0
+                             true); // apply_index_type_limits=true for Dataset 0
     }
 
     // Note: Dataset 1 (asymmetric) and Dataset 2 (wide window) are tested separately
