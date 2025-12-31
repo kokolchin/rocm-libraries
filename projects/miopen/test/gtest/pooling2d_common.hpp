@@ -294,13 +294,6 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     {
         std::cerr << "DEBUG: Memory check PASSED for config: " << test_case << "\n";
     }
-#else
-    catch(...)
-    {
-        // If we can't get the handle (e.g., at test case generation time),
-        // skip the memory check. This allows test cases to be generated even
-        // when the handle is not available.
-    }
 
     g_filtering_stats[input_key].passed_all++;
     return true;
