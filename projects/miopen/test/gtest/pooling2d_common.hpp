@@ -30,8 +30,6 @@
 #define TEST_GET_INPUT_TENSOR 0
 #endif
 
-namespace pooling2d_gtest {
-
 // Dataset definitions (matching original pooling2d.hpp ctest driver, now removed):
 // - Dataset 0: Default dataset with various tensor sizes (tested in pooling2d.cpp)
 // - Dataset 1: Intended for testing of asymmetric configs (tested in pooling2d_asymmetric.cpp)
@@ -634,7 +632,5 @@ protected:
     // Common test execution method for all pooling2d tests
     void RunTest() { RunPooling2dTest<T>(this->GetParam()); }
 };
-
-} // namespace pooling2d_gtest
 
 #endif // GUARD_MIOPEN_TEST_GTEST_POOLING2D_COMMON_HPP

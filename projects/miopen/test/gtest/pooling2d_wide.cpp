@@ -9,8 +9,6 @@
 #include <half/half.hpp>
 #include "pooling2d_common.hpp"
 
-using namespace pooling2d_gtest;
-
 std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 {
     std::vector<Pooling2dTestCase> test_cases;
