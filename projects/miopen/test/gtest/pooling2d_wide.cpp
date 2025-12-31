@@ -103,6 +103,13 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     return test_cases;
 }
 
+// Cache the test cases to avoid regenerating them twice (once for FP32, once for FP16)
+static const std::vector<Pooling2dTestCase>& GetCachedPooling2dWideTestCases()
+{
+    static const std::vector<Pooling2dTestCase> cached = GetPooling2dWideTestCases();
+    return cached;
+}
+
 // Derived classes for Dataset 2 (wide window pooling)
 using GPU_WidePooling2d_FP32 = Pooling2dCommon<float>;
 using GPU_WidePooling2d_FP16 = Pooling2dCommon<half_float::half>;
@@ -113,10 +120,10 @@ TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { this->RunTest(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dWideTestCases()),
+                         testing::ValuesIn(GetCachedPooling2dWideTestCases()),
                          GetPooling2dTestCaseName);
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dWideTestCases()),
+                         testing::ValuesIn(GetCachedPooling2dWideTestCases()),
                          GetPooling2dTestCaseName);
