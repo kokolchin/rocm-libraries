@@ -54,7 +54,8 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
                        {1, 16, 4096, 4096}}; // Shape 18
 #endif
     std::vector<std::vector<int>> dataset0_lens         = {{2, 2}, {3, 3}};
-    std::vector<std::vector<int>> dataset0_strides      = {{2, 2}, {1, 1}};
+    // Note: Order matters for index type limits! CTest processes stride (1,1) before (2,2)
+    std::vector<std::vector<int>> dataset0_strides      = {{1, 1}, {2, 2}};
     std::vector<std::vector<int>> dataset0_pads         = {{0, 0}, {1, 1}};
     std::vector<miopenIndexType_t> dataset0_index_types = {
         miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
