@@ -9,7 +9,7 @@
 #include <half/half.hpp>
 #include "pooling2d_common.hpp"
 
-std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
+static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 {
     std::vector<Pooling2dTestCase> test_cases;
     IndexTypeCounters counters;
@@ -116,10 +116,10 @@ TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { this->RunTest();
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
+                         testing::ValuesIn(GetCachedPooling2dAsymmetricTestCases()),
                          GetPooling2dTestCaseName);
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
+                         testing::ValuesIn(GetCachedPooling2dAsymmetricTestCases()),
                          GetPooling2dTestCaseName);
