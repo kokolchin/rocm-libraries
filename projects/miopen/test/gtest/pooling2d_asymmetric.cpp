@@ -31,8 +31,9 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
     std::vector<std::vector<int>> dataset1_pads = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
 #endif
 
+    // Dataset 1 uses only uint8 and uint32 (matching ctest behavior)
     std::vector<miopenIndexType_t> dataset1_index_types = {
-        miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
+        miopenIndexUint8, miopenIndexUint32};
     std::vector<miopenPoolingMode_t> modes = {
         miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
     std::vector<int> wsidx_values = {0, 1};
@@ -57,7 +58,7 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 
     std::cerr << "\n=== Dataset 1 (Asymmetric) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 84\n";
+    std::cerr << "Expected ctest count: 84 (with uint8 and uint32 only)\n";
 
     // Analyze by mode and wsidx to identify the 2x pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;

@@ -28,8 +28,8 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     // Pads: {{0, 0}} - no padding for wide windows
     std::vector<std::vector<int>> dataset2_pads = {{0, 0}};
 
-    std::vector<miopenIndexType_t> dataset2_index_types = {
-        miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
+    // Dataset 2 uses only uint32 (matching ctest behavior)
+    std::vector<miopenIndexType_t> dataset2_index_types = {miopenIndexUint32};
     std::vector<miopenPoolingMode_t> modes = {
         miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
     std::vector<int> wsidx_values = {0, 1};
@@ -54,7 +54,7 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 33\n";
+    std::cerr << "Expected ctest count: 33 (with uint32 only)\n";
 
     // Analyze by mode and wsidx to identify the pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;
