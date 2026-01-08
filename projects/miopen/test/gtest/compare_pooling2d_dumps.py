@@ -101,17 +101,17 @@ def compare_files(ctest_file, gtest_file, dataset_name=""):
         
         if only_in_ctest:
             print(f"\n  {len(only_in_ctest)} configurations only in ctest:")
-            for i, config in enumerate(sorted(only_in_ctest)[:10], 1):
+            for i, config in enumerate(sorted(only_in_ctest)[:12], 1):
                 print(f"    {i}. {config}")
-            if len(only_in_ctest) > 10:
-                print(f"    ... and {len(only_in_ctest) - 10} more")
+            if len(only_in_ctest) > 12:
+                print(f"    ... and {len(only_in_ctest) - 12} more")
         
         if only_in_gtest:
             print(f"\n  {len(only_in_gtest)} configurations only in gtest:")
-            for i, config in enumerate(sorted(only_in_gtest)[:10], 1):
+            for i, config in enumerate(sorted(only_in_gtest)[:12], 1):
                 print(f"    {i}. {config}")
-            if len(only_in_gtest) > 10:
-                print(f"    ... and {len(only_in_gtest) - 10} more")
+            if len(only_in_gtest) > 12:
+                print(f"    ... and {len(only_in_gtest) - 12} more")
         
         # Statistics
         print("\n" + "-"*60)
