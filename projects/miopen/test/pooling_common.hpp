@@ -970,17 +970,7 @@ struct pooling_driver : test_driver
 // Function to print filtering statistics (call at end of test run)
 inline void PrintPooling2dFilteringStats()
 {
-    std::cerr << "\n" << std::string(60, '=') << "\n";
-    std::cerr << "CTEST FILTERING STATISTICS SUMMARY\n";
-    std::cerr << std::string(60, '=') << "\n";
-    for(const auto& pair : g_filtering_stats)
-    {
-        std::cerr << "\nInput shape: " << pair.first << "\n";
-        pair.second.PrintSummary();
-    }
-    std::cerr << "\n" << std::string(60, '=') << "\n";
-    
-    // Print debug summary for shape (1,19,1024,2048) in gtest style
+    // Only print debug summary for shape (1,19,1024,2048) in gtest style
     std::string debug_key = "dataset0_(1,19,1024,2048)";
     if(g_filtering_stats.find(debug_key) != g_filtering_stats.end())
     {
@@ -999,16 +989,8 @@ inline void PrintPooling2dFilteringStats()
         
         std::cerr << "\nDEBUG: Looking for stats with key: '(1,19,1024,2048)'\n";
         std::cerr << "DEBUG: g_filtering_stats size: " << g_filtering_stats.size() << "\n";
-        std::cerr.flush();
-        for(const auto& pair : g_filtering_stats)
-        {
-            std::cerr << "DEBUG: Found key in stats: '" << pair.first << "'\n";
-        }
-        std::cerr.flush();
         std::cerr << "DEBUG: Found matching key, printing summary...\n";
-        std::cerr.flush();
         stats.PrintSummary();
-        std::cerr.flush();
         
         std::cerr << "\n=== DEBUG_SHAPE(1,19,1024,2048): Summary of ADDED configs ===\n";
         std::cerr << "Total added: " << g_debug_shape_added_configs.size() << "\n";
