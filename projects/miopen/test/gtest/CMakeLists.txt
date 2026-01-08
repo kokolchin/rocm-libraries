@@ -2,13 +2,6 @@ find_package(GTest REQUIRED)
 
 include(GoogleTest)
 
-# Option to control TEST_GET_INPUT_TENSOR for pooling2d tests
-# When ON, uses get_inputs() function (matching default ctest behavior)
-# When OFF, uses predefined 18 shapes (matching ctest with --all)
-option(MIOPEN_TEST_POOLING2D_GET_INPUT_TENSOR 
-    "Use get_inputs() for pooling2d test input shapes (matches default ctest)" 
-    OFF)
-
 if(MIOPEN_USE_HIPBLASLT)
   find_package(hipblaslt REQUIRED PATHS /opt/rocm $ENV{HIP_PATH})
 endif()
@@ -54,14 +47,6 @@ function(add_gtest TEST_NAME TEST_CPP)
   add_executable(${TEST_NAME} ${TEST_CPP})
   if(WIN32)
     target_compile_definitions(${TEST_NAME} PRIVATE NOMINMAX)
-  endif()
-  
-  # Add TEST_GET_INPUT_TENSOR definition for pooling2d tests if option is set
-  if(MIOPEN_TEST_POOLING2D_GET_INPUT_TENSOR)
-    if("${TEST_CPP}" MATCHES "pooling2d" OR "${TEST_NAME}" MATCHES "pooling2d")
-      target_compile_definitions(${TEST_NAME} PRIVATE TEST_GET_INPUT_TENSOR=1)
-      message(STATUS "  Setting TEST_GET_INPUT_TENSOR=1 for ${TEST_NAME}")
-    endif()
   endif()
 
   add_dependencies(tests ${TEST_NAME})
