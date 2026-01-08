@@ -572,6 +572,11 @@ struct pooling_driver : test_driver
         key << "dataset" << dataset_id << "_(" << in_shape[0] << "," << in_shape[1] << ","
             << in_shape[2] << "," << in_shape[3] << ")";
         std::string input_key = key.str();
+        
+        // DEBUG: Check if this is the problematic shape
+        bool debug_shape = (in_shape.size() >= 4 && in_shape[0] == 1 && in_shape[1] == 19 &&
+                           in_shape[2] == 1024 && in_shape[3] == 2048);
+        
         g_filtering_stats[input_key].total_checked++;
         auto idx_typ = index_type_lookup.at(miopen::ToUpper(index_type));
         auto idx_sz  = sizeof(uint8_t);
@@ -593,9 +598,31 @@ struct pooling_driver : test_driver
 
         filter.SetIndexType(idx_typ);
         filter.SetWorkspaceIndexMode(miopenPoolingWorkspaceIndexMode_t(wsidx));
+        
+        if(debug_shape)
+        {
+            std::cerr << "\n=== DEBUG_SHAPE(1,19,1024,2048): Processing config ===\n"
+                      << "  lens=[" << lens[0] << "," << lens[1] << "]\n"
+                      << "  pads=[" << pads[0] << "," << pads[1] << "]\n"
+                      << "  strides=[" << strides[0] << "," << strides[1] << "]\n"
+                      << "  index_type=" << static_cast<int>(idx_typ) << "\n"
+                      << "  mode=" << static_cast<int>(filter.GetMode()) << "\n"
+                      << "  wsidx=" << wsidx << "\n"
+                      << "  dataset_id=" << dataset_id << "\n"
+                      << "  full_set=" << full_set << "\n";
+        }
 
         if(wsidx == 0 && spt_dim == 3 && filter.GetMode() == miopenPoolingMax && full_set)
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check1 (3D max wsidx=0): "
+                          << "lens=[" << lens[0] << "," << lens[1] << "] "
+                          << "pads=[" << pads[0] << "," << pads[1] << "] "
+                          << "strides=[" << strides[0] << "," << strides[1] << "] "
+                          << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                          << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+            }
             g_filtering_stats[input_key].filtered_check1++;
             show_command();
             std::cout << "Warning: Config skipped. Workspace index mask mode is not implemented "
@@ -606,6 +633,15 @@ struct pooling_driver : test_driver
 
         if(wsidx == 0 && spt_dim == 2 && filter.GetMode() == miopenPoolingMax && wide_dataset)
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check2 (wide dataset): "
+                          << "lens=[" << lens[0] << "," << lens[1] << "] "
+                          << "pads=[" << pads[0] << "," << pads[1] << "] "
+                          << "strides=[" << strides[0] << "," << strides[1] << "] "
+                          << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                          << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+            }
             g_filtering_stats[input_key].filtered_check2++;
             show_command();
             std::cout << "Warning: Config skipped. Workspace index mask mode is not implemented "
@@ -619,6 +655,15 @@ struct pooling_driver : test_driver
             filter.GetMode() == miopenPoolingAverageInclusive) &&
            full_set)
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check3 (average wsidx=0): "
+                          << "lens=[" << lens[0] << "," << lens[1] << "] "
+                          << "pads=[" << pads[0] << "," << pads[1] << "] "
+                          << "strides=[" << strides[0] << "," << strides[1] << "] "
+                          << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                          << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+            }
             g_filtering_stats[input_key].filtered_check3++;
             show_command();
             std::cout << "Warning: Config skipped. Workspace index modes are irrelevant for "
@@ -640,6 +685,15 @@ struct pooling_driver : test_driver
             if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set &&
                filter.GetMode() == miopenPoolingMax)
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check4 (uint8 max wsidx=1): "
+                              << "lens=[" << lens[0] << "," << lens[1] << "] "
+                              << "pads=[" << pads[0] << "," << pads[1] << "] "
+                              << "strides=[" << strides[0] << "," << strides[1] << "] "
+                              << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                              << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check4++;
                 show_command();
                 std::cout << "Warning: Config skipped: uint8 index is too small "
@@ -654,6 +708,15 @@ struct pooling_driver : test_driver
             if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set &&
                filter.GetMode() == miopenPoolingMax)
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check5 (uint16 max wsidx=1): "
+                              << "lens=[" << lens[0] << "," << lens[1] << "] "
+                              << "pads=[" << pads[0] << "," << pads[1] << "] "
+                              << "strides=[" << strides[0] << "," << strides[1] << "] "
+                              << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                              << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check5++;
                 show_command();
                 std::cout << "Warning: Config skipped: uint16 index is too small "
@@ -667,6 +730,16 @@ struct pooling_driver : test_driver
                 // test_pooling_test --all only test 5 uint16 cases
                 if(num_uint16_case > 5)
                 {
+                    if(debug_shape)
+                    {
+                        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (uint16 limit): "
+                                  << "lens=[" << lens[0] << "," << lens[1] << "] "
+                                  << "pads=[" << pads[0] << "," << pads[1] << "] "
+                                  << "strides=[" << strides[0] << "," << strides[1] << "] "
+                                  << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                                  << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx
+                                  << " num_uint16_case=" << num_uint16_case << "\n";
+                    }
                     g_filtering_stats[input_key].filtered_check6++;
                     show_command();
                     std::cout << "Warning: Config skipped for the default dataset to speed "
@@ -687,6 +760,16 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint32_case > 5)
                     {
+                        if(debug_shape)
+                        {
+                            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (uint32 limit wsidx=0): "
+                                      << "lens=[" << lens[0] << "," << lens[1] << "] "
+                                      << "pads=[" << pads[0] << "," << pads[1] << "] "
+                                      << "strides=[" << strides[0] << "," << strides[1] << "] "
+                                      << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                                      << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx
+                                      << " num_uint32_case=" << num_uint32_case << "\n";
+                        }
                         g_filtering_stats[input_key].filtered_check6++;
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
@@ -700,6 +783,16 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint32_case_imgidx > 5)
                     {
+                        if(debug_shape)
+                        {
+                            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (uint32 limit wsidx=1): "
+                                      << "lens=[" << lens[0] << "," << lens[1] << "] "
+                                      << "pads=[" << pads[0] << "," << pads[1] << "] "
+                                      << "strides=[" << strides[0] << "," << strides[1] << "] "
+                                      << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                                      << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx
+                                      << " num_uint32_case_imgidx=" << num_uint32_case_imgidx << "\n";
+                        }
                         g_filtering_stats[input_key].filtered_check6++;
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
@@ -720,6 +813,16 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint64_case > 5)
                     {
+                        if(debug_shape)
+                        {
+                            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (uint64 limit wsidx=0): "
+                                      << "lens=[" << lens[0] << "," << lens[1] << "] "
+                                      << "pads=[" << pads[0] << "," << pads[1] << "] "
+                                      << "strides=[" << strides[0] << "," << strides[1] << "] "
+                                      << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                                      << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx
+                                      << " num_uint64_case=" << num_uint64_case << "\n";
+                        }
                         g_filtering_stats[input_key].filtered_check6++;
                         show_command();
                         std::cout << "Warning: Config skipped for the default dataset to speed up "
@@ -733,6 +836,16 @@ struct pooling_driver : test_driver
                 {
                     if(num_uint64_case_imgidx > 5 && spt_dim == 2)
                     {
+                        if(debug_shape)
+                        {
+                            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (uint64 limit wsidx=1): "
+                                      << "lens=[" << lens[0] << "," << lens[1] << "] "
+                                      << "pads=[" << pads[0] << "," << pads[1] << "] "
+                                      << "strides=[" << strides[0] << "," << strides[1] << "] "
+                                      << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                                      << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx
+                                      << " num_uint64_case_imgidx=" << num_uint64_case_imgidx << "\n";
+                        }
                         g_filtering_stats[input_key].filtered_check6++;
                         show_command();
                         std::cout << "Warning: Config skipped to speed up testing of the "
@@ -753,6 +866,16 @@ struct pooling_driver : test_driver
 
         if(spt_dim != 2 && spt_dim != 3)
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check7 (spt_dim=" << spt_dim
+                          << "): "
+                          << "lens=[" << lens[0] << "," << lens[1] << "] "
+                          << "pads=[" << pads[0] << "," << pads[1] << "] "
+                          << "strides=[" << strides[0] << "," << strides[1] << "] "
+                          << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                          << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+            }
             g_filtering_stats[input_key].filtered_check7++;
             show_command();
             std::cout << "Warning: Config skipped becuse it is not supported " //
@@ -765,6 +888,17 @@ struct pooling_driver : test_driver
         {
             if(lens[i] > (input_desc.GetLengths()[i + 2] + static_cast<uint64_t>(2) * pads[i]))
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check8 (kernel size i=" << i
+                              << " lens[" << i << "]=" << lens[i] << " > input+2*pad="
+                              << (input_desc.GetLengths()[i + 2] + 2 * pads[i]) << "): "
+                              << "lens=[" << lens[0] << "," << lens[1] << "] "
+                              << "pads=[" << pads[0] << "," << pads[1] << "] "
+                              << "strides=[" << strides[0] << "," << strides[1] << "] "
+                              << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                              << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check8++;
                 show_command();
                 std::cout << "Warning: Config skipped becuse it is invalid "
@@ -784,6 +918,16 @@ struct pooling_driver : test_driver
             size_t device_mem = get_handle().GetGlobalMemorySize();
             if(total_mem >= device_mem)
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check9 (memory: total_mem="
+                              << total_mem << " >= device_mem=" << device_mem << "): "
+                              << "lens=[" << lens[0] << "," << lens[1] << "] "
+                              << "pads=[" << pads[0] << "," << pads[1] << "] "
+                              << "strides=[" << strides[0] << "," << strides[1] << "] "
+                              << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                              << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check9++;
                 show_command();
                 std::cout << "Config skipped because it requires " << total_mem
@@ -874,10 +1018,29 @@ struct pooling_driver : test_driver
                 log_files[dataset_idx] << static_cast<int>(idx_typ) << " "
                                       << static_cast<int>(filter.GetMode()) << " " << wsidx << "\n";
                 log_files[dataset_idx].flush();
+                
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): LOGGED to file: "
+                              << "lens=[" << lens[0] << "," << lens[1] << "] "
+                              << "pads=[" << pads[0] << "," << pads[1] << "] "
+                              << "strides=[" << strides[0] << "," << strides[1] << "] "
+                              << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                              << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+                }
             }
         }
 
         // Config passed all checks and will be executed
+        if(debug_shape)
+        {
+            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: "
+                      << "lens=[" << lens[0] << "," << lens[1] << "] "
+                      << "pads=[" << pads[0] << "," << pads[1] << "] "
+                      << "strides=[" << strides[0] << "," << strides[1] << "] "
+                      << "index_type=" << static_cast<int>(idx_typ) << " mode="
+                      << static_cast<int>(filter.GetMode()) << " wsidx=" << wsidx << "\n";
+        }
         g_filtering_stats[input_key].passed_all++;
 
         switch(filter.GetIndexType())
