@@ -135,11 +135,21 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     key << "(" << test_case.input_dims[0] << "," << test_case.input_dims[1] << ","
         << test_case.input_dims[2] << "," << test_case.input_dims[3] << ")";
     std::string input_key = key.str();
+    
+    // DEBUG: Detailed output for shape (1, 19, 1024, 2048)
+    bool debug_shape = (test_case.input_dims[0] == 1 && test_case.input_dims[1] == 19 &&
+                        test_case.input_dims[2] == 1024 && test_case.input_dims[3] == 2048);
+    
     g_filtering_stats[input_key].total_checked++;
     // Check 1: Validate dimensions (spt_dim == 2 for 2D pooling)
     int spt_dim = static_cast<int>(test_case.input_dims.size()) - 2;
     if(spt_dim != 2)
     {
+        if(debug_shape)
+        {
+            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check1 (spt_dim=" << spt_dim
+                      << "): " << test_case << "\n";
+        }
         g_filtering_stats[input_key].filtered_check1++;
         return false;
     }
@@ -150,6 +160,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         if(test_case.lens[i] >
            (test_case.input_dims[i + 2] + static_cast<int>(2) * test_case.pads[i]))
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check2 (lens[" << i
+                          << "]=" << test_case.lens[i] << " > input+2*pad="
+                          << (test_case.input_dims[i + 2] + 2 * test_case.pads[i])
+                          << "): " << test_case << "\n";
+            }
             g_filtering_stats[input_key].filtered_check2++;
             return false;
         }
@@ -169,6 +186,11 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         }
         if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
         {
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check3 (wide dataset): "
+                          << test_case << "\n";
+            }
             g_filtering_stats[input_key].filtered_check3++;
             return false;
         }
@@ -183,6 +205,11 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
        (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
     {
+        if(debug_shape)
+        {
+            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check4 (uint8/uint16 max wsidx=1): "
+                      << test_case << "\n";
+        }
         g_filtering_stats[input_key].filtered_check4++;
         return false;
     }
@@ -193,6 +220,11 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     if(test_case.wsidx == 0 &&
        (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
     {
+        if(debug_shape)
+        {
+            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check5 (average wsidx=0): "
+                      << test_case << "\n";
+        }
         g_filtering_stats[input_key].filtered_check5++;
         return false;
     }
@@ -212,6 +244,12 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
             }
             if(index_max <= lens_product)
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (wsidx=0, index_max="
+                              << index_max << " <= lens_product=" << lens_product << "): "
+                              << test_case << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check6++;
                 return false;
             }
@@ -225,6 +263,13 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
                 static_cast<size_t>(output_dims[2]) * static_cast<size_t>(output_dims[3]);
             if(index_max <= output_spatial_product)
             {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check6 (wsidx=1, index_max="
+                              << index_max
+                              << " <= output_spatial_product=" << output_spatial_product << "): "
+                              << test_case << "\n";
+                }
                 g_filtering_stats[input_key].filtered_check6++;
                 return false;
             }
@@ -276,8 +321,17 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
         if(total_mem >= device_mem)
         {
             memory_check_failed = true;
-            std::cerr << "DEBUG: Memory check FAILED for config: " << test_case
-                      << " total_mem=" << total_mem << " device_mem=" << device_mem << "\n";
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check7 (memory: total_mem="
+                          << total_mem << " >= device_mem=" << device_mem << "): " << test_case
+                          << "\n";
+            }
+            else
+            {
+                std::cerr << "DEBUG: Memory check FAILED for config: " << test_case
+                          << " total_mem=" << total_mem << " device_mem=" << device_mem << "\n";
+            }
             g_filtering_stats[input_key].filtered_check7++;
             return false; // Skip config that would exceed GPU memory
         }
@@ -301,6 +355,10 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
     }
 
     g_filtering_stats[input_key].passed_all++;
+    if(debug_shape)
+    {
+        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: " << test_case << "\n";
+    }
     return true;
 }
 
@@ -380,6 +438,16 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool skip_wide_check         = false,
                                  bool apply_index_type_limits = true)
 {
+    // DEBUG: Check if this is the problematic shape
+    bool debug_shape = (input_dims.size() == 4 && input_dims[0] == 1 && input_dims[1] == 19 &&
+                        input_dims[2] == 1024 && input_dims[3] == 2048);
+    if(debug_shape)
+    {
+        std::cerr << "\n=== DEBUG_SHAPE(1,19,1024,2048): Starting AddTestCasesForInput ===\n";
+        std::cerr << "  apply_index_type_limits=" << apply_index_type_limits << "\n";
+        std::cerr << "  skip_wide_check=" << skip_wide_check << "\n";
+    }
+    
     size_t total_generated            = 0;
     size_t filtered_by_should_include = 0;
     size_t filtered_by_index_limits   = 0;
@@ -416,15 +484,26 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                 {
                                     test_cases.push_back(test_case);
                                     added++;
+                                    if(debug_shape)
+                                    {
+                                        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): ADDED: "
+                                                  << test_case << "\n";
+                                    }
                                 }
                                 else
                                 {
                                     filtered_by_index_limits++;
+                                    if(debug_shape)
+                                    {
+                                        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED by index_type_limits: "
+                                                  << test_case << "\n";
+                                    }
                                 }
                             }
                             else
                             {
                                 filtered_by_should_include++;
+                                // Note: ShouldIncludeTestCase already prints debug for this shape
                             }
                         }
                     }
@@ -470,6 +549,24 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
     }
     std::cerr << std::string(60, '=') << "\n\n";
     std::cerr.flush();
+    
+    // DEBUG: Print all added configs for this shape
+    if(debug_shape)
+    {
+        std::cerr << "\n=== DEBUG_SHAPE(1,19,1024,2048): Summary of ADDED configs ===\n";
+        std::cerr << "Total added: " << added << "\n";
+        // Find all configs for this shape in test_cases
+        size_t count = 0;
+        for(const auto& tc : test_cases)
+        {
+            if(tc.input_dims[0] == 1 && tc.input_dims[1] == 19 && tc.input_dims[2] == 1024 &&
+               tc.input_dims[3] == 2048)
+            {
+                std::cerr << "  [" << count++ << "] " << tc << "\n";
+            }
+        }
+        std::cerr << "=== END DEBUG_SHAPE(1,19,1024,2048) ===\n\n";
+    }
 }
 
 template <typename T, typename Index>
