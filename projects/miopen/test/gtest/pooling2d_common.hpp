@@ -157,14 +157,10 @@ inline bool PassEarlyFilters(const Pooling2dTestCase& test_case, bool skip_wide_
         return false;
     }
     
-    // Early filter: (spt_dim == 2 && wsidx == 1) && max for uint8/uint16 (in switch, but we do it here)
-    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
-       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
-    {
-        return false;
-    }
-    
-    return true;
+        // Note: The uint8/uint16 max wsidx=1 check is now done in ShouldAddBasedOnIndexType
+        // to match ctest's order (it happens in the switch statement)
+        
+        return true;
 }
 
 // Helper function to check if a test case should be included
@@ -422,11 +418,25 @@ struct IndexTypeCounters
     int num_uint64_case_imgidx = 0;
 
     // Check if we should add a test case based on index type limits
-    bool ShouldAddBasedOnIndexType(miopenIndexType_t index_type, int wsidx)
+    // This matches ctest's switch statement logic
+    // Note: The uint8/uint16 max wsidx=1 check happens here (in the switch) in ctest
+    bool ShouldAddBasedOnIndexType(miopenIndexType_t index_type, int wsidx, int spt_dim, miopenPoolingMode_t mode, bool full_set)
     {
         switch(index_type)
         {
+        case miopenIndexUint8:
+            // In ctest, uint8 max cases with wsidx=1 are filtered in the switch
+            if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && mode == miopenPoolingMax)
+            {
+                return false; // Filtered: uint8 index is too small
+            }
+            return true; // No limit for uint8
         case miopenIndexUint16:
+            // In ctest, uint16 max cases with wsidx=1 are filtered in the switch
+            if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && mode == miopenPoolingMax)
+            {
+                return false; // Filtered: uint16 index is too small
+            }
             // Only test 5 uint16 cases total (but ctest uses > 5, allowing 6 cases)
             // Match ctest behavior exactly: if(num_uint16_case > 5) return false;
             if(num_uint16_case > 5)
@@ -533,7 +543,9 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                             
                             // Check index type limits BEFORE spt_dim/kernel checks (matching ctest)
                             // In ctest, limits are checked in the switch statement before spt_dim/kernel checks
-                            if(apply_index_type_limits && !counters.ShouldAddBasedOnIndexType(index_type, wsidx))
+                            // The uint8/uint16 max wsidx=1 check also happens in the switch in ctest
+                            int spt_dim = static_cast<int>(input_dims.size()) - 2;
+                            if(apply_index_type_limits && !counters.ShouldAddBasedOnIndexType(index_type, wsidx, spt_dim, mode, true))
                             {
                                 filtered_by_index_limits++;
                                 if(debug_shape)
