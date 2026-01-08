@@ -125,10 +125,54 @@ struct FilteringStats
 // Global stats (per input shape)
 static std::map<std::string, FilteringStats> g_filtering_stats;
 
+// Helper function to check early filters (before index type limits, matching ctest order)
+// Returns true if case passes early filters, false if it should be filtered out
+inline bool PassEarlyFilters(const Pooling2dTestCase& test_case, bool skip_wide_check = false)
+{
+    int spt_dim = static_cast<int>(test_case.input_dims.size()) - 2;
+    
+    // Early filter: wsidx == 0 && spt_dim == 3 && max && full_set (not applicable for 2D)
+    // Early filter: wsidx == 0 && spt_dim == 2 && max && wide_dataset
+    if(!skip_wide_check)
+    {
+        bool is_wide_dataset = false;
+        for(int i = 0; i < spt_dim; i++)
+        {
+            if(test_case.lens[i] >= 35) // Wide window threshold
+            {
+                is_wide_dataset = true;
+                break;
+            }
+        }
+        if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
+        {
+            return false;
+        }
+    }
+    
+    // Early filter: wsidx == 0 && average && full_set
+    if(test_case.wsidx == 0 &&
+       (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
+    {
+        return false;
+    }
+    
+    // Early filter: (spt_dim == 2 && wsidx == 1) && max for uint8/uint16 (in switch, but we do it here)
+    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
+       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
+    {
+        return false;
+    }
+    
+    return true;
+}
+
 // Helper function to check if a test case should be included
 // This matches the original ctest filtering logic
 // skip_wide_check: if true, skips the wide dataset check (for Dataset 1 - asymmetric)
-inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_wide_check = false)
+// skip_early_filters: if true, skips early filters (wide dataset, average wsidx=0, uint8/uint16 max wsidx=1)
+//                     because they're checked separately before index type limits
+inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_wide_check = false, bool skip_early_filters = false)
 {
     // Create key for this input shape
     std::ostringstream key;
@@ -174,62 +218,65 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, bool skip_
 
     // Check 3: Skip wide dataset with wsidx=0 and max pooling (only for Dataset 0 and Dataset 2)
     // This matches ctest order: happens before average check
-    if(!skip_wide_check)
+    if(!skip_early_filters)
     {
-        bool is_wide_dataset = false;
-        for(int i = 0; i < spt_dim; i++)
+        if(!skip_wide_check)
         {
-            if(test_case.lens[i] >= 35) // Wide window threshold
+            bool is_wide_dataset = false;
+            for(int i = 0; i < spt_dim; i++)
             {
-                is_wide_dataset = true;
-                break;
+                if(test_case.lens[i] >= 35) // Wide window threshold
+                {
+                    is_wide_dataset = true;
+                    break;
+                }
+            }
+            if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
+            {
+                if(debug_shape)
+                {
+                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check3 (wide dataset): "
+                              << test_case << "\n";
+                }
+                g_filtering_stats[input_key].filtered_check3++;
+                return false;
             }
         }
-        if(test_case.wsidx == 0 && test_case.mode == miopenPoolingMax && is_wide_dataset)
+
+        // Check 4: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
+        // This matches ctest order: happens BEFORE the uint8/uint16 max wsidx=1 check
+        // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
+        // tested
+        if(test_case.wsidx == 0 &&
+           (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
         {
             if(debug_shape)
             {
-                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check3 (wide dataset): "
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check4 (average wsidx=0): "
                           << test_case << "\n";
             }
-            g_filtering_stats[input_key].filtered_check3++;
+            g_filtering_stats[input_key].filtered_check4++;
             return false;
         }
-    }
 
-    // Check 4: Skip average pooling with wsidx=0 (workspace index modes are irrelevant for Average)
-    // This matches ctest order: happens BEFORE the uint8/uint16 max wsidx=1 check
-    // This matches original ctest behavior: skip to optimize performance, but ensure wsidx=1 is
-    // tested
-    if(test_case.wsidx == 0 &&
-       (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive))
-    {
-        if(debug_shape)
+        // Check 5: Skip uint8/uint16 max pooling with wsidx=1 in 2D when full_set is true
+        // The original ctest skips these when full_set is true (with --all flag)
+        // This is a blanket skip for performance optimization, matching ctest behavior exactly:
+        // if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && filter.GetMode() ==
+        // miopenPoolingMax) Note: Some uint32/uint64 with wsidx=1 may still pass Check 6, but
+        // uint8/uint16 are blanket skipped
+        // NOTE: In ctest, this check happens in the switch statement AFTER the average check
+        if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
+           (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
         {
-            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check4 (average wsidx=0): "
-                      << test_case << "\n";
+            if(debug_shape)
+            {
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check5 (uint8/uint16 max wsidx=1): "
+                          << test_case << "\n";
+            }
+            g_filtering_stats[input_key].filtered_check5++;
+            return false;
         }
-        g_filtering_stats[input_key].filtered_check4++;
-        return false;
-    }
-
-    // Check 5: Skip uint8/uint16 max pooling with wsidx=1 in 2D when full_set is true
-    // The original ctest skips these when full_set is true (with --all flag)
-    // This is a blanket skip for performance optimization, matching ctest behavior exactly:
-    // if((spt_dim == 3 || (spt_dim == 2 && wsidx == 1)) && full_set && filter.GetMode() ==
-    // miopenPoolingMax) Note: Some uint32/uint64 with wsidx=1 may still pass Check 6, but
-    // uint8/uint16 are blanket skipped
-    // NOTE: In ctest, this check happens in the switch statement AFTER the average check
-    if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1 &&
-       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
-    {
-        if(debug_shape)
-        {
-            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED Check5 (uint8/uint16 max wsidx=1): "
-                      << test_case << "\n";
-        }
-        g_filtering_stats[input_key].filtered_check5++;
-        return false;
     }
 
     // Check 6: Index range validation for max pooling
@@ -476,31 +523,37 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                 index_type,
                                 mode,
                                 wsidx};
-                            if(ShouldIncludeTestCase(test_case, skip_wide_check))
+                            
+                            // Check early filters first (matching ctest order)
+                            if(!PassEarlyFilters(test_case, skip_wide_check))
                             {
-                                // Apply original ctest limits for non-uint8 index types
-                                // Only apply limits for Dataset 0 (matching ctest behavior:
-                                // skip_many_configs_with_non_int8_index = (dataset_id == 0) &&
-                                // full_set)
-                                if(!apply_index_type_limits ||
-                                   counters.ShouldAddBasedOnIndexType(index_type, wsidx))
+                                filtered_by_should_include++;
+                                continue;
+                            }
+                            
+                            // Check index type limits BEFORE spt_dim/kernel checks (matching ctest)
+                            // In ctest, limits are checked in the switch statement before spt_dim/kernel checks
+                            if(apply_index_type_limits && !counters.ShouldAddBasedOnIndexType(index_type, wsidx))
+                            {
+                                filtered_by_index_limits++;
+                                if(debug_shape)
                                 {
-                                    test_cases.push_back(test_case);
-                                    added++;
-                                    if(debug_shape)
-                                    {
-                                        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): ADDED: "
-                                                  << test_case << "\n";
-                                    }
+                                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED by index_type_limits: "
+                                              << test_case << "\n";
                                 }
-                                else
+                                continue;
+                            }
+                            
+                            // Now check the rest (spt_dim, kernel size, index range, memory)
+                            // Skip early filters since we already checked them
+                            if(ShouldIncludeTestCase(test_case, skip_wide_check, true))
+                            {
+                                test_cases.push_back(test_case);
+                                added++;
+                                if(debug_shape)
                                 {
-                                    filtered_by_index_limits++;
-                                    if(debug_shape)
-                                    {
-                                        std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED by index_type_limits: "
-                                                  << test_case << "\n";
-                                    }
+                                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): ADDED: "
+                                              << test_case << "\n";
                                 }
                             }
                             else
