@@ -1,0 +1,198 @@
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [2,2] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [2,2] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [0,0] strides: [1,1] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [2,2] pads: [1,1] strides: [1,1] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [2,2] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [2,2] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && num_uint32_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && num_uint64_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [0,0] strides: [1,1] index_type: 3, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint8 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): PASSED all checks: input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 0, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (uint16 index too small): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (num_uint16_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 1, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && num_uint32_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint32_case_imgidx > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 2, mode: 2, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && num_uint64_case > 5): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 0, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 0, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 1, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 1, wsidx: 1
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && average && full_set): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 2, wsidx: 0
+DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx!=0 && num_uint64_case_imgidx > 5 && spt_dim==2): input_dims: [1,19,1024,2048] lens: [3,3] pads: [1,1] strides: [1,1] index_type: 3, mode: 2, wsidx: 1
+
+=== Dataset 0 (Standard) Test Case Generation Summary ===
+Total test cases generated: 462
+Input shapes: 18
+===========================================================
+
