@@ -130,14 +130,15 @@ static std::map<std::string, FilteringStats> g_filtering_stats;
 // Matching variable names: idx_typ, idx_sz, spt_dim, skip_many_configs_with_non_int8_index, wide_dataset, full_set
 inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, 
                                    bool skip_wide_check = false,
-                                   bool apply_index_type_limits = true)
+                                   bool apply_index_type_limits = true,
+                                   bool is_wide_dataset = false)
 {
     // Match ctest variable names exactly
     auto idx_typ = test_case.index_type;
     auto idx_sz  = sizeof(uint8_t);
     int spt_dim  = static_cast<int>(test_case.input_dims.size()) - 2;
     const bool skip_many_configs_with_non_int8_index = apply_index_type_limits; // dataset_id == 0 && full_set
-    const bool wide_dataset = false; // dataset_id == 2 && full_set (not applicable for Dataset 0)
+    const bool wide_dataset = is_wide_dataset; // dataset_id == 2 && full_set
     const bool full_set = true; // Always true for Dataset 0
     
     // DEBUG: Detailed output for shape (1, 19, 1024, 2048)
@@ -376,7 +377,8 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  const std::vector<int>& wsidx_values,
                                  std::vector<Pooling2dTestCase>& test_cases,
                                  bool skip_wide_check         = false,
-                                 bool apply_index_type_limits = true)
+                                 bool apply_index_type_limits = true,
+                                 bool is_wide_dataset          = false)
 {
     // Match ctest order exactly: index_type -> mode -> lens -> strides -> pads -> wsidx
     // This matches the order parameters are added in pooling_driver (base class adds index_type, mode first,
@@ -402,7 +404,8 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                 mode,
                                 wsidx};
                             
-                            if(ShouldIncludeTestCase(test_case, skip_wide_check, apply_index_type_limits))
+                            if(ShouldIncludeTestCase(
+                                   test_case, skip_wide_check, apply_index_type_limits, is_wide_dataset))
                             {
                                 test_cases.push_back(test_case);
                             }
