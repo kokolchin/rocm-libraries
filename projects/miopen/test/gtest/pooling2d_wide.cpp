@@ -11,8 +11,16 @@
 
 std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 {
+    // Cache results to avoid duplicate generation when called multiple times
+    static std::vector<Pooling2dTestCase> cached_test_cases;
+    static bool cached = false;
+    
+    if(cached)
+    {
+        return cached_test_cases;
+    }
+    
     std::vector<Pooling2dTestCase> test_cases;
-    IndexTypeCounters counters;
 
     // Dataset 2: Wide window configurations
     // Input: {{1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}}
@@ -46,7 +54,6 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
                              dataset2_index_types,
                              modes,
                              wsidx_values,
-                             counters,
                              test_cases,
                              false,  // skip_wide_check=false for Dataset 2 (wide window)
                              false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
@@ -100,14 +107,11 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
         log_file.close();
     }
 
+    // Cache the results
+    cached_test_cases = test_cases;
+    cached = true;
+    
     return test_cases;
-}
-
-// Cache the test cases to avoid regenerating them twice (once for FP32, once for FP16)
-static const std::vector<Pooling2dTestCase>& GetCachedPooling2dWideTestCases()
-{
-    static const std::vector<Pooling2dTestCase> cached = GetPooling2dWideTestCases();
-    return cached;
 }
 
 // Derived classes for Dataset 2 (wide window pooling)
@@ -120,10 +124,10 @@ TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { this->RunTest(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP32,
-                         testing::ValuesIn(GetCachedPooling2dWideTestCases()),
+                         testing::ValuesIn(GetPooling2dWideTestCases()),
                          GetPooling2dTestCaseName);
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP16,
-                         testing::ValuesIn(GetCachedPooling2dWideTestCases()),
+                         testing::ValuesIn(GetPooling2dWideTestCases()),
                          GetPooling2dTestCaseName);

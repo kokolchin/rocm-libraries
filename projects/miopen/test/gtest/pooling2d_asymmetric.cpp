@@ -11,8 +11,16 @@
 
 static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 {
+    // Cache results to avoid duplicate generation when called multiple times
+    static std::vector<Pooling2dTestCase> cached_test_cases;
+    static bool cached = false;
+    
+    if(cached)
+    {
+        return cached_test_cases;
+    }
+    
     std::vector<Pooling2dTestCase> test_cases;
-    IndexTypeCounters counters;
 
     // Dataset 1: Asymmetric configurations
     // Input: {{1, 4, 4, 4}} - minimal input for asymmetric testing
@@ -50,7 +58,6 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
                              dataset1_index_types,
                              modes,
                              wsidx_values,
-                             counters,
                              test_cases,
                              true,   // skip_wide_check=true for Dataset 1 (asymmetric)
                              false); // apply_index_type_limits=false for Dataset 1 (matching ctest)
@@ -104,14 +111,11 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
         log_file.close();
     }
 
+    // Cache the results
+    cached_test_cases = test_cases;
+    cached = true;
+    
     return test_cases;
-}
-
-// Cache the test cases to avoid regenerating them twice (once for FP32, once for FP16)
-static const std::vector<Pooling2dTestCase>& GetCachedPooling2dAsymmetricTestCases()
-{
-    static const std::vector<Pooling2dTestCase> cached = GetPooling2dAsymmetricTestCases();
-    return cached;
 }
 
 // Derived classes for Dataset 1 (asymmetric pooling)
@@ -124,10 +128,10 @@ TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { this->RunTest();
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP32,
-                         testing::ValuesIn(GetCachedPooling2dAsymmetricTestCases()),
+                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
                          GetPooling2dTestCaseName);
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP16,
-                         testing::ValuesIn(GetCachedPooling2dAsymmetricTestCases()),
+                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
                          GetPooling2dTestCaseName);
