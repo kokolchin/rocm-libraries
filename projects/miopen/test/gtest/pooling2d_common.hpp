@@ -477,9 +477,8 @@ struct IndexTypeCounters
                 ++num_uint64_case_imgidx;
             }
             return true;
-        case miopenIndexUint8:
         default:
-            // No limit for uint8
+            // No limit for other types
             return true;
         }
     }
