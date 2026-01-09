@@ -378,16 +378,18 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool skip_wide_check         = false,
                                  bool apply_index_type_limits = true)
 {
-    // Original loops matching ctest order: lens -> strides -> pads -> index_type -> mode -> wsidx
-    for(const auto& lens : lens_list)
+    // Match ctest order exactly: index_type -> mode -> lens -> strides -> pads -> wsidx
+    // This matches the order parameters are added in pooling_driver (base class adds index_type, mode first,
+    // then derived class adds lens, strides, pads, wsidx)
+    for(const auto& index_type : index_types)
     {
-        for(const auto& strides : strides_list)
+        for(const auto& mode : modes)
         {
-            for(const auto& pads : pads_list)
+            for(const auto& lens : lens_list)
             {
-                for(const auto& index_type : index_types)
+                for(const auto& strides : strides_list)
                 {
-                    for(const auto& mode : modes)
+                    for(const auto& pads : pads_list)
                     {
                         for(int wsidx : wsidx_values)
                         {
