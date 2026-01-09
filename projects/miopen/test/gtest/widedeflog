@@ -1,0 +1,17 @@
+
+=== Dataset 2 (Wide Window) Test Case Generation Summary ===
+Total test cases generated: 44
+Expected ctest count: 33 (with uint32 only)
+
+Breakdown by mode and wsidx:
+  Max mode, wsidx=0: 11
+  Max mode, wsidx=1: 11
+  Max mode TOTAL: 22
+  Average mode, wsidx=0: 0
+  Average mode, wsidx=1: 11
+  Average mode TOTAL: 11
+  AverageInclusive mode, wsidx=0: 0
+  AverageInclusive mode, wsidx=1: 11
+  AverageInclusive mode TOTAL: 11
+=============================================================
+

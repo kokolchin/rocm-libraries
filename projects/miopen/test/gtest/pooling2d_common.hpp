@@ -27,7 +27,7 @@
 #endif
 
 #ifndef TEST_GET_INPUT_TENSOR
-#define TEST_GET_INPUT_TENSOR 0
+#define TEST_GET_INPUT_TENSOR 1
 #endif
 
 // Dataset definitions (matching original pooling2d.hpp ctest driver, now removed):
