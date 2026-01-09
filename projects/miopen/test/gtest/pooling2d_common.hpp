@@ -162,26 +162,16 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
     }
     
     // 2. wsidx == 0 && spt_dim == 2 && max && wide_dataset
-    if(!skip_wide_check)
+    // Note: wide_dataset is false for Dataset 0, so this check won't trigger for Dataset 0
+    // But we keep it to match ctest structure exactly
+    if(test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && wide_dataset)
     {
-        bool is_wide = false;
-        for(int i = 0; i < spt_dim; i++)
+        if(debug_shape)
         {
-            if(test_case.lens[i] >= 35) // Wide window threshold
-            {
-                is_wide = true;
-                break;
-            }
+            std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && spt_dim==2 && max && wide_dataset): " << test_case << "\n";
         }
-        if(test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && is_wide)
-        {
-            if(debug_shape)
-            {
-                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && spt_dim==2 && max && wide_dataset): " << test_case << "\n";
-            }
-            g_filtering_stats[input_key].filtered_check3++;
-            return false;
-        }
+        g_filtering_stats[input_key].filtered_check3++;
+        return false;
     }
     
     // 3. wsidx == 0 && average && full_set
@@ -372,17 +362,8 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
     return true;
 }
 
-// Global counters matching ctest (matching original ctest behavior)
-// NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-static int num_uint16_case = 0;
-// NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-static int num_uint32_case = 0;
-// NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-static int num_uint32_case_imgidx = 0;
-// NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-static int num_uint64_case = 0;
-// NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-static int num_uint64_case_imgidx = 0;
+// Note: Global counters (num_uint16_case, num_uint32_case, etc.) are defined in pooling_common.hpp
+// which is included above, so we use those directly
 
 // Helper function to generate test cases for a single input configuration
 // Uses original loops matching ctest generation order
