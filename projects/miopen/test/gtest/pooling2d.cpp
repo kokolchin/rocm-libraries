@@ -21,7 +21,6 @@
 std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 {
     std::vector<Pooling2dTestCase> test_cases;
-    IndexTypeCounters counters;
 
     // Dataset 0: Default dataset (various tensor sizes)
     std::vector<std::vector<int>> dataset0_inputs;
@@ -75,7 +74,6 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
                              dataset0_index_types,
                              modes,
                              wsidx_values,
-                             counters,
                              test_cases,
                              false, // skip_wide_check=false for Dataset 0
                              true); // apply_index_type_limits=true for Dataset 0
