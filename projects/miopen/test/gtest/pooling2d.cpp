@@ -20,6 +20,16 @@
 
 std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 {
+    // Cache results to avoid duplicate generation when called multiple times
+    // (e.g., for both FP32 and FP16 test instantiations)
+    static std::vector<Pooling2dTestCase> cached_test_cases;
+    static bool cached = false;
+    
+    if(cached)
+    {
+        return cached_test_cases;
+    }
+    
     std::vector<Pooling2dTestCase> test_cases;
 
     // Dataset 0: Default dataset (various tensor sizes)
@@ -108,6 +118,10 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
         log_file.close();
     }
 
+    // Cache the results
+    cached_test_cases = test_cases;
+    cached = true;
+    
     return test_cases;
 }
 
