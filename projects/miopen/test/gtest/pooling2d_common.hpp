@@ -165,14 +165,32 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
     // 2. wsidx == 0 && spt_dim == 2 && max && wide_dataset
     // Note: wide_dataset is false for Dataset 0, so this check won't trigger for Dataset 0
     // But we keep it to match ctest structure exactly
+    // DEBUG: Log wide dataset filtering check
+    if(is_wide_dataset)
+    {
+        std::cerr << "DEBUG_WIDE_FILTER: Checking test_case: " << test_case 
+                  << " | wsidx=" << test_case.wsidx 
+                  << " | spt_dim=" << spt_dim 
+                  << " | mode=" << static_cast<int>(test_case.mode) 
+                  << " | wide_dataset=" << (wide_dataset ? "true" : "false")
+                  << " | is_wide_dataset=" << (is_wide_dataset ? "true" : "false") << "\n";
+    }
     if(test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && wide_dataset)
     {
+        std::cerr << "DEBUG_WIDE_FILTER: FILTERED test_case: " << test_case 
+                  << " (wsidx==0 && spt_dim==2 && max && wide_dataset)\n";
         if(debug_shape)
         {
             std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && spt_dim==2 && max && wide_dataset): " << test_case << "\n";
         }
         g_filtering_stats[input_key].filtered_check3++;
         return false;
+    }
+    if(is_wide_dataset && test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && !wide_dataset)
+    {
+        std::cerr << "DEBUG_WIDE_FILTER: WARNING - Should be filtered but wide_dataset is false! test_case: " << test_case 
+                  << " | is_wide_dataset=" << (is_wide_dataset ? "true" : "false")
+                  << " | wide_dataset=" << (wide_dataset ? "true" : "false") << "\n";
     }
     
     // 3. wsidx == 0 && average && full_set
@@ -380,6 +398,13 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool apply_index_type_limits = true,
                                  bool is_wide_dataset          = false)
 {
+    // DEBUG: Log parameters for wide dataset
+    if(is_wide_dataset)
+    {
+        std::cerr << "DEBUG_ADD_TEST_CASES: Called with is_wide_dataset=true for input_dims: [" 
+                  << input_dims[0] << ", " << input_dims[1] << ", " << input_dims[2] << ", " << input_dims[3] << "]\n";
+    }
+    
     // Match ctest order exactly: index_type -> mode -> lens -> strides -> pads -> wsidx
     // This matches the order parameters are added in pooling_driver (base class adds index_type, mode first,
     // then derived class adds lens, strides, pads, wsidx)
@@ -404,8 +429,18 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                 mode,
                                 wsidx};
                             
-                            if(ShouldIncludeTestCase(
-                                   test_case, skip_wide_check, apply_index_type_limits, is_wide_dataset))
+                            bool included = ShouldIncludeTestCase(
+                                test_case, skip_wide_check, apply_index_type_limits, is_wide_dataset);
+                            
+                            // DEBUG: Log result for wide dataset Max pooling with wsidx=0
+                            if(is_wide_dataset && wsidx == 0 && mode == miopenPoolingMax)
+                            {
+                                std::cerr << "DEBUG_ADD_TEST_CASES: test_case: " << test_case 
+                                          << " | included=" << (included ? "true" : "false")
+                                          << " | is_wide_dataset=" << (is_wide_dataset ? "true" : "false") << "\n";
+                            }
+                            
+                            if(included)
                             {
                                 test_cases.push_back(test_case);
                             }

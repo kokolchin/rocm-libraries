@@ -23,8 +23,50 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
     std::vector<Pooling2dTestCase> test_cases;
 
     // Dataset 1: Asymmetric configurations
-    // Input: {{1, 4, 4, 4}} - minimal input for asymmetric testing
-    std::vector<std::vector<int>> dataset1_inputs = {{1, 4, 4, 4}};
+    // Input: Use all input shapes from dataset 0 (matching ctest behavior with --all --dataset 1)
+    // These are the same input shapes used by ctest when --all is specified
+    std::vector<std::vector<int>> dataset1_inputs = {
+        {1, 1, 8, 8},
+        {1, 1, 14, 14},
+        {1, 1, 27, 27},
+        {1, 3, 32, 32},
+        {1, 3, 224, 224},
+        {1, 3, 227, 227},
+        {1, 3, 231, 231},
+        {1, 16, 2048, 2048},
+        {1, 16, 3072, 3072},
+        {1, 16, 4096, 4096},
+        {1, 19, 1024, 2048},
+        {1, 32, 8, 8},
+        {1, 32, 16, 16},
+        {1, 32, 28, 28},
+        {1, 48, 7, 7},
+        {1, 64, 14, 14},
+        {1, 64, 56, 56},
+        {1, 64, 112, 112},
+        {1, 96, 27, 27},
+        {1, 128, 28, 28},
+        {1, 128, 56, 56},
+        {1, 144, 14, 14},
+        {1, 192, 7, 7},
+        {1, 192, 14, 14},
+        {1, 192, 28, 28},
+        {1, 256, 12, 12},
+        {1, 256, 13, 13},
+        {1, 256, 28, 28},
+        {1, 320, 28, 28},
+        {1, 384, 13, 13},
+        {1, 480, 64, 128},
+        {1, 480, 128, 256},
+        {1, 512, 4, 4},
+        {1, 512, 12, 12},
+        {1, 512, 28, 28},
+        {1, 512, 64, 128},
+        {1, 576, 4, 4},
+        {1, 576, 14, 14},
+        {1, 832, 7, 7},
+        {1, 1056, 7, 7},
+        {1, 2048, 11, 11}};
 
     // Lens: {{2, 2}, {1, 2}, {2, 1}} - asymmetric kernel sizes
     std::vector<std::vector<int>> dataset1_lens = {{2, 2}, {1, 2}, {2, 1}};
@@ -65,7 +107,8 @@ static std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 
     std::cerr << "\n=== Dataset 1 (Asymmetric) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 84 (with uint8 and uint32 only)\n";
+    std::cerr << "Input shapes: " << dataset1_inputs.size() << "\n";
+    std::cerr << "Expected ctest count: ~3444 (with all input shapes from dataset 0)\n";
 
     // Analyze by mode and wsidx to identify the 2x pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;
