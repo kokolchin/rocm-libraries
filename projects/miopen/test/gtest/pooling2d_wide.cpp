@@ -23,9 +23,11 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     std::vector<Pooling2dTestCase> test_cases;
 
     // Dataset 2: Wide window configurations
-    // Input: {{1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}}
+    // Input shapes matching ctest behavior with --dataset 2
+    // Based on comparison script output from AMD machine:
+    // (1, 3, 224, 224), (1, 16, 2048, 2048), (1, 16, 3072, 3072)
     std::vector<std::vector<int>> dataset2_inputs = {
-        {1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}};
+        {1, 3, 224, 224}, {1, 16, 2048, 2048}, {1, 16, 3072, 3072}};
 
     // Lens: {{35, 35}, {100, 100}, {255, 255}, {410, 400}} - wide window kernel sizes
     std::vector<std::vector<int>> dataset2_lens = {{35, 35}, {100, 100}, {255, 255}, {410, 400}};
