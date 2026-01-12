@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <vector>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
@@ -24,10 +25,19 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 
     // Dataset 2: Wide window configurations
     // Input shapes matching ctest behavior with --dataset 2
+    std::vector<std::vector<int>> dataset2_inputs;
+#if TEST_GET_INPUT_TENSOR
+    // When TEST_GET_INPUT_TENSOR = 1, use get_inputs() function (matching original ctest behavior)
+    int batch_factor                      = 0; // Default batch factor matching original ctest
+    std::set<std::vector<int>> in_dim_set = get_inputs<int>(batch_factor);
+    dataset2_inputs.assign(in_dim_set.begin(), in_dim_set.end());
+#else
+    // When TEST_GET_INPUT_TENSOR = 0, use predefined shapes
     // Based on comparison script output from AMD machine:
     // (1, 3, 224, 224), (1, 16, 2048, 2048), (1, 16, 3072, 3072)
-    std::vector<std::vector<int>> dataset2_inputs = {
+    dataset2_inputs = {
         {1, 3, 224, 224}, {1, 16, 2048, 2048}, {1, 16, 3072, 3072}};
+#endif
 
     // Lens: {{35, 35}, {100, 100}, {255, 255}, {410, 400}} - wide window kernel sizes
     std::vector<std::vector<int>> dataset2_lens = {{35, 35}, {100, 100}, {255, 255}, {410, 400}};
