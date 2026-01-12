@@ -125,22 +125,23 @@ struct FilteringStats
 // Global stats (per input shape)
 static std::map<std::string, FilteringStats> g_filtering_stats;
 
-// Filtering function matching ctest's run() method exactly
-// This copies the exact logic from pooling_common.hpp pooling_driver::run()
+// Filtering function matching ctest's run() method EXACTLY
+// This is a copy-paste of the filtering logic from pooling_common.hpp pooling_driver::run()
 // Matching variable names: idx_typ, idx_sz, spt_dim, skip_many_configs_with_non_int8_index, wide_dataset, full_set
+// NOTE: This branch is for analysis/logging, so we keep all logging while matching ctest logic exactly
 inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case, 
                                    bool skip_wide_check = false,
                                    bool apply_index_type_limits = true,
                                    bool is_wide_dataset = false)
 {
-    // Match ctest variable names exactly
+    // Copy-paste from ctest run() method - EXACT match
     auto idx_typ = test_case.index_type;
     auto idx_sz  = sizeof(uint8_t);
     int spt_dim  = static_cast<int>(test_case.input_dims.size()) - 2;
-    const bool skip_many_configs_with_non_int8_index = apply_index_type_limits; // dataset_id == 0 && full_set
-    const bool wide_dataset = is_wide_dataset; // dataset_id == 2 && full_set
-    const bool full_set = true; // Always true for Dataset 0
-    
+    const bool skip_many_configs_with_non_int8_index = apply_index_type_limits; // (dataset_id == 0) && full_set
+    const bool wide_dataset = is_wide_dataset; // (dataset_id == 2) && full_set
+    const bool full_set = true; // Always true for gtest
+
     // DEBUG: Detailed output for shape (1, 19, 1024, 2048)
     bool debug_shape = (test_case.input_dims[0] == 1 && test_case.input_dims[1] == 19 &&
                         test_case.input_dims[2] == 1024 && test_case.input_dims[3] == 2048);
@@ -150,10 +151,21 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         << test_case.input_dims[2] << "," << test_case.input_dims[3] << ")";
     std::string input_key = key.str();
     g_filtering_stats[input_key].total_checked++;
+
+    // Convert test_case to ctest format for filtering checks
+    std::vector<int> in_shape_vec(test_case.input_dims.begin(), test_case.input_dims.end());
+    std::vector<int> lens_vec(test_case.lens.begin(), test_case.lens.end());
+    std::vector<int> pads_vec(test_case.pads.begin(), test_case.pads.end());
+    std::vector<int> strides_vec(test_case.strides.begin(), test_case.strides.end());
     
-    // Match ctest run() order exactly:
-    // 1. wsidx == 0 && spt_dim == 3 && max && full_set (not applicable for 2D)
-    if(test_case.wsidx == 0 && spt_dim == 3 && test_case.mode == miopenPoolingMax && full_set)
+    // Create filter descriptor (matching ctest)
+    miopen::PoolingDescriptor filter{
+        test_case.mode, miopenPaddingDefault, lens_vec, strides_vec, pads_vec};
+    filter.SetIndexType(idx_typ);
+    filter.SetWorkspaceIndexMode(miopenPoolingWorkspaceIndexMode_t(test_case.wsidx));
+
+    // EXACT copy-paste from ctest run() method - check order matches exactly
+    if(test_case.wsidx == 0 && spt_dim == 3 && filter.GetMode() == miopenPoolingMax && full_set)
     {
         if(debug_shape)
         {
@@ -161,24 +173,15 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         }
         return false;
     }
-    
-    // 2. wsidx == 0 && spt_dim == 2 && max && wide_dataset
-    // Note: wide_dataset is false for Dataset 0, so this check won't trigger for Dataset 0
-    // But we keep it to match ctest structure exactly
-    // DEBUG: Log wide dataset filtering check
-    if(is_wide_dataset)
+
+    if(test_case.wsidx == 0 && spt_dim == 2 && filter.GetMode() == miopenPoolingMax && wide_dataset)
     {
-        std::cerr << "DEBUG_WIDE_FILTER: Checking test_case: " << test_case 
-                  << " | wsidx=" << test_case.wsidx 
-                  << " | spt_dim=" << spt_dim 
-                  << " | mode=" << static_cast<int>(test_case.mode) 
-                  << " | wide_dataset=" << (wide_dataset ? "true" : "false")
-                  << " | is_wide_dataset=" << (is_wide_dataset ? "true" : "false") << "\n";
-    }
-    if(test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && wide_dataset)
-    {
-        std::cerr << "DEBUG_WIDE_FILTER: FILTERED test_case: " << test_case 
-                  << " (wsidx==0 && spt_dim==2 && max && wide_dataset)\n";
+        // DEBUG: Log wide dataset filtering check
+        if(is_wide_dataset)
+        {
+            std::cerr << "DEBUG_WIDE_FILTER: FILTERED test_case: " << test_case 
+                      << " (wsidx==0 && spt_dim==2 && max && wide_dataset)\n";
+        }
         if(debug_shape)
         {
             std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (wsidx==0 && spt_dim==2 && max && wide_dataset): " << test_case << "\n";
@@ -186,16 +189,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         g_filtering_stats[input_key].filtered_check3++;
         return false;
     }
-    if(is_wide_dataset && test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && !wide_dataset)
-    {
-        std::cerr << "DEBUG_WIDE_FILTER: WARNING - Should be filtered but wide_dataset is false! test_case: " << test_case 
-                  << " | is_wide_dataset=" << (is_wide_dataset ? "true" : "false")
-                  << " | wide_dataset=" << (wide_dataset ? "true" : "false") << "\n";
-    }
-    
-    // 3. wsidx == 0 && average && full_set
+
     if(test_case.wsidx == 0 &&
-       (test_case.mode == miopenPoolingAverage || test_case.mode == miopenPoolingAverageInclusive) &&
+       (filter.GetMode() == miopenPoolingAverage || filter.GetMode() == miopenPoolingAverageInclusive) &&
        full_set)
     {
         if(debug_shape)
@@ -205,13 +201,12 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         g_filtering_stats[input_key].filtered_check4++;
         return false;
     }
-    
-    // 4. switch(idx_typ) - matches ctest exactly
+
     switch(idx_typ)
     {
     case miopenIndexUint8: {
         if((spt_dim == 3 || (spt_dim == 2 && test_case.wsidx == 1)) && full_set &&
-           test_case.mode == miopenPoolingMax)
+           filter.GetMode() == miopenPoolingMax)
         {
             if(debug_shape)
             {
@@ -224,7 +219,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
     }
     case miopenIndexUint16: {
         if((spt_dim == 3 || (spt_dim == 2 && test_case.wsidx == 1)) && full_set &&
-           test_case.mode == miopenPoolingMax)
+           filter.GetMode() == miopenPoolingMax)
         {
             if(debug_shape)
             {
@@ -311,8 +306,9 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         break;
     }
     }
-    
-    // 5. spt_dim != 2 && spt_dim != 3
+
+    miopen::TensorDescriptor input_desc(miopenFloat, in_shape_vec);
+
     if(spt_dim != 2 && spt_dim != 3)
     {
         if(debug_shape)
@@ -322,13 +318,7 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
         g_filtering_stats[input_key].filtered_check1++;
         return false;
     }
-    
-    // 6. lens[i] > (input + 2*pads[i])
-    // Convert test_case.input_dims to vector for GetLengths()
-    std::vector<int> in_shape_vec(test_case.input_dims.begin(), test_case.input_dims.end());
-    std::vector<int> lens_vec(test_case.lens.begin(), test_case.lens.end());
-    std::vector<int> pads_vec(test_case.pads.begin(), test_case.pads.end());
-    miopen::TensorDescriptor input_desc(miopenFloat, in_shape_vec);
+
     for(int i = 0; i < spt_dim; i++)
     {
         if(lens_vec[i] > (input_desc.GetLengths()[i + 2] + static_cast<uint64_t>(2) * pads_vec[i]))
@@ -341,38 +331,27 @@ inline bool ShouldIncludeTestCase(const Pooling2dTestCase& test_case,
             return false;
         }
     }
-    
-    // 7. Memory check (matching ctest exactly)
+
     if(full_set)
     {
-        try
+        auto output_desc = filter.GetForwardOutputTensor(input_desc);
+        size_t total_mem =
+            3 * input_desc.GetNumBytes() + output_desc.GetNumBytes() +
+            idx_sz * output_desc.GetElementSize(); // estimate based on backward pass
+
+        size_t device_mem = get_handle().GetGlobalMemorySize();
+        if(total_mem >= device_mem)
         {
-            auto output_desc = miopen::PoolingDescriptor(
-                test_case.mode, miopenPaddingDefault, lens_vec, 
-                std::vector<int>(test_case.strides.begin(), test_case.strides.end()), pads_vec)
-                .GetForwardOutputTensor(input_desc);
-            size_t total_mem =
-                3 * input_desc.GetNumBytes() + output_desc.GetNumBytes() +
-                idx_sz * output_desc.GetElementSize();
-            
-            size_t device_mem = get_handle().GetGlobalMemorySize();
-            if(total_mem >= device_mem)
+            if(debug_shape)
             {
-                if(debug_shape)
-                {
-                    std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (memory: total_mem=" << total_mem 
-                              << " >= device_mem=" << device_mem << "): " << test_case << "\n";
-                }
-                g_filtering_stats[input_key].filtered_check7++;
-                return false;
+                std::cerr << "DEBUG_SHAPE(1,19,1024,2048): FILTERED (memory: total_mem=" << total_mem 
+                          << " >= device_mem=" << device_mem << "): " << test_case << "\n";
             }
-        }
-        catch(...)
-        {
-            // Skip memory check if handle not available
+            g_filtering_stats[input_key].filtered_check7++;
+            return false;
         }
     }
-    
+
     g_filtering_stats[input_key].passed_all++;
     if(debug_shape)
     {
