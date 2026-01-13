@@ -25,6 +25,7 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 
     // Dataset 2: Wide window configurations
     // Input shapes matching ctest behavior with --dataset 2
+    // From pooling2d.hpp: get_2d_pooling_input_shapes_wide()
     std::vector<std::vector<int>> dataset2_inputs;
 #if TEST_GET_INPUT_TENSOR
     // When TEST_GET_INPUT_TENSOR = 1, use get_inputs() function (matching original ctest behavior)
@@ -32,11 +33,10 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     std::set<std::vector<int>> in_dim_set = get_inputs<int>(batch_factor);
     dataset2_inputs.assign(in_dim_set.begin(), in_dim_set.end());
 #else
-    // When TEST_GET_INPUT_TENSOR = 0, use predefined shapes
-    // Based on comparison script output from AMD machine:
-    // (1, 3, 224, 224), (1, 16, 2048, 2048), (1, 16, 3072, 3072)
+    // When TEST_GET_INPUT_TENSOR = 0, use predefined shapes matching ctest exactly
+    // From pooling2d.hpp get_2d_pooling_input_shapes_wide():
     dataset2_inputs = {
-        {1, 3, 224, 224}, {1, 16, 2048, 2048}, {1, 16, 3072, 3072}};
+        {1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}};
 #endif
 
     // Lens: {{35, 35}, {100, 100}, {255, 255}, {410, 400}} - wide window kernel sizes
@@ -56,20 +56,28 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 
     // Generate cartesian product for dataset 2
     // This matches the original ctest test_pooling2d behavior with --dataset 2
+    // IMPORTANT: Order must match ctest exactly: index_type -> mode -> input_shape -> lens -> strides -> pads -> wsidx
+    // This is the order in which test_driver processes test cases (based on add() call order)
     // Filter invalid combinations at generation time instead of skipping at runtime
-    for(const auto& input_dims : dataset2_inputs)
+    for(const auto& index_type : dataset2_index_types)
     {
-        AddTestCasesForInput(input_dims,
-                             dataset2_lens,
-                             dataset2_strides,
-                             dataset2_pads,
-                             dataset2_index_types,
-                             modes,
-                             wsidx_values,
-                             test_cases,
-                             false,  // skip_wide_check=false for Dataset 2 (wide window)
-                             false,  // apply_index_type_limits=false for Dataset 2 (matching ctest)
-                             true);  // is_wide_dataset=true for Dataset 2 (wide window)
+        for(const auto& mode : modes)
+        {
+            for(const auto& input_dims : dataset2_inputs)
+            {
+                AddTestCasesForInput(input_dims,
+                                     dataset2_lens,
+                                     dataset2_strides,
+                                     dataset2_pads,
+                                     {index_type}, // Single index_type for this iteration
+                                     {mode},       // Single mode for this iteration
+                                     wsidx_values,
+                                     test_cases,
+                                     false,  // skip_wide_check=false for Dataset 2 (wide window)
+                                     false,  // apply_index_type_limits=false for Dataset 2 (matching ctest)
+                                     true);  // is_wide_dataset=true for Dataset 2 (wide window)
+            }
+        }
     }
 
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";

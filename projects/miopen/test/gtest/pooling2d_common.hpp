@@ -377,6 +377,11 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  bool apply_index_type_limits = true,
                                  bool is_wide_dataset          = false)
 {
+    // Note: Global counters (num_uint16_case, etc.) accumulate globally across all test cases
+    // in ctest, matching the behavior where test_driver processes test cases sequentially.
+    // These counters are NOT reset per input shape - they accumulate to limit the total number
+    // of non-uint8 index type test cases when apply_index_type_limits is true.
+    
     // DEBUG: Log parameters for wide dataset
     if(is_wide_dataset)
     {
@@ -384,9 +389,11 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                   << input_dims[0] << ", " << input_dims[1] << ", " << input_dims[2] << ", " << input_dims[3] << "]\n";
     }
     
-    // Match ctest order exactly: index_type -> mode -> lens -> strides -> pads -> wsidx
-    // This matches the order parameters are added in pooling_driver (base class adds index_type, mode first,
-    // then derived class adds lens, strides, pads, wsidx)
+    // Generate test cases for the given input_shape with the specified index_types and modes
+    // Inner loop order: lens -> strides -> pads -> wsidx
+    // Note: The outer loops (index_type -> mode -> input_shape) are in the caller (GetPooling2dTestCases)
+    // to match ctest's test_driver order exactly
+    // Note: Order matters for index type limits! CTest processes stride (2,2) before (1,1)
     for(const auto& index_type : index_types)
     {
         for(const auto& mode : modes)
