@@ -1,0 +1,15 @@
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Full/GPU_WidePooling2d_FP16
+[ RUN      ] Full/GPU_WidePooling2d_FP16.HalfTest_pooling2d_wide/0
+/data/rocm-libraries/projects/miopen/test/gtest/pooling2d_wide.cpp:46: Skipped
+-> GTests using test_drive<> disabled until gtest-aware version of test/driver.hpp is built 
+
+[  SKIPPED ] Full/GPU_WidePooling2d_FP16.HalfTest_pooling2d_wide/0 (0 ms)
+[----------] 1 test from Full/GPU_WidePooling2d_FP16 (31 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (31 ms total)
+[  PASSED  ] 0 tests.
+[  SKIPPED ] 1 test, listed below:
+[  SKIPPED ] Full/GPU_WidePooling2d_FP16.HalfTest_pooling2d_wide/0
