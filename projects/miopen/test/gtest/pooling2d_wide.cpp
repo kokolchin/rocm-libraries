@@ -26,22 +26,11 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     // Dataset 2: Wide window configurations
     // Input shapes matching ctest behavior with --dataset 2
     // From pooling2d.hpp: get_2d_pooling_input_shapes_wide()
-    std::vector<std::vector<int>> dataset2_inputs;
-#if TEST_GET_INPUT_TENSOR
-    // When TEST_GET_INPUT_TENSOR = 1, use get_inputs() function (matching original ctest behavior)
-    // NOTE: Ctest uses ALL shapes from get_inputs(), but dataset_id=2 is determined by
-    //       lens/strides/pads selection via generate_multi_data (third element = dataset 2)
-    int batch_factor                      = 0; // Default batch factor matching original ctest
-    std::set<std::vector<int>> in_dim_set = get_inputs<int>(batch_factor);
-    dataset2_inputs.assign(in_dim_set.begin(), in_dim_set.end());
-    std::cerr << "DEBUG: TEST_GET_INPUT_TENSOR=1, using " << dataset2_inputs.size() 
-              << " input shapes from get_inputs()\n";
-#else
-    // When TEST_GET_INPUT_TENSOR = 0, use predefined shapes matching ctest exactly
-    // From pooling2d.hpp get_2d_pooling_input_shapes_wide():
-    dataset2_inputs = {
+    // NOTE: Even when TEST_GET_INPUT_TENSOR=1, dataset 2 uses the predefined wide window shapes
+    //       because dataset_id is determined by lens/strides/pads selection, and dataset 2
+    //       is specifically for wide window testing with these predefined shapes
+    std::vector<std::vector<int>> dataset2_inputs = {
         {1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}};
-#endif
 
     // Lens: {{35, 35}, {100, 100}, {255, 255}, {410, 400}} - wide window kernel sizes
     std::vector<std::vector<int>> dataset2_lens = {{35, 35}, {100, 100}, {255, 255}, {410, 400}};
