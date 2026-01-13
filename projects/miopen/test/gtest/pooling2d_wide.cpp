@@ -29,9 +29,13 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
     std::vector<std::vector<int>> dataset2_inputs;
 #if TEST_GET_INPUT_TENSOR
     // When TEST_GET_INPUT_TENSOR = 1, use get_inputs() function (matching original ctest behavior)
+    // NOTE: Ctest uses ALL shapes from get_inputs(), but dataset_id=2 is determined by
+    //       lens/strides/pads selection via generate_multi_data (third element = dataset 2)
     int batch_factor                      = 0; // Default batch factor matching original ctest
     std::set<std::vector<int>> in_dim_set = get_inputs<int>(batch_factor);
     dataset2_inputs.assign(in_dim_set.begin(), in_dim_set.end());
+    std::cerr << "DEBUG: TEST_GET_INPUT_TENSOR=1, using " << dataset2_inputs.size() 
+              << " input shapes from get_inputs()\n";
 #else
     // When TEST_GET_INPUT_TENSOR = 0, use predefined shapes matching ctest exactly
     // From pooling2d.hpp get_2d_pooling_input_shapes_wide():
@@ -82,7 +86,10 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 
     std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
     std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 33 (with uint32 only)\n";
+    std::cerr << "Number of input shapes used: " << dataset2_inputs.size() << "\n";
+    std::cerr << "Expected: 14 test cases per data type (14x2=28 total with FP32+FP16)\n";
+    std::cerr << "Note: When TEST_GET_INPUT_TENSOR=1, ctest uses all shapes from get_inputs()\n";
+    std::cerr << "      but only those that pass kernel size validation (lens <= input+2*pad)\n";
 
     // Analyze by mode and wsidx to identify the pattern
     std::map<int, std::map<int, int>> mode_wsidx_counts;

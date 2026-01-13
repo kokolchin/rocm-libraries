@@ -9,14 +9,9 @@
 #include "../network_data.hpp"
 #include "pooling2d_common.hpp"
 
-// Configuration define matching the original ctest behavior
-// These can be overridden at compile time via -D flags
-// TEST_GET_INPUT_TENSOR: When 0, uses all 18 predefined input shapes (matching ctest with --all).
-//                        When 1, uses get_inputs() function to generate input shapes from
-//                        network_data.
-#ifndef TEST_GET_INPUT_TENSOR
-#define TEST_GET_INPUT_TENSOR 1
-#endif
+// TEST_GET_INPUT_TENSOR is defined in pooling2d_common.hpp
+// When 0: uses all 18 predefined input shapes (matching ctest with --all)
+// When 1: uses get_inputs() function to generate input shapes from network_data
 
 std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 {
