@@ -11,8 +11,9 @@
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
 
-#define MIO_BN_TEST_EPSILON 1e-5
-#define MIO_BN_TEST_EXPAVGFACTOR 0.1
+namespace {
+constexpr double MIO_BN_TEST_EPSILON      = 1e-5;
+constexpr double MIO_BN_TEST_EXPAVGFACTOR = 0.1;
 
 enum class BN3DPerActTestType
 {
@@ -36,6 +37,7 @@ std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
             {BN3DPerActTestType::BackwardRecalc},
             {BN3DPerActTestType::BackwardUseSaved}};
 }
+} // namespace
 
 struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
 {
