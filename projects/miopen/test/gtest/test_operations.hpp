@@ -25,6 +25,9 @@
  *******************************************************************************/
 #pragma once
 
+#include <miopen/fusion_plan.hpp>
+#include <miopen/fusion/fusion_op_args.hpp>
+#include <miopen/fusion_ops.hpp>
 #include "../verify.hpp"
 
 namespace test {
