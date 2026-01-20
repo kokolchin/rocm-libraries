@@ -58,7 +58,7 @@ run_and_time() {
         local start=$(date +%s.%N)
         eval "$test_cmd" > /dev/null 2>&1
         local end=$(date +%s.%N)
-        local duration=$(echo "$end - $start" | bc)
+        local duration=$(awk "BEGIN {print $end - $start}")
         times+=($duration)
         echo "    Time: ${duration}s"
     done
@@ -66,9 +66,9 @@ run_and_time() {
     # Calculate average
     local sum=0
     for t in "${times[@]}"; do
-        sum=$(echo "$sum + $t" | bc)
+        sum=$(awk "BEGIN {print $sum + $t}")
     done
-    local avg=$(echo "scale=3; $sum / $ITERATIONS" | bc)
+    local avg=$(awk "BEGIN {printf \"%.3f\", $sum / $ITERATIONS}")
     
     echo "  Average time: ${avg}s"
     echo ""
@@ -181,13 +181,13 @@ fi
 echo "New GTest average: ${NEW_TIME}s"
 
 if [ "$OLD_TIME" != "N/A" ]; then
-    DIFF=$(echo "$NEW_TIME - $OLD_TIME" | bc)
-    PERCENT=$(echo "scale=2; ($NEW_TIME / $OLD_TIME) * 100" | bc)
+    DIFF=$(awk "BEGIN {print $NEW_TIME - $OLD_TIME}")
+    PERCENT=$(awk "BEGIN {printf \"%.2f\", ($NEW_TIME / $OLD_TIME) * 100}")
     echo "Difference: ${DIFF}s (${PERCENT}% of old time)"
     
-    if (( $(echo "$NEW_TIME > $OLD_TIME * 1.1" | bc -l) )); then
+    if awk "BEGIN {exit !($NEW_TIME > $OLD_TIME * 1.1)}"; then
         echo "WARNING: New gtest is more than 10% slower than old ctest!"
-    elif (( $(echo "$NEW_TIME < $OLD_TIME * 0.9" | bc -l) )); then
+    elif awk "BEGIN {exit !($NEW_TIME < $OLD_TIME * 0.9)}"; then
         echo "SUCCESS: New gtest is more than 10% faster than old ctest!"
     else
         echo "OK: New gtest timing is similar to old ctest (within 10%)"
