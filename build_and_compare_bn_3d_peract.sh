@@ -135,7 +135,9 @@ run_and_time() {
 
 # Get current commit to restore later
 CURRENT_COMMIT=$(git rev-parse HEAD)
+SOURCE_DIR=$(pwd) # Ensure SOURCE_DIR is the absolute path to the root
 echo "Current commit: $CURRENT_COMMIT"
+echo "Source directory: $SOURCE_DIR"
 echo "Will restore to this commit after comparison"
 echo ""
 
@@ -143,27 +145,28 @@ echo ""
 echo "=========================================="
 echo "Step 1: Building NEW gtest version"
 echo "=========================================="
-mkdir -p build_new
-build_test "$CURRENT_COMMIT" "$BUILD_DIR" "$BUILD_JOBS" "build_new/test_bn_3d_peract_test"
+mkdir -p "$SOURCE_DIR/build_new"
+build_test "$CURRENT_COMMIT" "$BUILD_DIR" "$BUILD_JOBS" "$SOURCE_DIR/build_new/test_bn_3d_peract_test"
 
 # Step 2: Build old ctest version
 echo "=========================================="
 echo "Step 2: Building OLD ctest version"
 echo "=========================================="
-mkdir -p build_old
-build_test "$OLD_COMMIT" "$BUILD_DIR" "$BUILD_JOBS" "build_old/test_bn_3d_peract_test"
+mkdir -p "$SOURCE_DIR/build_old"
+# The original CTest target name is test_bn_3d_peract (not test_bn_3d_peract_test)
+build_test "$OLD_COMMIT" "$BUILD_DIR" "$BUILD_JOBS" "$SOURCE_DIR/build_old/test_bn_3d_peract"
 
 # Step 3: Restore to original commit
 echo "Restoring to original commit: $CURRENT_COMMIT"
 git checkout "$CURRENT_COMMIT"
 
-# Run timing comparison
+# Step 4: Run timing comparison
 echo "=========================================="
 echo "Step 3: Running Timing Comparison"
 echo "=========================================="
 
-OLD_BINARY="build_old/test_bn_3d_peract_test"
-NEW_BINARY="build_new/test_bn_3d_peract_test"
+OLD_BINARY="$SOURCE_DIR/build_old/test_bn_3d_peract"
+NEW_BINARY="$SOURCE_DIR/build_new/test_bn_3d_peract_test"
 
 if [ ! -f "$OLD_BINARY" ]; then
     echo "Error: Old ctest binary not found: $OLD_BINARY"
