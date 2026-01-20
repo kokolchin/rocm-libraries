@@ -29,6 +29,7 @@
 #include <miopen/fusion/fusion_op_args.hpp>
 #include <miopen/fusion_ops.hpp>
 #include "../verify.hpp"
+#include "../fusionHost.hpp"
 
 namespace test {
 template <typename DLModule>
