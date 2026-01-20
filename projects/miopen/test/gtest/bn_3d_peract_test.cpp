@@ -114,9 +114,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         auto&& handle = get_handle();
 
-        input   = tensor<T>{miopenTensorNCDHW, {n, c, d, h, w}};
-        output  = tensor<T>{miopenTensorNCDHW, {n, c, d, h, w}};
-        out_ref = tensor<AccDataType>{miopenTensorNCDHW, {n, c, d, h, w}};
+        input   = tensor<T>{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
+        output  = tensor<T>{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
+        out_ref = tensor<AccDataType>{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
 
         input.generate(uniform_signed_initializer<T>(2e-3, 1000));
 
@@ -329,11 +329,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             break;                                                                                 \
         }                                                                                          \
         case BN3DPerActTestType::BackwardRecalc: {                                                 \
-            tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+            tensor<data_type> dy_input{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
             auto dy_dev = handle.Write(dy_input.data);                                             \
                                                                                                    \
-            tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+            tensor<data_type> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
             tensor<AccDataType> dscale{miopenTensorNCDHW, derivedBnDesc.GetLengths()};             \
             tensor<AccDataType> dshift{miopenTensorNCDHW, derivedBnDesc.GetLengths()};             \
             auto dx_dev     = handle.Write(dx_output.data);                                        \
@@ -433,11 +433,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             saveMean.data   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());        \
             saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());    \
                                                                                                    \
-            tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+            tensor<data_type> dy_input{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
             auto dy_dev = handle.Write(dy_input.data);                                             \
                                                                                                    \
-            tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+            tensor<data_type> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
             tensor<AccDataType> dscale{miopenTensorNCDHW, derivedBnDesc.GetLengths()};             \
             tensor<AccDataType> dshift{miopenTensorNCDHW, derivedBnDesc.GetLengths()};             \
             auto dx_dev     = handle.Write(dx_output.data);                                        \
