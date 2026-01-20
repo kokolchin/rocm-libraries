@@ -157,7 +157,7 @@ build_test "$OLD_COMMIT" "$BUILD_DIR" "$BUILD_JOBS" "build_old/test_bn_3d_peract
 echo "Restoring to original commit: $CURRENT_COMMIT"
 git checkout "$CURRENT_COMMIT"
 
-# Step 4: Run timing comparison
+# Run timing comparison
 echo "=========================================="
 echo "Step 3: Running Timing Comparison"
 echo "=========================================="
@@ -179,30 +179,38 @@ echo "Old ctest binary: $OLD_BINARY"
 echo "New gtest binary: $NEW_BINARY"
 echo ""
 
-# Run old ctest
-OLD_TIME=$(run_and_time "./$OLD_BINARY --all" "Old CTest")
+DATA_TYPES=("float" "half" "double" "int8" "bfloat16")
+GTEST_FIXTURES=("FP32" "FP16" "FP64" "INT8" "BF16")
 
-# Run new gtest (with filter)
-NEW_TIME=$(run_and_time "./$NEW_BINARY --gtest_filter=Smoke/GPU_Bn3dPerAct_FP32.*" "New GTest")
+for i in "${!DATA_TYPES[@]}"; do
+    DT=${DATA_TYPES[$i]}
+    FX=${GTEST_FIXTURES[$i]}
+    
+    echo "------------------------------------------"
+    echo "Testing Data Type: $DT"
+    echo "------------------------------------------"
+    
+    # Run old ctest
+    OLD_TIME=$(run_and_time "./$OLD_BINARY --all --$DT" "Old CTest ($DT)")
+    
+    # Run new gtest
+    NEW_TIME=$(run_and_time "./$NEW_BINARY --gtest_filter=Smoke/GPU_Bn3dPerAct_$FX.*" "New GTest ($DT)")
+    
+    # Print summary for this type
+    echo "Summary for $DT:"
+    echo "  Old CTest average: ${OLD_TIME}s"
+    echo "  New GTest average: ${NEW_TIME}s"
+    
+    DIFF=$(awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {print new - old}')
+    PERCENT=$(awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {if (old > 0) printf "%.2f", (new / old) * 100; else print "0.00"}')
+    echo "  Difference: ${DIFF}s (${PERCENT}% of old time)"
+    echo ""
+done
 
-# Print summary
 echo "=========================================="
-echo "Summary"
+echo "Final Summary"
 echo "=========================================="
-echo "Old CTest average: ${OLD_TIME}s"
-echo "New GTest average: ${NEW_TIME}s"
-
-DIFF=$(awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {print new - old}')
-PERCENT=$(awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {printf "%.2f", (new / old) * 100}')
-echo "Difference: ${DIFF}s (${PERCENT}% of old time)"
-
-if awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {exit !(new > old * 1.1)}'; then
-    echo "WARNING: New gtest is more than 10% slower than old ctest!"
-elif awk -v new="$NEW_TIME" -v old="$OLD_TIME" 'BEGIN {exit !(new < old * 0.9)}'; then
-    echo "SUCCESS: New gtest is more than 10% faster than old ctest!"
-else
-    echo "OK: New gtest timing is similar to old ctest (within 10%)"
-fi
+# (Optional: Add total sum comparison here if needed)
 
 echo ""
 echo "To exclude from TheRock, add to SKIP_TESTS in CMakeLists.txt:"
