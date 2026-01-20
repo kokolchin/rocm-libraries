@@ -180,7 +180,7 @@ echo "New gtest binary: $NEW_BINARY"
 echo ""
 
 # Run old ctest
-OLD_TIME=$(run_and_time "./$OLD_BINARY" "Old CTest")
+OLD_TIME=$(run_and_time "./$OLD_BINARY --all" "Old CTest")
 
 # Run new gtest (with filter)
 NEW_TIME=$(run_and_time "./$NEW_BINARY --gtest_filter=Smoke/GPU_Bn3dPerAct_FP32.*" "New GTest")

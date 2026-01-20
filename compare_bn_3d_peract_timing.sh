@@ -156,7 +156,7 @@ if [ -n "$OLD_CTEST_BINARY" ] && [ -f "$OLD_CTEST_BINARY" ]; then
     # Get directory of binary for running
     OLD_CTEST_DIR=$(dirname "$OLD_CTEST_BINARY")
     OLD_CTEST_NAME=$(basename "$OLD_CTEST_BINARY")
-    OLD_TIME=$(cd "$OLD_CTEST_DIR" && run_and_time "./$OLD_CTEST_NAME" "Old CTest")
+    OLD_TIME=$(cd "$OLD_CTEST_DIR" && run_and_time "./$OLD_CTEST_NAME --all" "Old CTest")
 else
     OLD_TIME="N/A"
 fi
