@@ -145,6 +145,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         double epsilon                = MIO_BN_TEST_EPSILON;
         double averageFactor          = MIO_BN_TEST_EXPAVGFACTOR;
         bool useInverseVariance       = false;
+        miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
+        double activ_alpha = 0.0;
+        double activ_beta  = 0.0;
     };
 
     std::size_t n, c, d, h, w;
