@@ -43,6 +43,10 @@ struct GPU_Bn3dPerAct_FP32 : public ::testing::TestWithParam<BN3DPerActTestCase>
 {
     void SetUp() override
     {
+        // Reset internal environment values to ensure tests are order-agnostic
+        // See: https://github.com/ROCm/MIOpen/wiki/GTest-development
+        // Note: This test does not use PRNG or other internal environment values that need resetting
+
         // Simple 3D tensor: batch=4, channels=2, depth=3, height=8, width=8
         n = 4;
         c = 2;
