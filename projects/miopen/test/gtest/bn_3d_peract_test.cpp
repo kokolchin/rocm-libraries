@@ -10,6 +10,7 @@
 
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
+#include "../random.hpp"
 #include "../verify.hpp"
 #include "../fusionHost.hpp"
 #include "test_operations.hpp"
