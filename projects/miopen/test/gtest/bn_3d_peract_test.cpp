@@ -465,10 +465,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
         auto test_end = std::chrono::high_resolution_clock::now();                                 \
         auto total_time_ms = std::chrono::duration<double, std::milli>(test_end - test_start).count(); \
         if (total_time_ms > 0) {                                                                   \
-            std::cout << "[ TIMING ] Test case: " << test_case << std::endl;                       \
-            std::cout << "[ TIMING ] CPU reference time: " << std::fixed << std::setprecision(2)   \
+            std::cerr << "[ TIMING ] Test case: " << test_case << std::endl;                       \
+            std::cerr << "[ TIMING ] CPU reference time: " << std::fixed << std::setprecision(2)   \
                       << cpu_time_ms << " ms (" << (cpu_time_ms / total_time_ms) * 100 << "%)"       \
                       << " of total " << total_time_ms << " ms" << std::endl;                      \
+            std::cerr.flush();                                                                     \
         }                                                                                          \
     }
 
