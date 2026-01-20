@@ -56,22 +56,26 @@ build_test() {
     # Configure
     echo "Configuring with cmake..."
     cd "$build_dir"
-    cmake "$SOURCE_DIR"
+    cmake "$SOURCE_DIR/projects/miopen"
     
     # Build the target
     echo "Building test_bn_3d_peract_test with -j $jobs..."
     cmake --build . --target test_bn_3d_peract_test -j "$jobs"
     
     # Find the binary
+    # When building from projects/miopen, binaries are in bin/
     local binary_path=""
-    if [ -f "projects/miopen/test/test_bn_3d_peract_test" ]; then
-        binary_path="projects/miopen/test/test_bn_3d_peract_test"
-    elif [ -f "projects/miopen/test/gtest/test_bn_3d_peract_test" ]; then
-        binary_path="projects/miopen/test/gtest/test_bn_3d_peract_test"
+    if [ -f "bin/test_bn_3d_peract_test" ]; then
+        binary_path="bin/test_bn_3d_peract_test"
+    elif [ -f "test/gtest/test_bn_3d_peract_test" ]; then
+        binary_path="test/gtest/test_bn_3d_peract_test"
+    elif [ -f "test/test_bn_3d_peract_test" ]; then
+        binary_path="test/test_bn_3d_peract_test"
     elif [ -f "test_bn_3d_peract_test" ]; then
         binary_path="test_bn_3d_peract_test"
     else
         echo "Error: Binary not found after build!"
+        echo "Searched in: bin/test_bn_3d_peract_test, test/gtest/test_bn_3d_peract_test, test/test_bn_3d_peract_test, test_bn_3d_peract_test"
         exit 1
     fi
     
