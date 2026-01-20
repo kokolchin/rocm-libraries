@@ -113,7 +113,13 @@ run_and_time() {
     for i in $(seq 1 $ITERATIONS); do
         echo "  Iteration $i/$ITERATIONS..."
         local start=$(date +%s.%N)
-        eval "$test_cmd" > /dev/null 2>&1
+        # Check if command exists before running
+        if ! eval "$test_cmd" > /dev/null 2>&1; then
+            echo "    Error: Command failed with exit code $?: $test_cmd"
+            # Try running again without silencing to show the error
+            eval "$test_cmd"
+            exit 1
+        fi
         local end=$(date +%s.%N)
         local duration=$(awk -v end="$end" -v start="$start" 'BEGIN {print end - start}')
         times+=($duration)
@@ -168,13 +174,15 @@ echo "=========================================="
 OLD_BINARY="$SOURCE_DIR/build_old/test_bn_3d_peract"
 NEW_BINARY="$SOURCE_DIR/build_new/test_bn_3d_peract_test"
 
-if [ ! -f "$OLD_BINARY" ]; then
-    echo "Error: Old ctest binary not found: $OLD_BINARY"
+if [ ! -x "$OLD_BINARY" ]; then
+    echo "Error: Old ctest binary not executable or not found: $OLD_BINARY"
+    ls -l "$OLD_BINARY"
     exit 1
 fi
 
-if [ ! -f "$NEW_BINARY" ]; then
-    echo "Error: New gtest binary not found: $NEW_BINARY"
+if [ ! -x "$NEW_BINARY" ]; then
+    echo "Error: New gtest binary not executable or not found: $NEW_BINARY"
+    ls -l "$NEW_BINARY"
     exit 1
 fi
 
@@ -194,10 +202,10 @@ for i in "${!DATA_TYPES[@]}"; do
     echo "------------------------------------------"
     
     # Run old ctest
-    OLD_TIME=$(run_and_time "./$OLD_BINARY --all --$DT" "Old CTest ($DT)")
+    OLD_TIME=$(run_and_time "$OLD_BINARY --all --$DT" "Old CTest ($DT)")
     
     # Run new gtest
-    NEW_TIME=$(run_and_time "./$NEW_BINARY --gtest_filter=Smoke/GPU_Bn3dPerAct_$FX.*" "New GTest ($DT)")
+    NEW_TIME=$(run_and_time "$NEW_BINARY --gtest_filter=Smoke/GPU_Bn3dPerAct_$FX.*" "New GTest ($DT)")
     
     # Print summary for this type
     echo "Summary for $DT:"
