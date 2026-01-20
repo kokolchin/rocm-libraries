@@ -109,13 +109,13 @@ run_and_time() {
     local test_name="$2"
     local times=()
     
-    echo "Running $test_name..."
+    echo "Running $test_name..." >&2
     for i in $(seq 1 $ITERATIONS); do
-        echo "  Iteration $i/$ITERATIONS..."
+        echo "  Iteration $i/$ITERATIONS..." >&2
         local start=$(date +%s.%N)
         # Check if command exists before running
         if ! eval "$test_cmd" > /dev/null 2>&1; then
-            echo "    Error: Command failed with exit code $?: $test_cmd"
+            echo "    Error: Command failed with exit code $?: $test_cmd" >&2
             # Try running again without silencing to show the error
             eval "$test_cmd"
             exit 1
@@ -123,7 +123,7 @@ run_and_time() {
         local end=$(date +%s.%N)
         local duration=$(awk -v end="$end" -v start="$start" 'BEGIN {print end - start}')
         times+=($duration)
-        echo "    Time: ${duration}s"
+        echo "    Time: ${duration}s" >&2
     done
     
     # Calculate average
@@ -133,8 +133,8 @@ run_and_time() {
     done
     local avg=$(awk -v sum="$sum" -v iter="$ITERATIONS" 'BEGIN {printf "%.3f", sum / iter}')
     
-    echo "  Average time: ${avg}s"
-    echo ""
+    echo "  Average time: ${avg}s" >&2
+    echo "" >&2
     
     echo "$avg"
 }
