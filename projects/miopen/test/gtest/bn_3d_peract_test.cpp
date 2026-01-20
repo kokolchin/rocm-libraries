@@ -39,8 +39,6 @@ struct BN3DPerActTestCase
         return ss << "(n: " << tc.n << " c: " << tc.c << " d: " << tc.d << " h: " << tc.h
                   << " w: " << tc.w << " type: " << static_cast<int>(tc.test_type) << ")";
     }
-
-    std::vector<std::size_t> GetInput() const { return {n, c, d, h, w}; }
 };
 
 std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
