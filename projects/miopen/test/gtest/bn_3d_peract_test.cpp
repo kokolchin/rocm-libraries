@@ -9,6 +9,7 @@
 #include <cmath>
 #include <chrono>
 #include <iomanip>
+#include <mutex>
 
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
@@ -59,6 +60,35 @@ std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
     }
     return test_cases;
 }
+
+struct GlobalTiming
+{
+    double cpu_ms   = 0;
+    double total_ms = 0;
+    std::mutex mtx;
+
+    void add(double c, double t)
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        cpu_ms += c;
+        total_ms += t;
+    }
+
+    ~GlobalTiming()
+    {
+        if(total_ms > 0)
+        {
+            std::cerr << std::endl
+                      << "============================================================" << std::endl;
+            std::cerr << "[ TIMING SUMMARY ] Accumulated for all test cases:" << std::endl;
+            std::cerr << "[ TIMING SUMMARY ] Total CPU reference time: " << std::fixed
+                      << std::setprecision(2) << cpu_ms << " ms (" << (cpu_ms / total_ms) * 100
+                      << "%)"
+                      << " of total " << total_ms << " ms" << std::endl;
+            std::cerr << "============================================================" << std::endl;
+        }
+    }
+} global_timing;
 } // namespace
 
 template <typename T>
@@ -464,6 +494,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
         }                                                                                          \
         auto test_end = std::chrono::high_resolution_clock::now();                                 \
         auto total_time_ms = std::chrono::duration<double, std::milli>(test_end - test_start).count(); \
+        global_timing.add(cpu_time_ms, total_time_ms);                                             \
         if (total_time_ms > 0) {                                                                   \
             std::cerr << "[ TIMING ] Test case: " << test_case << std::endl;                       \
             std::cerr << "[ TIMING ] CPU reference time: " << std::fixed << std::setprecision(2)   \
