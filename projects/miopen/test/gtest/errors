@@ -1,7 +1,803 @@
-/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:43:30: error: unused member function 'GetInput' [-Werror,-Wunused-member-function]
-   43 |     std::vector<std::size_t> GetInput() const { return {n, c, d, h, w}; }
-      |                              ^~~~~~~~
-1 error generated when compiling for gfx1030.
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:507:1: error: no matching constructor for initialization of 'tensor<float>'
+  507 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:332:31: note: expanded from macro 'TEST_PERACT_3D'
+  332 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:507:1: error: no matching constructor for initialization of 'tensor<float>'
+  507 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:336:31: note: expanded from macro 'TEST_PERACT_3D'
+  336 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:507:1: error: no matching constructor for initialization of 'tensor<float>'
+  507 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:436:31: note: expanded from macro 'TEST_PERACT_3D'
+  436 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:507:1: error: no matching constructor for initialization of 'tensor<float>'
+  507 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:440:31: note: expanded from macro 'TEST_PERACT_3D'
+  440 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:508:1: error: no matching constructor for initialization of 'tensor<half_float::half>'
+  508 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:332:31: note: expanded from macro 'TEST_PERACT_3D'
+  332 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:508:1: error: no matching constructor for initialization of 'tensor<half_float::half>'
+  508 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:336:31: note: expanded from macro 'TEST_PERACT_3D'
+  336 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:508:1: error: no matching constructor for initialization of 'tensor<half_float::half>'
+  508 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:436:31: note: expanded from macro 'TEST_PERACT_3D'
+  436 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:508:1: error: no matching constructor for initialization of 'tensor<half_float::half>'
+  508 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:440:31: note: expanded from macro 'TEST_PERACT_3D'
+  440 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:509:1: error: no matching constructor for initialization of 'tensor<bfloat16>'
+  509 | TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:332:31: note: expanded from macro 'TEST_PERACT_3D'
+  332 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:509:1: error: no matching constructor for initialization of 'tensor<bfloat16>'
+  509 | TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:336:31: note: expanded from macro 'TEST_PERACT_3D'
+  336 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:509:1: error: no matching constructor for initialization of 'tensor<bfloat16>'
+  509 | TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:436:31: note: expanded from macro 'TEST_PERACT_3D'
+  436 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:509:1: error: no matching constructor for initialization of 'tensor<bfloat16>'
+  509 | TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:440:31: note: expanded from macro 'TEST_PERACT_3D'
+  440 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:510:1: error: no matching constructor for initialization of 'tensor<double>'
+  510 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:332:31: note: expanded from macro 'TEST_PERACT_3D'
+  332 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:510:1: error: no matching constructor for initialization of 'tensor<double>'
+  510 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:336:31: note: expanded from macro 'TEST_PERACT_3D'
+  336 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:510:1: error: no matching constructor for initialization of 'tensor<double>'
+  510 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:436:31: note: expanded from macro 'TEST_PERACT_3D'
+  436 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:510:1: error: no matching constructor for initialization of 'tensor<double>'
+  510 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:440:31: note: expanded from macro 'TEST_PERACT_3D'
+  440 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:511:1: error: no matching constructor for initialization of 'tensor<int8_t>' (aka 'tensor<signed char>')
+  511 | TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:332:31: note: expanded from macro 'TEST_PERACT_3D'
+  332 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:511:1: error: no matching constructor for initialization of 'tensor<int8_t>' (aka 'tensor<signed char>')
+  511 | TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:336:31: note: expanded from macro 'TEST_PERACT_3D'
+  336 |             tensor<data_type> dx_output{miopenTensorNCDHW, {n, c, d, h, w}};                       \
+      |                               ^        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:511:1: error: no matching constructor for initialization of 'tensor<int8_t>' (aka 'tensor<signed char>')
+  511 | TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:436:31: note: expanded from macro 'TEST_PERACT_3D'
+  436 |             tensor<data_type> dy_input{miopenTensorNCDHW, {n, c, d, h, w}};                        \
+      |                               ^       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:176:5: note: candidate template ignored: couldn't infer template argument 'X'
+  176 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:169:5: note: candidate template ignored: could not match 'std::vector<X>' against 'miopenTensorLayout_t'
+  169 |     tensor(const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:164:5: note: candidate constructor template not viable: requires single argument 'dims', but 2 arguments were provided
+  164 |     tensor(const std::vector<X>& dims) : desc(miopen_type<T>{}, dims), data(desc.GetElementSpace())
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:203:5: note: candidate constructor not viable: requires single argument 'n', but 2 arguments were provided
+  203 |     tensor(std::size_t n) : desc(miopen_type<T>{}, {n}), data(n) {}
+      |     ^      ~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:205:5: note: candidate constructor not viable: requires single argument 'rhs', but 2 arguments were provided
+  205 |     tensor(miopen::TensorDescriptor rhs) : desc(std::move(rhs))
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit copy constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:146:8: note: candidate constructor (the implicit move constructor) not viable: requires 1 argument, but 2 were provided
+  146 | struct tensor
+      |        ^~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:182:5: note: candidate constructor template not viable: requires 3 arguments, but 2 were provided
+  182 |     tensor(miopenTensorLayout_t layout, const std::vector<X>& dims, const std::vector<X>& strides)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:157:5: note: candidate constructor not viable: requires 0 arguments, but 2 were provided
+  157 |     tensor() : desc(miopen_type<T>{}) {}
+      |     ^
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:188:5: note: candidate constructor not viable: requires 4 arguments, but 2 were provided
+  188 |     tensor(std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:193:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  193 |     tensor(miopenTensorLayout_t layout, std::size_t n, std::size_t c, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/data/rocm-libraries/projects/miopen/test/gtest/../tensor_holder.hpp:198:5: note: candidate constructor not viable: requires 5 arguments, but 2 were provided
+  198 |     tensor(std::size_t n, std::size_t c, std::size_t d, std::size_t h, std::size_t w)
+      |     ^      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated when compiling for gfx1030.
 gmake[3]: *** [test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/build.make:76: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/bn_3d_peract_test.cpp.o] Error 1
 gmake[2]: *** [CMakeFiles/Makefile2:19583: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/all] Error 2
 gmake[1]: *** [CMakeFiles/Makefile2:19590: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/rule] Error 2
