@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <cmath>
+#include <chrono>
+#include <iomanip>
 
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
@@ -175,6 +177,14 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
     {                                                                                              \
+        auto test_start = std::chrono::high_resolution_clock::now();                               \
+        double cpu_time_ms = 0;                                                                    \
+        auto start_cpu_timer = [&]() { return std::chrono::high_resolution_clock::now(); };        \
+        auto stop_cpu_timer = [&](std::chrono::high_resolution_clock::time_point start) {          \
+            auto end = std::chrono::high_resolution_clock::now();                                  \
+            cpu_time_ms += std::chrono::duration<double, std::milli>(end - start).count();         \
+        };                                                                                         \
+                                                                                                   \
         const auto& test_case = this->GetParam();                                                  \
         auto&& handle         = get_handle();                                                      \
                                                                                                    \
@@ -232,7 +242,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.runMean_ref      = runMean;                                                         \
             dl.runVariance_ref  = runVar;                                                          \
                                                                                                    \
-            test::ComputeCPUBNFwdTrain(dl);                                                        \
+            {                                                                                      \
+                auto start = start_cpu_timer();                                                    \
+                test::ComputeCPUBNFwdTrain(dl);                                                    \
+                stop_cpu_timer(start);                                                             \
+            }                                                                                      \
             test::CompareTensor(output, dl.out_ref, tolerance);                                    \
             test::CompareTensor(saveMean, dl.saveMean_ref, tolerance);                             \
             test::CompareTensor(saveInvVar, dl.saveVariance_ref, tolerance);                       \
@@ -271,7 +285,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.estVariance        = runVar;                                                        \
             dl.useInverseVariance = false;                                                         \
                                                                                                    \
-            test::ComputeCPUBNInference(dl);                                                       \
+            {                                                                                      \
+                auto start = start_cpu_timer();                                                    \
+                test::ComputeCPUBNInference(dl);                                                   \
+                stop_cpu_timer(start);                                                             \
+            }                                                                                      \
             test::CompareTensor(output, dl.out_ref, tolerance);                                    \
             break;                                                                                 \
         }                                                                                          \
@@ -332,11 +350,19 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl_fwd.saveVariance_ref = tensor<AccDataType>{derivedBnDesc.GetLengths()};             \
             dl_fwd.runMean_ref      = runMean;                                                     \
             dl_fwd.runVariance_ref  = runVar;                                                      \
-            test::ComputeCPUBNFwdTrain(dl_fwd);                                                    \
+            {                                                                                      \
+                auto start = start_cpu_timer();                                                    \
+                test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
+                stop_cpu_timer(start);                                                             \
+            }                                                                                      \
             dl.savedMean   = dl_fwd.saveMean_ref;                                                  \
             dl.savedInvVar = dl_fwd.saveVariance_ref;                                              \
                                                                                                    \
-            test::ComputeCPUBNBwd(dl);                                                             \
+            {                                                                                      \
+                auto start = start_cpu_timer();                                                    \
+                test::ComputeCPUBNBwd(dl);                                                         \
+                stop_cpu_timer(start);                                                             \
+            }                                                                                      \
             test::CompareTensor(dx_output, dl.out_ref, tolerance);                                 \
             test::CompareTensor(dscale, dl.dScale_ref, tolerance);                                 \
             test::CompareTensor(dshift, dl.dBias_ref, tolerance);                                  \
@@ -420,12 +446,24 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.savedMean   = saveMean;                                                             \
             dl.savedInvVar = saveInvVar;                                                           \
                                                                                                    \
-            test::ComputeCPUBNBwd(dl);                                                             \
+            {                                                                                      \
+                auto start = start_cpu_timer();                                                    \
+                test::ComputeCPUBNBwd(dl);                                                         \
+                stop_cpu_timer(start);                                                             \
+            }                                                                                      \
             test::CompareTensor(dx_output, dl.out_ref, tolerance);                                 \
             test::CompareTensor(dscale, dl.dScale_ref, tolerance);                                 \
             test::CompareTensor(dshift, dl.dBias_ref, tolerance);                                  \
             break;                                                                                 \
         }                                                                                          \
+        }                                                                                          \
+        auto test_end = std::chrono::high_resolution_clock::now();                                 \
+        auto total_time_ms = std::chrono::duration<double, std::milli>(test_end - test_start).count(); \
+        if (total_time_ms > 0) {                                                                   \
+            std::cout << "[ TIMING ] Test case: " << test_case << std::endl;                       \
+            std::cout << "[ TIMING ] CPU reference time: " << std::fixed << std::setprecision(2)   \
+                      << cpu_time_ms << " ms (" << (cpu_time_ms / total_time_ms) * 100 << "%)"       \
+                      << " of total " << total_time_ms << " ms" << std::endl;                      \
         }                                                                                          \
     }
 
