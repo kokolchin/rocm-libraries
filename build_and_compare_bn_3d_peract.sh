@@ -44,9 +44,41 @@ build_test() {
     echo "Building commit: $commit_hash"
     echo "=========================================="
     
+    # Check if binary already exists
+    if [ -f "$binary_dest" ] && [ -x "$binary_dest" ]; then
+        echo "Binary already exists at $binary_dest, skipping build..."
+        echo "Binary will be used for timing comparison."
+        echo ""
+        return 0
+    fi
+    
     # Checkout the commit
     echo "Checking out commit $commit_hash..."
     git checkout "$commit_hash"
+    
+    # If building old commit, skip gtest version to avoid duplicate target
+    if [ "$commit_hash" = "$OLD_COMMIT" ]; then
+        echo "Old commit detected - skipping gtest version to avoid duplicate target..."
+        GTEST_CMAKELISTS="$SOURCE_DIR/projects/miopen/test/gtest/CMakeLists.txt"
+        if [ -f "$GTEST_CMAKELISTS" ]; then
+            # Check if bn_3d_peract_test.cpp is already in SKIP_TESTS
+            if ! grep -q "bn_3d_peract_test.cpp" "$GTEST_CMAKELISTS" 2>/dev/null; then
+                # Add bn_3d_peract_test.cpp to SKIP_TESTS
+                # First, try to modify existing SKIP_TESTS line
+                if grep -q "set(SKIP_TESTS dumpTensorTest.cpp)" "$GTEST_CMAKELISTS"; then
+                    # Modify the existing SKIP_TESTS line
+                    sed -i 's/set(SKIP_TESTS dumpTensorTest.cpp)/set(SKIP_TESTS dumpTensorTest.cpp bn_3d_peract_test.cpp)/' "$GTEST_CMAKELISTS"
+                elif grep -q "^set(SKIP_TESTS" "$GTEST_CMAKELISTS"; then
+                    # Append to existing SKIP_TESTS (any format)
+                    sed -i '/^set(SKIP_TESTS/s/)$/ bn_3d_peract_test.cpp)/' "$GTEST_CMAKELISTS"
+                else
+                    # Add new SKIP_TESTS line after the OPENCL check block
+                    sed -i '/endif()/a\set(SKIP_TESTS bn_3d_peract_test.cpp)' "$GTEST_CMAKELISTS"
+                fi
+                echo "Added bn_3d_peract_test.cpp to SKIP_TESTS in gtest CMakeLists.txt"
+            fi
+        fi
+    fi
     
     # Clean and prepare build directory
     echo "Cleaning build directory: $build_dir..."
