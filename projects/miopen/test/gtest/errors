@@ -1,0 +1,99 @@
+In file included from /data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:15:
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:208:21: error: no type named 'FusionPlanDescriptor' in namespace 'miopen'; did you mean 'miopenFusionPlanDescriptor'?
+  208 | void InitFusionPlan(miopen::FusionPlanDescriptor& fusePlanDesc, DLModule& dl_module)
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                     miopenFusionPlanDescriptor
+/data/rocm-libraries/projects/miopen/include/miopen/miopen.h:3819:23: note: 'miopenFusionPlanDescriptor' declared here
+ 3819 | MIOPEN_DECLARE_OBJECT(miopenFusionPlanDescriptor);
+      |                       ^
+In file included from /data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:15:
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:210:28: error: no member named 'FusionPlanDescriptor' in namespace 'miopen'
+  210 |     fusePlanDesc = miopen::FusionPlanDescriptor(miopenVerticalFusion, dl_module.GetInputDesc());
+      |                    ~~~~~~~~^
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:214:17: error: no type named 'FusionPlanDescriptor' in namespace 'miopen'; did you mean 'miopenFusionPlanDescriptor'?
+  214 | void AddBnInfer(miopen::FusionPlanDescriptor& fusePlanDesc,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 miopenFusionPlanDescriptor
+/data/rocm-libraries/projects/miopen/include/miopen/miopen.h:3819:23: note: 'miopenFusionPlanDescriptor' declared here
+ 3819 | MIOPEN_DECLARE_OBJECT(miopenFusionPlanDescriptor);
+      |                       ^
+In file included from /data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:15:
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:215:25: error: no type named 'OperatorArgs' in namespace 'miopen'
+  215 |                 miopen::OperatorArgs& params,
+      |                 ~~~~~~~~^
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:218:42: error: no member named 'BatchNormInferenceFusionOpDescriptor' in namespace 'miopen'
+  218 |     auto bnOp = std::make_shared<miopen::BatchNormInferenceFusionOpDescriptor>(dl_module.bn_mode,
+      |                                  ~~~~~~~~^
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:232:15: error: no type named 'FusionPlanDescriptor' in namespace 'miopen'; did you mean 'miopenFusionPlanDescriptor'?
+  232 | void AddActiv(miopen::FusionPlanDescriptor& fusePlanDesc,
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |               miopenFusionPlanDescriptor
+/data/rocm-libraries/projects/miopen/include/miopen/miopen.h:3819:23: note: 'miopenFusionPlanDescriptor' declared here
+ 3819 | MIOPEN_DECLARE_OBJECT(miopenFusionPlanDescriptor);
+      |                       ^
+In file included from /data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:15:
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:233:23: error: no type named 'OperatorArgs' in namespace 'miopen'
+  233 |               miopen::OperatorArgs& params,
+      |               ~~~~~~~~^
+/data/rocm-libraries/projects/miopen/test/gtest/test_operations.hpp:237:45: error: no member named 'ActivFwdFusionOpDescriptor' in namespace 'miopen'
+  237 |     auto activOp = std::make_shared<miopen::ActivFwdFusionOpDescriptor>(activ_mode);
+      |                                     ~~~~~~~~^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:470:1: error: use of undeclared identifier 'uniform_signed_initializer'
+  470 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
+      | ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:298:31: note: expanded from macro 'TEST_PERACT_3D'
+  298 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:470:1: error: use of undeclared identifier 'uniform_signed_initializer'
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:402:31: note: expanded from macro 'TEST_PERACT_3D'
+  402 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:471:1: error: use of undeclared identifier 'uniform_signed_initializer'
+  471 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
+      | ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:298:31: note: expanded from macro 'TEST_PERACT_3D'
+  298 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:471:1: error: use of undeclared identifier 'uniform_signed_initializer'
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:402:31: note: expanded from macro 'TEST_PERACT_3D'
+  402 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:472:1: error: use of undeclared identifier 'uniform_signed_initializer'
+  472 | TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+      | ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:298:31: note: expanded from macro 'TEST_PERACT_3D'
+  298 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:472:1: error: use of undeclared identifier 'uniform_signed_initializer'
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:402:31: note: expanded from macro 'TEST_PERACT_3D'
+  402 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:473:1: error: use of undeclared identifier 'uniform_signed_initializer'
+  473 | TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
+      | ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:298:31: note: expanded from macro 'TEST_PERACT_3D'
+  298 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:473:1: error: use of undeclared identifier 'uniform_signed_initializer'
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:402:31: note: expanded from macro 'TEST_PERACT_3D'
+  402 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:474:1: error: use of undeclared identifier 'uniform_signed_initializer'
+  474 | TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
+      | ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:298:31: note: expanded from macro 'TEST_PERACT_3D'
+  298 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:474:1: error: use of undeclared identifier 'uniform_signed_initializer'
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:402:31: note: expanded from macro 'TEST_PERACT_3D'
+  402 |             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
+      |                               ^
+/data/rocm-libraries/projects/miopen/test/gtest/bn_3d_peract_test.cpp:480:99: error: no newline at end of file [-Werror,-Wnewline-eof]
+  480 | INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_INT8, testing::ValuesIn(GetBN3DPerActTestCases()));
+      |                                                                                                   ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated when compiling for gfx1030.
+gmake[3]: *** [test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/build.make:76: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/bn_3d_peract_test.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:19583: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:19590: test/gtest/CMakeFiles/test_bn_3d_peract_test.dir/rule] Error 2
+gmake: *** [Makefile:8455: test_bn_3d_peract_test] Error 2
