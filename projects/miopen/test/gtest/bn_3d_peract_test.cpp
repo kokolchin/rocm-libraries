@@ -134,7 +134,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         // Get layout from input before creating out_ref to ensure consistency
         auto input_layout_opt = input.desc.GetLayoutEnum();
-        bn_layout = input_layout_opt ? input_layout_opt.value() : miopenTensorNCDHW;
+        bn_layout = (input_layout_opt && input_layout_opt.value() != 0) ? input_layout_opt.value() : miopenTensorNCDHW;
         out_ref   = tensor<AccDataType>{bn_layout, std::vector<std::size_t>{n, c, d, h, w}};
 
         input.generate(uniform_signed_initializer<T>(2e-3, 1000));
