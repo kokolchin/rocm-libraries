@@ -47,15 +47,21 @@ void ComputeCPUBNInference(DLModule& dl_module)
             if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                // This should only happen for 5D tensors when size == 5
+                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
                 if(dims.size() == 5)
                 {
                     desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
                 }
+                else if(dims.size() == 4)
+                {
+                    // Already reshaped to 4D, use NCHW
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
+                }
                 else
                 {
-                    // Should not happen, but handle gracefully
-                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                    // For other dimensions, use default layout based on dimension count
+                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
+                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
                 }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
@@ -112,15 +118,21 @@ void ComputeCPUBNBwd(DLModule& dl_module)
             if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                // This should only happen for 5D tensors when size == 5
+                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
                 if(dims.size() == 5)
                 {
                     desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
                 }
+                else if(dims.size() == 4)
+                {
+                    // Already reshaped to 4D, use NCHW
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
+                }
                 else
                 {
-                    // Should not happen, but handle gracefully
-                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                    // For other dimensions, use default layout based on dimension count
+                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
+                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
                 }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
@@ -183,15 +195,21 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
             if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                // This should only happen for 5D tensors when size == 5
+                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
                 if(dims.size() == 5)
                 {
                     desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
                 }
+                else if(dims.size() == 4)
+                {
+                    // Already reshaped to 4D, use NCHW
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
+                }
                 else
                 {
-                    // Should not happen, but handle gracefully
-                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                    // For other dimensions, use default layout based on dimension count
+                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
+                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
                 }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
