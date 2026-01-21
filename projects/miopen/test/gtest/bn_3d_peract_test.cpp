@@ -145,18 +145,13 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
         // Ensure derivedBnDesc has a valid layout (DeriveBNTensorDescriptor doesn't preserve layout)
         // derivedBnDesc is 4D (CxDxHxW), so use 4D layout, not 5D bn_layout
-        auto derived_layout_opt = derivedBnDesc.GetLayoutEnum();
         auto derived_num_dims = derivedBnDesc.GetLengths().size();
         // Always set derived_layout to a valid default based on dimensions
         derived_layout = (derived_num_dims == 5) ? miopenTensorNCDHW : miopenTensorNCHW;
-        // Ensure derived_layout is never 0
-        if(derived_layout == 0)
-        {
-            derived_layout = miopenTensorNCHW;
-        }
-        // Check if we need to fix the layout in derivedBnDesc
+        
         bool need_fix = false;
-        if(!derived_layout_opt || derived_layout_opt.value() == 0)
+        auto derived_layout_opt = derivedBnDesc.GetLayoutEnum();
+        if(!derived_layout_opt || derived_layout_opt.value() != derived_layout)
         {
             need_fix = true;
         }
