@@ -178,13 +178,40 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             tolerance = 0.5; // Same tolerance for other types
     }
 
-    // Helper to ensure tensor descriptor has valid layout (GetLayout_t() may return 0)
+    // Helper to ensure tensor descriptor has valid layout (GetLayout_t() may return 0 or invalid layout)
     template<typename TensorType>
     static void EnsureValidLayout(TensorType& t, miopenTensorLayout_t default_layout)
     {
-        if(t.desc.GetLayout_t() == 0)
+        auto layout_t = t.desc.GetLayout_t();
+        auto num_dims = t.desc.GetLengths().size();
+        
+        // Determine correct layout based on number of dimensions
+        miopenTensorLayout_t valid_layout;
+        if(num_dims == 5)
         {
-            t.desc = miopen::TensorDescriptor(t.desc.GetType(), default_layout, t.desc.GetLengths());
+            // For 5D tensors, only NCDHW and NDHWC are supported
+            valid_layout = miopenTensorNCDHW;
+        }
+        else if(num_dims == 4)
+        {
+            // For 4D tensors, use NCHW as default
+            valid_layout = miopenTensorNCHW;
+        }
+        else
+        {
+            // For other dimensions, use provided default
+            valid_layout = default_layout;
+        }
+        
+        // If current layout is 0 or invalid for this dimension, recreate with correct layout
+        if(layout_t == 0 || 
+           (num_dims == 5 && layout_t != miopenTensorNCDHW && layout_t != miopenTensorNDHWC) ||
+           (num_dims == 4 && layout_t != miopenTensorNCHW && layout_t != miopenTensorNHWC && 
+            layout_t != miopenTensorCHWN && layout_t != miopenTensorNCHWc4 && 
+            layout_t != miopenTensorNCHWc8 && layout_t != miopenTensorCHWNc4 && 
+            layout_t != miopenTensorCHWNc8))
+        {
+            t.desc = miopen::TensorDescriptor(t.desc.GetType(), valid_layout, t.desc.GetLengths());
         }
     }
 
