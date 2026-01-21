@@ -41,14 +41,6 @@ void ComputeCPUBNInference(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            // Ensure layout is set correctly for 5D tensors before reshaping
-            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
-            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
-            {
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -97,14 +89,6 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            // Ensure layout is set correctly for 5D tensors before reshaping
-            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
-            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
-            {
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -159,14 +143,6 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            // Ensure layout is set correctly for 5D tensors before reshaping
-            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
-            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
-            {
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
