@@ -42,10 +42,11 @@ void ComputeCPUBNInference(DLModule& dl_module)
         if(size == 5)
         {
             auto layout = desc.GetLayout_t();
-            if(layout == 0)
+            auto dims = desc.GetLengths();
+            if(layout == 0 && dims.size() == 5)
             {
-                // If layout is uninitialized, set it to NCDHW (default for 3D)
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -96,10 +97,11 @@ void ComputeCPUBNBwd(DLModule& dl_module)
         if(size == 5)
         {
             auto layout = desc.GetLayout_t();
-            if(layout == 0)
+            auto dims = desc.GetLengths();
+            if(layout == 0 && dims.size() == 5)
             {
-                // If layout is uninitialized, set it to NCDHW (default for 3D)
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -156,10 +158,11 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
         if(size == 5)
         {
             auto layout = desc.GetLayout_t();
-            if(layout == 0)
+            auto dims = desc.GetLengths();
+            if(layout == 0 && dims.size() == 5)
             {
-                // If layout is uninitialized, set it to NCDHW (default for 3D)
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
