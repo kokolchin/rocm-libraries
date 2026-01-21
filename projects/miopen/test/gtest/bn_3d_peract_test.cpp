@@ -205,9 +205,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         double activ_gamma                = 1.0;
 
         // Helper to ensure all descriptors have valid layouts before CPU computation
-        void EnsureLayouts(miopenTensorLayout_t default_layout)
+        void EnsureLayouts(miopenTensorLayout_t /* default_layout */)
         {
-            auto FixLayout = [default_layout](auto& tensor) {
+            auto FixLayout = [](auto& tensor) {
                 auto dims = tensor.desc.GetLengths();
                 if(dims.size() == 0)
                     return;
