@@ -58,16 +58,14 @@ std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
     for(const auto& shape : get_3d_bn_peract_inputs(4))
     {
         const auto n = shape[0];
+        // Match ctest logic: skip ALL test cases when n == 1 (not just training/backward)
+        // From bn_peract_test.cpp: if(n == 1) { return; }
+        if(n == 1)
+        {
+            continue; // Skip all test cases for batch size 1
+        }
         for(const auto& type : types)
         {
-            // Filter out test cases that would be skipped at runtime:
-            // - n == 1 is not supported for training/backward (only inference works)
-            if(n == 1 && (type == BN3DPerActTestType::ForwardTraining ||
-                          type == BN3DPerActTestType::BackwardRecalc ||
-                          type == BN3DPerActTestType::BackwardUseSaved))
-            {
-                continue; // Skip this test case instead of generating it
-            }
             test_cases.push_back({shape[0], shape[1], shape[2], shape[3], shape[4], type});
         }
     }
@@ -120,11 +118,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         h              = tc.h;
         w              = tc.w;
 
-        if(n == 1 && (tc.test_type == BN3DPerActTestType::ForwardTraining ||
-                      tc.test_type == BN3DPerActTestType::BackwardRecalc ||
-                      tc.test_type == BN3DPerActTestType::BackwardUseSaved))
+        // Match ctest logic: skip ALL test cases when n == 1
+        // From bn_peract_test.cpp: if(n == 1) { return; }
+        if(n == 1)
         {
-            GTEST_SKIP() << "Batch size of 1 is not supported for BN training/backward";
+            GTEST_SKIP() << "Invalid batch size for batch norm tests";
         }
 
         auto&& handle = get_handle();
