@@ -82,13 +82,15 @@ struct GlobalTiming
         if(total_ms > 0)
         {
             std::cerr << std::endl
-                      << "============================================================" << std::endl;
+                      << "============================================================"
+                      << std::endl;
             std::cerr << "[ TIMING SUMMARY ] Accumulated for all test cases:" << std::endl;
             std::cerr << "[ TIMING SUMMARY ] Total CPU reference time: " << std::fixed
                       << std::setprecision(2) << cpu_ms << " ms (" << (cpu_ms / total_ms) * 100
                       << "%)"
                       << " of total " << total_ms << " ms" << std::endl;
-            std::cerr << "============================================================" << std::endl;
+            std::cerr << "============================================================"
+                      << std::endl;
         }
     }
 } global_timing;
@@ -126,10 +128,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
 
         bn_layout = input.desc.GetLayout_t();
-        scale   = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
-        shift   = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
-        runMean = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
-        runVar  = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
+        scale     = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
+        shift     = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
+        runMean   = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
+        runVar    = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
 
         scale.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
         shift.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
@@ -217,12 +219,12 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
     {                                                                                              \
-        auto test_start = std::chrono::high_resolution_clock::now();                               \
-        double cpu_time_ms = 0;                                                                    \
+        auto test_start      = std::chrono::high_resolution_clock::now();                          \
+        double cpu_time_ms   = 0;                                                                  \
         auto start_cpu_timer = [&]() { return std::chrono::high_resolution_clock::now(); };        \
-        auto stop_cpu_timer = [&](std::chrono::high_resolution_clock::time_point start) {          \
-            auto end = std::chrono::high_resolution_clock::now();                                  \
-            cpu_time_ms += std::chrono::duration<double, std::milli>(end - start).count();         \
+        auto stop_cpu_timer  = [&](std::chrono::high_resolution_clock::time_point start) {         \
+            auto end = std::chrono::high_resolution_clock::now();                                 \
+            cpu_time_ms += std::chrono::duration<double, std::milli>(end - start).count();        \
         };                                                                                         \
                                                                                                    \
         const auto& test_case = this->GetParam();                                                  \
@@ -233,35 +235,34 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             test_case.test_type == BN3DPerActTestType::BackwardRecalc ||                           \
             test_case.test_type == BN3DPerActTestType::BackwardUseSaved))                          \
         {                                                                                          \
-            GTEST_SKIP() << "INT8 is only supported for inference";                                 \
+            GTEST_SKIP() << "INT8 is only supported for inference";                                \
         }                                                                                          \
                                                                                                    \
         switch(test_case.test_type)                                                                \
         {                                                                                          \
         case BN3DPerActTestType::ForwardTraining: {                                                \
-            tensor<AccDataType> saveMean{this->bn_layout, this->derivedBnDesc.GetLengths()};           \
-            tensor<AccDataType> saveInvVar{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
+            tensor<AccDataType> saveMean{this->bn_layout, this->derivedBnDesc.GetLengths()};       \
+            tensor<AccDataType> saveInvVar{this->bn_layout, this->derivedBnDesc.GetLengths()};     \
             auto saveMean_dev   = handle.Write(saveMean.data);                                     \
             auto saveInvVar_dev = handle.Write(saveInvVar.data);                                   \
                                                                                                    \
-            miopenStatus_t status = miopenBatchNormalizationForwardTraining(                       \
-                &handle,                                                                           \
-                miopenBNPerActivation,                                                             \
-                &alpha,                                                                            \
-                &beta,                                                                             \
-                &input.desc,                                                                       \
-                in_dev.get(),                                                                      \
-                &output.desc,                                                                      \
-                out_dev.get(),                                                                     \
-                &derivedBnDesc,                                                                    \
-                scale_dev.get(),                                                                   \
-                shift_dev.get(),                                                                   \
-                expAvgFactor,                                                                      \
-                runMean_dev.get(),                                                                 \
-                runVar_dev.get(),                                                                  \
-                epsilon,                                                                           \
-                saveMean_dev.get(),                                                                \
-                saveInvVar_dev.get());                                                             \
+            miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,               \
+                                                                            miopenBNPerActivation, \
+                                                                            &alpha,                \
+                                                                            &beta,                 \
+                                                                            &input.desc,           \
+                                                                            in_dev.get(),          \
+                                                                            &output.desc,          \
+                                                                            out_dev.get(),         \
+                                                                            &derivedBnDesc,        \
+                                                                            scale_dev.get(),       \
+                                                                            shift_dev.get(),       \
+                                                                            expAvgFactor,          \
+                                                                            runMean_dev.get(),     \
+                                                                            runVar_dev.get(),      \
+                                                                            epsilon,               \
+                                                                            saveMean_dev.get(),    \
+                                                                            saveInvVar_dev.get()); \
                                                                                                    \
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
@@ -296,20 +297,21 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
         }                                                                                          \
         case BN3DPerActTestType::ForwardInferenceRecalc:                                           \
         case BN3DPerActTestType::ForwardInferenceUseEstimated: {                                   \
-            miopenStatus_t status = miopenBatchNormalizationForwardInference(&handle,              \
-                                                                             miopenBNPerActivation, \
-                                                                             &alpha,               \
-                                                                             &beta,                \
-                                                                             &input.desc,          \
-                                                                             in_dev.get(),         \
-                                                                             &output.desc,         \
-                                                                             out_dev.get(),        \
-                                                                             &derivedBnDesc,       \
-                                                                             scale_dev.get(),      \
-                                                                             shift_dev.get(),      \
-                                                                             runMean_dev.get(),    \
-                                                                             runVar_dev.get(),     \
-                                                                             epsilon);             \
+            miopenStatus_t status =                                                                \
+                miopenBatchNormalizationForwardInference(&handle,                                  \
+                                                         miopenBNPerActivation,                    \
+                                                         &alpha,                                   \
+                                                         &beta,                                    \
+                                                         &input.desc,                              \
+                                                         in_dev.get(),                             \
+                                                         &output.desc,                             \
+                                                         out_dev.get(),                            \
+                                                         &derivedBnDesc,                           \
+                                                         scale_dev.get(),                          \
+                                                         shift_dev.get(),                          \
+                                                         runMean_dev.get(),                        \
+                                                         runVar_dev.get(),                         \
+                                                         epsilon);                                 \
                                                                                                    \
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
@@ -334,13 +336,15 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             break;                                                                                 \
         }                                                                                          \
         case BN3DPerActTestType::BackwardRecalc: {                                                 \
-            tensor<data_type> dy_input{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
+            tensor<data_type> dy_input{miopenTensorNCDHW,                                          \
+                                       std::vector<std::size_t>{n, c, d, h, w}};                   \
             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
             auto dy_dev = handle.Write(dy_input.data);                                             \
                                                                                                    \
-            tensor<data_type> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
-            tensor<AccDataType> dscale{this->bn_layout, this->derivedBnDesc.GetLengths()};             \
-            tensor<AccDataType> dshift{this->bn_layout, this->derivedBnDesc.GetLengths()};             \
+            tensor<data_type> dx_output{miopenTensorNCDHW,                                         \
+                                        std::vector<std::size_t>{n, c, d, h, w}};                  \
+            tensor<AccDataType> dscale{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
+            tensor<AccDataType> dshift{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
             auto dx_dev     = handle.Write(dx_output.data);                                        \
             auto dscale_dev = handle.Write(dscale.data);                                           \
             auto dshift_dev = handle.Write(dshift.data);                                           \
@@ -381,15 +385,17 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.dBias_ref  = dshift;                                                                \
                                                                                                    \
             typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                                   \
-            dl_fwd.input            = input;                                                       \
-            dl_fwd.output           = output;                                                      \
-            dl_fwd.out_ref          = out_ref;                                                     \
-            dl_fwd.scale            = scale;                                                       \
-            dl_fwd.shift            = shift;                                                       \
-            dl_fwd.saveMean_ref     = tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()}; \
-            dl_fwd.saveVariance_ref = tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()}; \
-            dl_fwd.runMean_ref      = runMean;                                                     \
-            dl_fwd.runVariance_ref  = runVar;                                                      \
+            dl_fwd.input   = input;                                                                \
+            dl_fwd.output  = output;                                                               \
+            dl_fwd.out_ref = out_ref;                                                              \
+            dl_fwd.scale   = scale;                                                                \
+            dl_fwd.shift   = shift;                                                                \
+            dl_fwd.saveMean_ref =                                                                  \
+                tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()};            \
+            dl_fwd.saveVariance_ref =                                                              \
+                tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()};            \
+            dl_fwd.runMean_ref     = runMean;                                                      \
+            dl_fwd.runVariance_ref = runVar;                                                       \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
@@ -409,42 +415,43 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             break;                                                                                 \
         }                                                                                          \
         case BN3DPerActTestType::BackwardUseSaved: {                                               \
-            tensor<AccDataType> saveMean{this->bn_layout, this->derivedBnDesc.GetLengths()};           \
-            tensor<AccDataType> saveInvVar{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
+            tensor<AccDataType> saveMean{this->bn_layout, this->derivedBnDesc.GetLengths()};       \
+            tensor<AccDataType> saveInvVar{this->bn_layout, this->derivedBnDesc.GetLengths()};     \
             auto saveMean_dev   = handle.Write(saveMean.data);                                     \
             auto saveInvVar_dev = handle.Write(saveInvVar.data);                                   \
                                                                                                    \
-            miopenStatus_t status = miopenBatchNormalizationForwardTraining(                       \
-                &handle,                                                                           \
-                miopenBNPerActivation,                                                             \
-                &alpha,                                                                            \
-                &beta,                                                                             \
-                &input.desc,                                                                       \
-                in_dev.get(),                                                                      \
-                &output.desc,                                                                      \
-                out_dev.get(),                                                                     \
-                &derivedBnDesc,                                                                    \
-                scale_dev.get(),                                                                   \
-                shift_dev.get(),                                                                   \
-                expAvgFactor,                                                                      \
-                runMean_dev.get(),                                                                 \
-                runVar_dev.get(),                                                                  \
-                epsilon,                                                                           \
-                saveMean_dev.get(),                                                                \
-                saveInvVar_dev.get());                                                             \
+            miopenStatus_t status = miopenBatchNormalizationForwardTraining(&handle,               \
+                                                                            miopenBNPerActivation, \
+                                                                            &alpha,                \
+                                                                            &beta,                 \
+                                                                            &input.desc,           \
+                                                                            in_dev.get(),          \
+                                                                            &output.desc,          \
+                                                                            out_dev.get(),         \
+                                                                            &derivedBnDesc,        \
+                                                                            scale_dev.get(),       \
+                                                                            shift_dev.get(),       \
+                                                                            expAvgFactor,          \
+                                                                            runMean_dev.get(),     \
+                                                                            runVar_dev.get(),      \
+                                                                            epsilon,               \
+                                                                            saveMean_dev.get(),    \
+                                                                            saveInvVar_dev.get()); \
                                                                                                    \
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
             saveMean.data   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());        \
             saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());    \
                                                                                                    \
-            tensor<data_type> dy_input{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
+            tensor<data_type> dy_input{miopenTensorNCDHW,                                          \
+                                       std::vector<std::size_t>{n, c, d, h, w}};                   \
             dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
             auto dy_dev = handle.Write(dy_input.data);                                             \
                                                                                                    \
-            tensor<data_type> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}}; \
-            tensor<AccDataType> dscale{this->bn_layout, this->derivedBnDesc.GetLengths()};             \
-            tensor<AccDataType> dshift{this->bn_layout, this->derivedBnDesc.GetLengths()};             \
+            tensor<data_type> dx_output{miopenTensorNCDHW,                                         \
+                                        std::vector<std::size_t>{n, c, d, h, w}};                  \
+            tensor<AccDataType> dscale{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
+            tensor<AccDataType> dshift{this->bn_layout, this->derivedBnDesc.GetLengths()};         \
             auto dx_dev     = handle.Write(dx_output.data);                                        \
             auto dscale_dev = handle.Write(dscale.data);                                           \
             auto dshift_dev = handle.Write(dshift.data);                                           \
@@ -498,12 +505,14 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
         }                                                                                          \
         }                                                                                          \
         auto test_end = std::chrono::high_resolution_clock::now();                                 \
-        auto total_time_ms = std::chrono::duration<double, std::milli>(test_end - test_start).count(); \
+        auto total_time_ms =                                                                       \
+            std::chrono::duration<double, std::milli>(test_end - test_start).count();              \
         global_timing.add(cpu_time_ms, total_time_ms);                                             \
-        if (total_time_ms > 0) {                                                                   \
+        if(total_time_ms > 0)                                                                      \
+        {                                                                                          \
             std::cerr << "[ TIMING ] Test case: " << test_case << std::endl;                       \
             std::cerr << "[ TIMING ] CPU reference time: " << std::fixed << std::setprecision(2)   \
-                      << cpu_time_ms << " ms (" << (cpu_time_ms / total_time_ms) * 100 << "%)"       \
+                      << cpu_time_ms << " ms (" << (cpu_time_ms / total_time_ms) * 100 << "%)"     \
                       << " of total " << total_time_ms << " ms" << std::endl;                      \
             std::cerr.flush();                                                                     \
         }                                                                                          \
