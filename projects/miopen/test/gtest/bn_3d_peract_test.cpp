@@ -206,9 +206,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         // Helper to ensure all descriptors have valid layouts before CPU computation
         // This is critical because BuildReshaped4DTensorDescriptor will exit if layout is 0
-        void EnsureLayouts(miopenTensorLayout_t default_layout, const char* tensor_name = nullptr)
+        void EnsureLayouts(miopenTensorLayout_t default_layout, const char* /* tensor_name */ = nullptr)
         {
-            auto FixLayout = [default_layout, tensor_name](auto& tensor, const char* name) {
+            auto FixLayout = [default_layout](auto& tensor, const char* name) {
                 auto dims = tensor.desc.GetLengths();
                 if(dims.size() == 0)
                     return;
