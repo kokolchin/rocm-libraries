@@ -57,8 +57,17 @@ std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
     // Use default batch size factor (0) to match ctest behavior
     for(const auto& shape : get_3d_bn_peract_inputs(MIOPEN_TEST_DEFAULT_BATCH_SIZE_FACTOR))
     {
+        const auto n = shape[0];
         for(const auto& type : types)
         {
+            // Filter out test cases that would be skipped at runtime:
+            // - n == 1 is not supported for training/backward (only inference works)
+            if(n == 1 && (type == BN3DPerActTestType::ForwardTraining ||
+                          type == BN3DPerActTestType::BackwardRecalc ||
+                          type == BN3DPerActTestType::BackwardUseSaved))
+            {
+                continue; // Skip this test case instead of generating it
+            }
             test_cases.push_back({shape[0], shape[1], shape[2], shape[3], shape[4], type});
         }
     }
