@@ -263,10 +263,27 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                    (num_dims == 4 && (layout == miopenTensorNCDHW || layout == miopenTensorNDHWC)) ||
                    (num_dims == 5 && (layout == miopenTensorNCHW || layout == miopenTensorNHWC || layout == miopenTensorCHWN)))
                 {
+                    // Validate correct_layout is valid before using it
+                    if(correct_layout != miopenTensorNCHW && correct_layout != miopenTensorNHWC &&
+                       correct_layout != miopenTensorNCDHW && correct_layout != miopenTensorNDHWC)
+                    {
+                        std::cerr << "[ERROR] EnsureLayouts: Invalid layout value " << correct_layout 
+                                  << " for tensor '" << (name ? name : "unknown") << "'" << std::endl;
+                        // Fallback to safe defaults
+                        correct_layout = (num_dims == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
+                    }
                     std::cerr << "[DEBUG] EnsureLayouts: Fixing layout for '" << (name ? name : "unknown")
                               << "' from " << layout << " to " << correct_layout << std::endl;
                     tensor.desc = miopen::TensorDescriptor(
                         tensor.desc.GetType(), correct_layout, dims);
+                    
+                    // Verify the layout was set correctly
+                    auto new_layout = tensor.desc.GetLayout_t();
+                    if(new_layout == 0)
+                    {
+                        std::cerr << "[ERROR] EnsureLayouts: Failed to set layout for '" << (name ? name : "unknown")
+                                  << "' - still has layout 0 after TensorDescriptor creation!" << std::endl;
+                    }
                 }
             };
             FixLayout(input, "input");
