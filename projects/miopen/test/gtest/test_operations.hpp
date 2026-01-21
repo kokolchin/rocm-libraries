@@ -25,6 +25,12 @@
  *******************************************************************************/
 #pragma once
 
+#include <miopen/fusion_plan.hpp>
+#include <miopen/fusion/fusion_op_args.hpp>
+#include <miopen/fusion_ops.hpp>
+#include "../verify.hpp"
+#include "../fusionHost.hpp"
+
 namespace test {
 template <typename DLModule>
 void ComputeCPUBNInference(DLModule& dl_module)
@@ -33,7 +39,7 @@ void ComputeCPUBNInference(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -81,7 +87,7 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -135,7 +141,7 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
