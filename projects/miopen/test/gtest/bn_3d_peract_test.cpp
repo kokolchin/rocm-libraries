@@ -139,6 +139,12 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         input.generate(uniform_signed_initializer<T>(2e-3, 1000));
 
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
+        // Ensure derivedBnDesc has a valid layout (DeriveBNTensorDescriptor doesn't preserve layout)
+        if(derivedBnDesc.GetLayout_t() == 0)
+        {
+            derivedBnDesc = miopen::TensorDescriptor(
+                derivedBnDesc.GetType(), bn_layout, derivedBnDesc.GetLengths());
+        }
         scale   = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
         shift   = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
         runMean = tensor<AccDataType>{bn_layout, derivedBnDesc.GetLengths()};
