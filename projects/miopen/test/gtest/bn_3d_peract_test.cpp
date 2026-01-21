@@ -449,10 +449,6 @@ using GPU_Bn3dPerAct_FP64 = GPU_Bn3dPerAct<double>;
             dl.estMean            = runMean;                                                       \
             dl.estVariance        = runVar;                                                        \
             dl.useInverseVariance = false;                                                         \
-            // For Recalc mode in CPU reference, we need to signal it.                     \
-            // But test_operations.hpp doesn't seem to have a flag for it in DLModule.     \
-            // Wait, batchNormPerActivHostInference ALWAYS uses estMean/estVariance.       \
-            // So for Recalc, we should probably calculate them first.                      \
             EnsureValidLayout(dl.input, miopenTensorNCDHW);                                        \
             EnsureValidLayout(dl.output, miopenTensorNCDHW);                                       \
             EnsureValidLayout(dl.out_ref, this->bn_layout);                                       \
@@ -465,7 +461,6 @@ using GPU_Bn3dPerAct_FP64 = GPU_Bn3dPerAct<double>;
                 try {                                                                              \
                     if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)          \
                     {                                                                              \
-                        /* For Recalc, we use FwdTrain reference to get the mean/var */            \
                         typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                       \
                         dl_fwd.input = input;                                                      \
                         dl_fwd.out_ref = out_ref;                                                  \
