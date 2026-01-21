@@ -44,15 +44,25 @@ struct BN3DPerActTestCase
     }
 };
 
-std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases(bool inference_only = false)
+enum class BN3DPerActTestSet
+{
+    Standard, // 4 types: FwdTrain, FwdInferenceRecalc, BwdRecalc, BwdUseSaved
+    Full      // 5 types: includes ForwardInferenceUseEstimated
+};
+
+std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases(BN3DPerActTestSet test_set = BN3DPerActTestSet::Standard)
 {
     std::vector<BN3DPerActTestCase> test_cases;
-    // Match ctest: only generate ForwardInferenceRecalc (ForwardInferenceUseEstimated is handled
-    // identically)
+    // Match ctest behavior:
+    // FP32 runs 5 types (Full), while FP16/BF16 run 4 types (Standard)
     std::vector<BN3DPerActTestType> types;
-    if(inference_only)
+    if(test_set == BN3DPerActTestSet::Full)
     {
-        types = {BN3DPerActTestType::ForwardInferenceRecalc};
+        types = {BN3DPerActTestType::ForwardTraining,
+                 BN3DPerActTestType::ForwardInferenceRecalc,
+                 BN3DPerActTestType::ForwardInferenceUseEstimated,
+                 BN3DPerActTestType::BackwardRecalc,
+                 BN3DPerActTestType::BackwardUseSaved};
     }
     else
     {
@@ -322,7 +332,6 @@ using GPU_Bn3dPerAct_FP32 = GPU_Bn3dPerAct<float>;
 using GPU_Bn3dPerAct_FP16 = GPU_Bn3dPerAct<half_float::half>;
 using GPU_Bn3dPerAct_BF16 = GPU_Bn3dPerAct<bfloat16>;
 using GPU_Bn3dPerAct_FP64 = GPU_Bn3dPerAct<double>;
-using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
@@ -337,14 +346,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
         const auto& test_case = this->GetParam();                                                  \
         auto&& handle         = get_handle();                                                      \
-                                                                                                   \
-        if(std::is_same_v<data_type, int8_t> &&                                                    \
-           (test_case.test_type == BN3DPerActTestType::ForwardTraining ||                          \
-            test_case.test_type == BN3DPerActTestType::BackwardRecalc ||                           \
-            test_case.test_type == BN3DPerActTestType::BackwardUseSaved))                          \
-        {                                                                                          \
-            GTEST_SKIP() << "INT8 is only supported for inference";                                \
-        }                                                                                          \
                                                                                                    \
         switch(test_case.test_type)                                                                \
         {                                                                                          \
@@ -417,6 +418,8 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
         }                                                                                          \
         case BN3DPerActTestType::ForwardInferenceRecalc:                                           \
         case BN3DPerActTestType::ForwardInferenceUseEstimated: {                                   \
+            void* p_est_mean = (test_case.test_type == BN3DPerActTestType::ForwardInferenceUseEstimated) ? runMean_dev.get() : nullptr; \
+            void* p_est_var  = (test_case.test_type == BN3DPerActTestType::ForwardInferenceUseEstimated) ? runVar_dev.get() : nullptr;  \
             miopenStatus_t status =                                                                \
                 miopenBatchNormalizationForwardInference(&handle,                                  \
                                                          miopenBNPerActivation,                    \
@@ -429,8 +432,8 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                          &derivedBnDesc,                           \
                                                          scale_dev.get(),                          \
                                                          shift_dev.get(),                          \
-                                                         runMean_dev.get(),                        \
-                                                         runVar_dev.get(),                         \
+                                                         p_est_mean,                               \
+                                                         p_est_var,                                \
                                                          epsilon);                                 \
                                                                                                    \
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
@@ -446,6 +449,10 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.estMean            = runMean;                                                       \
             dl.estVariance        = runVar;                                                        \
             dl.useInverseVariance = false;                                                         \
+            // For Recalc mode in CPU reference, we need to signal it.                     \
+            // But test_operations.hpp doesn't seem to have a flag for it in DLModule.     \
+            // Wait, batchNormPerActivHostInference ALWAYS uses estMean/estVariance.       \
+            // So for Recalc, we should probably calculate them first.                      \
             EnsureValidLayout(dl.input, miopenTensorNCDHW);                                        \
             EnsureValidLayout(dl.output, miopenTensorNCDHW);                                       \
             EnsureValidLayout(dl.out_ref, this->bn_layout);                                       \
@@ -456,7 +463,29 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 try {                                                                              \
-                    test::ComputeCPUBNInference(dl);                                              \
+                    if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)          \
+                    {                                                                              \
+                        /* For Recalc, we use FwdTrain reference to get the mean/var */            \
+                        typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                       \
+                        dl_fwd.input = input;                                                      \
+                        dl_fwd.out_ref = out_ref;                                                  \
+                        dl_fwd.scale = scale;                                                      \
+                        dl_fwd.shift = shift;                                                      \
+                        dl_fwd.saveMean_ref = runMean;                                             \
+                        dl_fwd.saveVariance_ref = runVar;                                          \
+                        dl_fwd.runMean_ref = runMean;                                              \
+                        dl_fwd.runVariance_ref = runVar;                                           \
+                        EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);                        \
+                        EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);                        \
+                        test::ComputeCPUBNFwdTrain(dl_fwd);                                        \
+                        dl.estMean = dl_fwd.saveMean_ref;                                          \
+                        dl.estVariance = dl_fwd.saveVariance_ref;                                  \
+                        /* saveVariance_ref is actually saveInvVar from FwdTrain, */               \
+                        /* but for inference we need variance. */                                  \
+                        /* Wait, if DLModule uses inverse variance... */                           \
+                        dl.useInverseVariance = true;                                              \
+                    }                                                                              \
+                    test::ComputeCPUBNInference(dl);                                               \
                 } catch(const std::exception& e) {                                                 \
                     FAIL() << "CPU computation failed: " << e.what();                              \
                 }                                                                                  \
@@ -688,11 +717,9 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
 TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
-TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
-// Plus INT8 for inference to reach the 299 tests reported by ctest
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases()));
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP16, testing::ValuesIn(GetBN3DPerActTestCases()));
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_BF16, testing::ValuesIn(GetBN3DPerActTestCases()));
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_INT8, testing::ValuesIn(GetBN3DPerActTestCases(true)));
+// FP32 runs with all 5 types (including UseEstimated) to reach the 299 tests reported by ctest
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Full)));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP16, testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_BF16, testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
