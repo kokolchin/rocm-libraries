@@ -43,9 +43,10 @@ void ComputeCPUBNInference(DLModule& dl_module)
         {
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            // Ensure layout is set correctly for 5D tensors before reshaping
+            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
+            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
             {
-                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
                 desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
@@ -98,9 +99,10 @@ void ComputeCPUBNBwd(DLModule& dl_module)
         {
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            // Ensure layout is set correctly for 5D tensors before reshaping
+            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
+            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
             {
-                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
                 desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
@@ -159,9 +161,10 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
         {
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            // Ensure layout is set correctly for 5D tensors before reshaping
+            // If layout is uninitialized (0) or invalid, set it to NCDHW (default for 3D)
+            if((layout == 0 || (layout != miopenTensorNCDHW && layout != miopenTensorNDHWC)) && dims.size() == 5)
             {
-                // If layout is uninitialized and we have 5 dimensions, set it to NCDHW (default for 3D)
                 desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
