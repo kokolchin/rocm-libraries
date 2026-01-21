@@ -41,6 +41,12 @@ void ComputeCPUBNInference(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
+            auto layout = desc.GetLayout_t();
+            if(layout == 0)
+            {
+                // If layout is uninitialized, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -89,6 +95,12 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
+            auto layout = desc.GetLayout_t();
+            if(layout == 0)
+            {
+                // If layout is uninitialized, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -143,6 +155,12 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
+            auto layout = desc.GetLayout_t();
+            if(layout == 0)
+            {
+                // If layout is uninitialized, set it to NCDHW (default for 3D)
+                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, desc.GetLengths());
+            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
