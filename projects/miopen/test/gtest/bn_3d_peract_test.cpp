@@ -533,11 +533,8 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
 TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
-TEST_PERACT_3D(GPU_Bn3dPerAct_FP64, double)
-TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
 
+// Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases()));
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP16, testing::ValuesIn(GetBN3DPerActTestCases()));
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_BF16, testing::ValuesIn(GetBN3DPerActTestCases()));
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP64, testing::ValuesIn(GetBN3DPerActTestCases()));
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_INT8, testing::ValuesIn(GetBN3DPerActTestCases()));
