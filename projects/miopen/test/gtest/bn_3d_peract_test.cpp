@@ -205,9 +205,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         double activ_gamma                = 1.0;
 
         // Helper to ensure all descriptors have valid layouts before CPU computation
-        void EnsureLayouts(miopenTensorLayout_t /* default_layout */)
+        // This is critical because BuildReshaped4DTensorDescriptor will exit if layout is 0
+        void EnsureLayouts(miopenTensorLayout_t default_layout)
         {
-            auto FixLayout = [](auto& tensor) {
+            auto FixLayout = [default_layout](auto& tensor) {
                 auto dims = tensor.desc.GetLengths();
                 if(dims.size() == 0)
                     return;
@@ -222,16 +223,20 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                     // For 4D, use NCHW (default) or NHWC if that was the original intent
                     if(layout == miopenTensorNHWC || layout == miopenTensorNDHWC)
                         correct_layout = miopenTensorNHWC;
-                    else
+                    else if(layout == miopenTensorNCHW || layout == miopenTensorNCDHW)
                         correct_layout = miopenTensorNCHW;
+                    else
+                        correct_layout = miopenTensorNCHW; // Default for 4D
                 }
                 else if(num_dims == 5)
                 {
                     // For 5D, use NCDHW (default) or NDHWC if that was the original intent
-                    if(layout == miopenTensorNHWC || layout == miopenTensorNDHWC)
+                    if(layout == miopenTensorNDHWC || layout == miopenTensorNHWC)
                         correct_layout = miopenTensorNDHWC;
-                    else
+                    else if(layout == miopenTensorNCDHW || layout == miopenTensorNCHW)
                         correct_layout = miopenTensorNCDHW;
+                    else
+                        correct_layout = default_layout; // Use provided default (should be NCDHW for 5D)
                 }
                 else
                 {
@@ -239,7 +244,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                     correct_layout = (num_dims == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
                 }
                 
-                // Fix layout if it's uninitialized (0) or unsupported for this number of dimensions
+                // ALWAYS fix layout if it's uninitialized (0) - this is critical!
+                // Also fix if layout is unsupported for this number of dimensions
                 if(layout == 0 || 
                    (num_dims == 4 && (layout == miopenTensorNCDHW || layout == miopenTensorNDHWC)) ||
                    (num_dims == 5 && (layout == miopenTensorNCHW || layout == miopenTensorNHWC || layout == miopenTensorCHWN)))
@@ -367,7 +373,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
-                test::ComputeCPUBNFwdTrain(dl);                                                    \
+                try {                                                                              \
+                    test::ComputeCPUBNFwdTrain(dl);                                                \
+                } catch(const std::exception& e) {                                                 \
+                    FAIL() << "CPU computation failed: " << e.what();                              \
+                }                                                                                  \
                 stop_cpu_timer(start);                                                             \
             }                                                                                      \
             test::CompareTensor(output, dl.out_ref, tolerance);                                    \
@@ -412,7 +422,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
-                test::ComputeCPUBNInference(dl);                                                   \
+                try {                                                                              \
+                    test::ComputeCPUBNInference(dl);                                              \
+                } catch(const std::exception& e) {                                                 \
+                    FAIL() << "CPU computation failed: " << e.what();                              \
+                }                                                                                  \
                 stop_cpu_timer(start);                                                             \
             }                                                                                      \
             test::CompareTensor(output, dl.out_ref, tolerance);                                    \
@@ -482,7 +496,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl_fwd.EnsureLayouts(this->bn_layout);                                                 \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
-                test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
+                try {                                                                              \
+                    test::ComputeCPUBNFwdTrain(dl_fwd);                                            \
+                } catch(const std::exception& e) {                                                 \
+                    FAIL() << "CPU forward computation failed: " << e.what();                      \
+                }                                                                                  \
                 stop_cpu_timer(start);                                                             \
             }                                                                                      \
             dl.savedMean   = dl_fwd.saveMean_ref;                                                  \
@@ -491,7 +509,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
-                test::ComputeCPUBNBwd(dl);                                                         \
+                try {                                                                              \
+                    test::ComputeCPUBNBwd(dl);                                                     \
+                } catch(const std::exception& e) {                                                 \
+                    FAIL() << "CPU backward computation failed: " << e.what();                     \
+                }                                                                                  \
                 stop_cpu_timer(start);                                                             \
             }                                                                                      \
             test::CompareTensor(dx_output, dl.out_ref, tolerance);                                 \
@@ -581,7 +603,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
-                test::ComputeCPUBNBwd(dl);                                                         \
+                try {                                                                              \
+                    test::ComputeCPUBNBwd(dl);                                                     \
+                } catch(const std::exception& e) {                                                 \
+                    FAIL() << "CPU backward computation failed: " << e.what();                     \
+                }                                                                                  \
                 stop_cpu_timer(start);                                                             \
             }                                                                                      \
             test::CompareTensor(dx_output, dl.out_ref, tolerance);                                 \

@@ -41,29 +41,6 @@ void ComputeCPUBNInference(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            // Defensive check: ensure layout is set before reshaping
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            if(layout == 0)
-            {
-                // Default to NCDHW for 5D tensors if layout is uninitialized
-                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
-                if(dims.size() == 5)
-                {
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-                }
-                else if(dims.size() == 4)
-                {
-                    // Already reshaped to 4D, use NCHW
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
-                }
-                else
-                {
-                    // For other dimensions, use default layout based on dimension count
-                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
-                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
-                }
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -112,29 +89,6 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            // Defensive check: ensure layout is set before reshaping
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            if(layout == 0)
-            {
-                // Default to NCDHW for 5D tensors if layout is uninitialized
-                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
-                if(dims.size() == 5)
-                {
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-                }
-                else if(dims.size() == 4)
-                {
-                    // Already reshaped to 4D, use NCHW
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
-                }
-                else
-                {
-                    // For other dimensions, use default layout based on dimension count
-                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
-                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
-                }
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
@@ -189,29 +143,6 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
     auto ReshapeIfNeeded = [size](auto& desc) {
         if(size == 5)
         {
-            // Defensive check: ensure layout is set before reshaping
-            auto layout = desc.GetLayout_t();
-            auto dims = desc.GetLengths();
-            if(layout == 0)
-            {
-                // Default to NCDHW for 5D tensors if layout is uninitialized
-                // If dimensions are 5, use NCDHW; if 4, use NCHW (might have been reshaped already)
-                if(dims.size() == 5)
-                {
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
-                }
-                else if(dims.size() == 4)
-                {
-                    // Already reshaped to 4D, use NCHW
-                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCHW, dims);
-                }
-                else
-                {
-                    // For other dimensions, use default layout based on dimension count
-                    miopenTensorLayout_t default_layout = (dims.size() == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
-                    desc = miopen::TensorDescriptor(desc.GetType(), default_layout, dims);
-                }
-            }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
     };
