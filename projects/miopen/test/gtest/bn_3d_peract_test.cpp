@@ -205,144 +205,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         double activ_alpha                = 1.0;
         double activ_beta                 = 0.0;
         double activ_gamma                = 1.0;
-
-        // Helper to ensure all descriptors have valid layouts before CPU computation
-        // This is critical because BuildReshaped4DTensorDescriptor will exit if layout is 0
-        void EnsureLayouts(miopenTensorLayout_t default_layout, const char* /* tensor_name */ = nullptr)
-        {
-            auto FixLayout = [default_layout](auto& tensor, const char* name) {
-                auto dims = tensor.desc.GetLengths();
-                if(dims.size() == 0)
-                    return;
-                
-                // Use GetLayoutEnum() to avoid exception if layout is not set
-                auto layout_opt = tensor.desc.GetLayoutEnum();
-                auto layout = layout_opt ? layout_opt.value() : 0;
-                auto num_dims = dims.size();
-                
-                // Debug: print if layout is 0 or not set
-                if(layout == 0 || !layout_opt)
-                {
-                    std::cerr << "[DEBUG] EnsureLayouts: Found layout 0 for tensor '" << (name ? name : "unknown")
-                              << "' with " << num_dims << " dimensions: [";
-                    for(size_t i = 0; i < dims.size(); ++i)
-                    {
-                        if(i > 0) std::cerr << ", ";
-                        std::cerr << dims[i];
-                    }
-                    std::cerr << "]" << std::endl;
-                }
-                
-                // Determine the correct layout based on number of dimensions
-                miopenTensorLayout_t correct_layout;
-                if(num_dims == 4)
-                {
-                    // For 4D, use NCHW (default) or NHWC if that was the original intent
-                    if(layout == miopenTensorNHWC || layout == miopenTensorNDHWC)
-                        correct_layout = miopenTensorNHWC;
-                    else if(layout == miopenTensorNCHW || layout == miopenTensorNCDHW)
-                        correct_layout = miopenTensorNCHW;
-                    else
-                        correct_layout = miopenTensorNCHW; // Default for 4D
-                }
-                else if(num_dims == 5)
-                {
-                    // For 5D, use NCDHW (default) or NDHWC if that was the original intent
-                    if(layout == miopenTensorNDHWC || layout == miopenTensorNHWC)
-                        correct_layout = miopenTensorNDHWC;
-                    else if(layout == miopenTensorNCDHW || layout == miopenTensorNCHW)
-                        correct_layout = miopenTensorNCDHW;
-                    else
-                        correct_layout = default_layout; // Use provided default (should be NCDHW for 5D)
-                }
-                else
-                {
-                    // For other dimensions, use default based on num_dims
-                    correct_layout = (num_dims == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
-                }
-                
-                // ALWAYS fix layout if it's uninitialized (0) - this is critical!
-                // Also fix if layout is unsupported for this number of dimensions
-                if(layout == 0 || 
-                   (num_dims == 4 && (layout == miopenTensorNCDHW || layout == miopenTensorNDHWC)) ||
-                   (num_dims == 5 && (layout == miopenTensorNCHW || layout == miopenTensorNHWC || layout == miopenTensorCHWN)))
-                {
-                    // Validate correct_layout is valid before using it
-                    if(correct_layout != miopenTensorNCHW && correct_layout != miopenTensorNHWC &&
-                       correct_layout != miopenTensorNCDHW && correct_layout != miopenTensorNDHWC)
-                    {
-                        std::cerr << "[ERROR] EnsureLayouts: Invalid layout value " << correct_layout 
-                                  << " for tensor '" << (name ? name : "unknown") << "'" << std::endl;
-                        // Fallback to safe defaults
-                        correct_layout = (num_dims == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
-                    }
-                    std::cerr << "[DEBUG] EnsureLayouts: Fixing layout for '" << (name ? name : "unknown")
-                              << "' from " << layout << " to " << correct_layout << std::endl;
-                    tensor.desc = miopen::TensorDescriptor(
-                        tensor.desc.GetType(), correct_layout, dims);
-                    
-                    // Verify the layout was set correctly (use GetLayoutEnum to avoid exception)
-                    auto new_layout_opt = tensor.desc.GetLayoutEnum();
-                    if(!new_layout_opt || new_layout_opt.value() == 0)
-                    {
-                        std::cerr << "[ERROR] EnsureLayouts: Failed to set layout for '" << (name ? name : "unknown")
-                                  << "' - still has invalid layout after TensorDescriptor creation!" << std::endl;
-                    }
-                }
-            };
-            FixLayout(input, "input");
-            FixLayout(output, "output");
-            FixLayout(out_ref, "out_ref");
-            FixLayout(scale, "scale");
-            FixLayout(shift, "shift");
-            FixLayout(estMean, "estMean");
-            FixLayout(estVariance, "estVariance");
-            FixLayout(dy, "dy");
-            FixLayout(bnScale, "bnScale");
-            FixLayout(dScale_ref, "dScale_ref");
-            FixLayout(dBias_ref, "dBias_ref");
-            FixLayout(savedMean, "savedMean");
-            FixLayout(savedInvVar, "savedInvVar");
-            FixLayout(saveMean_ref, "saveMean_ref");
-            FixLayout(saveVariance_ref, "saveVariance_ref");
-            FixLayout(runMean_ref, "runMean_ref");
-            FixLayout(runVariance_ref, "runVariance_ref");
-            
-            // Final check: verify all layouts are valid (use GetLayoutEnum to avoid exception)
-            std::cerr << "[DEBUG] EnsureLayouts: Final verification" << std::endl;
-            auto CheckLayout = [](auto& tensor, const char* name) {
-                auto layout_opt = tensor.desc.GetLayoutEnum();
-                auto dims = tensor.desc.GetLengths();
-                if(dims.size() > 0 && (!layout_opt || layout_opt.value() == 0))
-                {
-                    std::cerr << "[ERROR] EnsureLayouts: Tensor '" << name << "' still has invalid layout after fix!"
-                              << " Dimensions: [";
-                    for(size_t i = 0; i < dims.size(); ++i)
-                    {
-                        if(i > 0) std::cerr << ", ";
-                        std::cerr << dims[i];
-                    }
-                    std::cerr << "]" << std::endl;
-                }
-            };
-            CheckLayout(input, "input");
-            CheckLayout(output, "output");
-            CheckLayout(out_ref, "out_ref");
-            CheckLayout(scale, "scale");
-            CheckLayout(shift, "shift");
-            CheckLayout(estMean, "estMean");
-            CheckLayout(estVariance, "estVariance");
-            CheckLayout(dy, "dy");
-            CheckLayout(bnScale, "bnScale");
-            CheckLayout(dScale_ref, "dScale_ref");
-            CheckLayout(dBias_ref, "dBias_ref");
-            CheckLayout(savedMean, "savedMean");
-            CheckLayout(savedInvVar, "savedInvVar");
-            CheckLayout(saveMean_ref, "saveMean_ref");
-            CheckLayout(saveVariance_ref, "saveVariance_ref");
-            CheckLayout(runMean_ref, "runMean_ref");
-            CheckLayout(runVariance_ref, "runVariance_ref");
-        }
     };
 
     std::size_t n, c, d, h, w;
@@ -440,8 +302,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.saveVariance_ref = saveInvVar;                                                      \
             dl.runMean_ref      = runMean;                                                         \
             dl.runVariance_ref  = runVar;                                                          \
-            dl.EnsureLayouts(this->bn_layout, "ForwardTraining");                                 \
-                                                                                                   \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 try {                                                                              \
@@ -489,8 +349,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.estMean            = runMean;                                                       \
             dl.estVariance        = runVar;                                                        \
             dl.useInverseVariance = false;                                                         \
-            dl.EnsureLayouts(this->bn_layout, "ForwardInference");                                \
-                                                                                                   \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 try {                                                                              \
@@ -564,7 +422,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                 tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()};            \
             dl_fwd.runMean_ref     = runMean;                                                      \
             dl_fwd.runVariance_ref = runVar;                                                       \
-            dl_fwd.EnsureLayouts(this->bn_layout, "BackwardRecalc_fwd");                          \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 try {                                                                              \
@@ -576,7 +433,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             }                                                                                      \
             dl.savedMean   = dl_fwd.saveMean_ref;                                                  \
             dl.savedInvVar = dl_fwd.saveVariance_ref;                                              \
-            dl.EnsureLayouts(this->bn_layout, "BackwardRecalc_bwd");                              \
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
@@ -670,8 +526,6 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.dBias_ref   = dshift;                                                               \
             dl.savedMean   = saveMean;                                                             \
             dl.savedInvVar = saveInvVar;                                                           \
-            dl.EnsureLayouts(this->bn_layout, "BackwardUseSaved");                                \
-                                                                                                   \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 try {                                                                              \
