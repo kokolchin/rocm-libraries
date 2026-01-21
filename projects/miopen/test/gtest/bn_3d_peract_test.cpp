@@ -54,8 +54,8 @@ std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
                                              BN3DPerActTestType::BackwardRecalc,
                                              BN3DPerActTestType::BackwardUseSaved};
 
-    // Use default batch size factor (0) to match ctest behavior
-    for(const auto& shape : get_3d_bn_peract_inputs(MIOPEN_TEST_DEFAULT_BATCH_SIZE_FACTOR))
+    // Use batch size factor 4 to match ctest behavior (like other BN 3D tests)
+    for(const auto& shape : get_3d_bn_peract_inputs(4))
     {
         const auto n = shape[0];
         for(const auto& type : types)
