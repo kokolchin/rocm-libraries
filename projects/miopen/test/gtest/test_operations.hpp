@@ -39,7 +39,7 @@ void ComputeCPUBNInference(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -87,7 +87,7 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -141,7 +141,7 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
     // In case of NxCxDxHxW
     auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5)
+        if(size == 5 && desc.GetNumDims() == 5)
         {
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
