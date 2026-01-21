@@ -203,6 +203,36 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         double activ_alpha                = 1.0;
         double activ_beta                 = 0.0;
         double activ_gamma                = 1.0;
+
+        // Helper to ensure all descriptors have valid layouts before CPU computation
+        void EnsureLayouts(miopenTensorLayout_t default_layout)
+        {
+            auto FixLayout = [default_layout](auto& tensor) {
+                auto dims = tensor.desc.GetLengths();
+                if(dims.size() > 0 && tensor.desc.GetLayout_t() == 0)
+                {
+                    tensor.desc = miopen::TensorDescriptor(
+                        tensor.desc.GetType(), default_layout, dims);
+                }
+            };
+            FixLayout(input);
+            FixLayout(output);
+            FixLayout(out_ref);
+            FixLayout(scale);
+            FixLayout(shift);
+            FixLayout(estMean);
+            FixLayout(estVariance);
+            FixLayout(dy);
+            FixLayout(bnScale);
+            FixLayout(dScale_ref);
+            FixLayout(dBias_ref);
+            FixLayout(savedMean);
+            FixLayout(savedInvVar);
+            FixLayout(saveMean_ref);
+            FixLayout(saveVariance_ref);
+            FixLayout(runMean_ref);
+            FixLayout(runVariance_ref);
+        }
     };
 
     std::size_t n, c, d, h, w;
@@ -300,6 +330,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.saveVariance_ref = saveInvVar;                                                      \
             dl.runMean_ref      = runMean;                                                         \
             dl.runVariance_ref  = runVar;                                                          \
+            dl.EnsureLayouts(this->bn_layout);                                                     \
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
@@ -344,6 +375,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.estMean            = runMean;                                                       \
             dl.estVariance        = runVar;                                                        \
             dl.useInverseVariance = false;                                                         \
+            dl.EnsureLayouts(this->bn_layout);                                                     \
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
@@ -414,6 +446,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                 tensor<AccDataType>{this->bn_layout, this->derivedBnDesc.GetLengths()};            \
             dl_fwd.runMean_ref     = runMean;                                                      \
             dl_fwd.runVariance_ref = runVar;                                                       \
+            dl_fwd.EnsureLayouts(this->bn_layout);                                                 \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
                 test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
@@ -421,6 +454,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             }                                                                                      \
             dl.savedMean   = dl_fwd.saveMean_ref;                                                  \
             dl.savedInvVar = dl_fwd.saveVariance_ref;                                              \
+            dl.EnsureLayouts(this->bn_layout);                                                     \
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
@@ -510,6 +544,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
             dl.dBias_ref   = dshift;                                                               \
             dl.savedMean   = saveMean;                                                             \
             dl.savedInvVar = saveInvVar;                                                           \
+            dl.EnsureLayouts(this->bn_layout);                                                     \
                                                                                                    \
             {                                                                                      \
                 auto start = start_cpu_timer();                                                    \
