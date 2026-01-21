@@ -147,16 +147,49 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         // derivedBnDesc is 4D (CxDxHxW), so use 4D layout, not 5D bn_layout
         auto derived_layout_opt = derivedBnDesc.GetLayoutEnum();
         auto derived_num_dims = derivedBnDesc.GetLengths().size();
+        // Always set derived_layout to a valid default based on dimensions
         derived_layout = (derived_num_dims == 5) ? miopenTensorNCDHW : miopenTensorNCHW;
+        // Ensure derived_layout is never 0
+        if(derived_layout == 0)
+        {
+            derived_layout = miopenTensorNCHW;
+        }
+        // Check if we need to fix the layout in derivedBnDesc
+        bool need_fix = false;
         if(!derived_layout_opt || derived_layout_opt.value() == 0)
         {
-            derivedBnDesc = miopen::TensorDescriptor(
-                derivedBnDesc.GetType(), derived_layout, derivedBnDesc.GetLengths());
+            need_fix = true;
         }
-        else if(derived_layout_opt.value() == 0 || 
-                (derived_num_dims == 4 && derived_layout_opt.value() != miopenTensorNCHW && 
-                 derived_layout_opt.value() != miopenTensorNHWC && 
-                 derived_layout_opt.value() != miopenTensorCHWN))
+        else if(derived_num_dims == 4)
+        {
+            // For 4D, only accept valid 4D layouts
+            auto layout_val = derived_layout_opt.value();
+            if(layout_val != miopenTensorNCHW && 
+               layout_val != miopenTensorNHWC && 
+               layout_val != miopenTensorCHWN &&
+               layout_val != miopenTensorNCHWc4 &&
+               layout_val != miopenTensorNCHWc8 &&
+               layout_val != miopenTensorCHWNc4 &&
+               layout_val != miopenTensorCHWNc8)
+            {
+                need_fix = true;
+            }
+        }
+        else if(derived_num_dims == 5)
+        {
+            // For 5D, only accept valid 5D layouts
+            auto layout_val = derived_layout_opt.value();
+            if(layout_val != miopenTensorNCDHW && layout_val != miopenTensorNDHWC)
+            {
+                need_fix = true;
+            }
+        }
+        else
+        {
+            // For other dimensions, always fix
+            need_fix = true;
+        }
+        if(need_fix)
         {
             derivedBnDesc = miopen::TensorDescriptor(
                 derivedBnDesc.GetType(), derived_layout, derivedBnDesc.GetLengths());
