@@ -209,10 +209,43 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         {
             auto FixLayout = [default_layout](auto& tensor) {
                 auto dims = tensor.desc.GetLengths();
-                if(dims.size() > 0 && tensor.desc.GetLayout_t() == 0)
+                if(dims.size() == 0)
+                    return;
+                
+                auto layout = tensor.desc.GetLayout_t();
+                auto num_dims = dims.size();
+                
+                // Determine the correct layout based on number of dimensions
+                miopenTensorLayout_t correct_layout;
+                if(num_dims == 4)
+                {
+                    // For 4D, use NCHW (default) or NHWC if that was the original intent
+                    if(layout == miopenTensorNHWC || layout == miopenTensorNDHWC)
+                        correct_layout = miopenTensorNHWC;
+                    else
+                        correct_layout = miopenTensorNCHW;
+                }
+                else if(num_dims == 5)
+                {
+                    // For 5D, use NCDHW (default) or NDHWC if that was the original intent
+                    if(layout == miopenTensorNHWC || layout == miopenTensorNDHWC)
+                        correct_layout = miopenTensorNDHWC;
+                    else
+                        correct_layout = miopenTensorNCDHW;
+                }
+                else
+                {
+                    // For other dimensions, use default based on num_dims
+                    correct_layout = (num_dims == 4) ? miopenTensorNCHW : miopenTensorNCDHW;
+                }
+                
+                // Fix layout if it's uninitialized (0) or unsupported for this number of dimensions
+                if(layout == 0 || 
+                   (num_dims == 4 && (layout == miopenTensorNCDHW || layout == miopenTensorNDHWC)) ||
+                   (num_dims == 5 && (layout == miopenTensorNCHW || layout == miopenTensorNHWC || layout == miopenTensorCHWN)))
                 {
                     tensor.desc = miopen::TensorDescriptor(
-                        tensor.desc.GetType(), default_layout, dims);
+                        tensor.desc.GetType(), correct_layout, dims);
                 }
             };
             FixLayout(input);
