@@ -133,14 +133,16 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         output = tensor<T>{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
 
         // Get layout from input before creating out_ref to ensure consistency
-        bn_layout = input.desc.GetLayout_t();
+        auto input_layout_opt = input.desc.GetLayoutEnum();
+        bn_layout = input_layout_opt ? input_layout_opt.value() : miopenTensorNCDHW;
         out_ref   = tensor<AccDataType>{bn_layout, std::vector<std::size_t>{n, c, d, h, w}};
 
         input.generate(uniform_signed_initializer<T>(2e-3, 1000));
 
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
         // Ensure derivedBnDesc has a valid layout (DeriveBNTensorDescriptor doesn't preserve layout)
-        if(derivedBnDesc.GetLayout_t() == 0)
+        auto derived_layout_opt = derivedBnDesc.GetLayoutEnum();
+        if(!derived_layout_opt || derived_layout_opt.value() == 0)
         {
             derivedBnDesc = miopen::TensorDescriptor(
                 derivedBnDesc.GetType(), bn_layout, derivedBnDesc.GetLengths());
@@ -213,11 +215,13 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 if(dims.size() == 0)
                     return;
                 
-                auto layout = tensor.desc.GetLayout_t();
+                // Use GetLayoutEnum() to avoid exception if layout is not set
+                auto layout_opt = tensor.desc.GetLayoutEnum();
+                auto layout = layout_opt ? layout_opt.value() : 0;
                 auto num_dims = dims.size();
                 
-                // Debug: print if layout is 0
-                if(layout == 0)
+                // Debug: print if layout is 0 or not set
+                if(layout == 0 || !layout_opt)
                 {
                     std::cerr << "[DEBUG] EnsureLayouts: Found layout 0 for tensor '" << (name ? name : "unknown")
                               << "' with " << num_dims << " dimensions: [";
@@ -277,12 +281,12 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                     tensor.desc = miopen::TensorDescriptor(
                         tensor.desc.GetType(), correct_layout, dims);
                     
-                    // Verify the layout was set correctly
-                    auto new_layout = tensor.desc.GetLayout_t();
-                    if(new_layout == 0)
+                    // Verify the layout was set correctly (use GetLayoutEnum to avoid exception)
+                    auto new_layout_opt = tensor.desc.GetLayoutEnum();
+                    if(!new_layout_opt || new_layout_opt.value() == 0)
                     {
                         std::cerr << "[ERROR] EnsureLayouts: Failed to set layout for '" << (name ? name : "unknown")
-                                  << "' - still has layout 0 after TensorDescriptor creation!" << std::endl;
+                                  << "' - still has invalid layout after TensorDescriptor creation!" << std::endl;
                     }
                 }
             };
@@ -304,14 +308,14 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             FixLayout(runMean_ref, "runMean_ref");
             FixLayout(runVariance_ref, "runVariance_ref");
             
-            // Final check: verify all layouts are valid
+            // Final check: verify all layouts are valid (use GetLayoutEnum to avoid exception)
             std::cerr << "[DEBUG] EnsureLayouts: Final verification" << std::endl;
             auto CheckLayout = [](auto& tensor, const char* name) {
-                auto layout = tensor.desc.GetLayout_t();
+                auto layout_opt = tensor.desc.GetLayoutEnum();
                 auto dims = tensor.desc.GetLengths();
-                if(dims.size() > 0 && layout == 0)
+                if(dims.size() > 0 && (!layout_opt || layout_opt.value() == 0))
                 {
-                    std::cerr << "[ERROR] EnsureLayouts: Tensor '" << name << "' still has layout 0 after fix!"
+                    std::cerr << "[ERROR] EnsureLayouts: Tensor '" << name << "' still has invalid layout after fix!"
                               << " Dimensions: [";
                     for(size_t i = 0; i < dims.size(); ++i)
                     {
