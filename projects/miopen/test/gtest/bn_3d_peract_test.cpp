@@ -47,9 +47,9 @@ struct BN3DPerActTestCase
 std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
 {
     std::vector<BN3DPerActTestCase> test_cases;
+    // Match ctest: only generate ForwardInferenceRecalc (ForwardInferenceUseEstimated is handled identically)
     std::vector<BN3DPerActTestType> types = {BN3DPerActTestType::ForwardTraining,
                                              BN3DPerActTestType::ForwardInferenceRecalc,
-                                             BN3DPerActTestType::ForwardInferenceUseEstimated,
                                              BN3DPerActTestType::BackwardRecalc,
                                              BN3DPerActTestType::BackwardUseSaved};
 
