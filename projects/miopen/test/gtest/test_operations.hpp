@@ -44,10 +44,19 @@ void ComputeCPUBNInference(DLModule& dl_module)
             // Defensive check: ensure layout is set before reshaping
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                // This should only happen for 5D tensors when size == 5
+                if(dims.size() == 5)
+                {
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                }
+                else
+                {
+                    // Should not happen, but handle gracefully
+                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -100,10 +109,19 @@ void ComputeCPUBNBwd(DLModule& dl_module)
             // Defensive check: ensure layout is set before reshaping
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                // This should only happen for 5D tensors when size == 5
+                if(dims.size() == 5)
+                {
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                }
+                else
+                {
+                    // Should not happen, but handle gracefully
+                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
@@ -162,10 +180,19 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
             // Defensive check: ensure layout is set before reshaping
             auto layout = desc.GetLayout_t();
             auto dims = desc.GetLengths();
-            if(layout == 0 && dims.size() == 5)
+            if(layout == 0)
             {
                 // Default to NCDHW for 5D tensors if layout is uninitialized
-                desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                // This should only happen for 5D tensors when size == 5
+                if(dims.size() == 5)
+                {
+                    desc = miopen::TensorDescriptor(desc.GetType(), miopenTensorNCDHW, dims);
+                }
+                else
+                {
+                    // Should not happen, but handle gracefully
+                    MIOPEN_THROW("Cannot reshape: descriptor has layout 0 and unexpected dimensions");
+                }
             }
             desc = miopen::BuildReshaped4DTensorDescriptor(desc);
         }
