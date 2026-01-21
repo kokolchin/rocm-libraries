@@ -41,15 +41,23 @@ struct BN3DPerActTestCase
     }
 };
 
-std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
+std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases(bool inference_only = false)
 {
     std::vector<BN3DPerActTestCase> test_cases;
     // Match ctest: only generate ForwardInferenceRecalc (ForwardInferenceUseEstimated is handled
     // identically)
-    std::vector<BN3DPerActTestType> types = {BN3DPerActTestType::ForwardTraining,
-                                             BN3DPerActTestType::ForwardInferenceRecalc,
-                                             BN3DPerActTestType::BackwardRecalc,
-                                             BN3DPerActTestType::BackwardUseSaved};
+    std::vector<BN3DPerActTestType> types;
+    if(inference_only)
+    {
+        types = {BN3DPerActTestType::ForwardInferenceRecalc};
+    }
+    else
+    {
+        types = {BN3DPerActTestType::ForwardTraining,
+                 BN3DPerActTestType::ForwardInferenceRecalc,
+                 BN3DPerActTestType::BackwardRecalc,
+                 BN3DPerActTestType::BackwardUseSaved};
+    }
 
     // Use batch size factor 4 to match ctest behavior (like other BN 3D tests)
     for(const auto& shape : get_3d_bn_peract_inputs(4))
@@ -409,6 +417,7 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
                                                                                                    \
             tensor<data_type> dx_output{miopenTensorNCDHW,                                         \
                                         std::vector<std::size_t>{n, c, d, h, w}};                  \
+            dy_input.generate(uniform_signed_initializer<data_type>(2e-3, 1000));                  \
             tensor<AccDataType> dscale{this->derived_layout, this->derivedBnDesc.GetLengths()};         \
             tensor<AccDataType> dshift{this->derived_layout, this->derivedBnDesc.GetLengths()};         \
             auto dx_dev     = handle.Write(dx_output.data);                                        \
@@ -591,8 +600,11 @@ using GPU_Bn3dPerAct_INT8 = GPU_Bn3dPerAct<int8_t>;
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
 TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+TEST_PERACT_3D(GPU_Bn3dPerAct_INT8, int8_t)
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
+// Plus INT8 for inference to reach the 299 tests reported by ctest
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases()));
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_FP16, testing::ValuesIn(GetBN3DPerActTestCases()));
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_BF16, testing::ValuesIn(GetBN3DPerActTestCases()));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_Bn3dPerAct_INT8, testing::ValuesIn(GetBN3DPerActTestCases(true)));
