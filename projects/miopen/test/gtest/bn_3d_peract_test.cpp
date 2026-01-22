@@ -87,7 +87,6 @@ GetBN3DPerActTestCases(BN3DPerActTestSet test_set = BN3DPerActTestSet::Standard)
     }
     return test_cases;
 }
-} // namespace
 
 template <typename T>
 struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
@@ -96,6 +95,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
     void SetUp() override
     {
+        prng::reset_seed();
         const auto& tc = this->GetParam();
         n              = tc.n;
         c              = tc.c;
@@ -298,6 +298,8 @@ using GPU_Bn3dPerAct_FP32  = GPU_Bn3dPerAct<float>;
 using GPU_Bn3dPerAct_FP16  = GPU_Bn3dPerAct<half_float::half>;
 using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
 using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
+
+} // namespace
 
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
