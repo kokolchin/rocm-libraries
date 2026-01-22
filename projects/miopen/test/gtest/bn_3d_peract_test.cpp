@@ -357,9 +357,10 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             tensor<AccDataType> gpu_saveMean(saveMean.desc);                                       \
             gpu_saveMean.data = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());      \
             tensor<AccDataType> gpu_saveInvVar(saveInvVar.desc);                                   \
-            gpu_saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());\
+            gpu_saveInvVar.data =                                                                  \
+                handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());                  \
             tensor<AccDataType> gpu_runMean(runMean.desc);                                         \
-            gpu_runMean.data = handle.Read<AccDataType>(runMean_dev, runMean.data.size());          \
+            gpu_runMean.data = handle.Read<AccDataType>(runMean_dev, runMean.data.size());         \
             tensor<AccDataType> gpu_runVar(runVar.desc);                                           \
             gpu_runVar.data = handle.Read<AccDataType>(runVar_dev, runVar.data.size());            \
                                                                                                    \
@@ -385,7 +386,7 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
                                                                                                    \
             test::ComputeCPUBNFwdTrain(dl);                                                        \
                                                                                                    \
-            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                 \
+            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                \
             test::CompareTensor(gpu_saveMean, dl.saveMean_ref, tolerance);                         \
             test::CompareTensor(gpu_saveInvVar, dl.saveVariance_ref, tolerance);                   \
             test::CompareTensor(gpu_runMean, dl.runMean_ref, tolerance);                           \
@@ -522,9 +523,9 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             tensor<data_type> gpu_dx(dx_output.desc);                                              \
             gpu_dx.data = handle.Read<data_type>(dx_dev, dx_output.data.size());                   \
             tensor<AccDataType> gpu_dscale(dscale.desc);                                           \
-            gpu_dscale.data = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
+            gpu_dscale.data = handle.Read<AccDataType>(dscale_dev, dscale.data.size());            \
             tensor<AccDataType> gpu_dshift(dshift.desc);                                           \
-            gpu_dshift.data = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
+            gpu_dshift.data = handle.Read<AccDataType>(dshift_dev, dshift.data.size());            \
                                                                                                    \
             typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
@@ -542,8 +543,8 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             dl_fwd.out_ref.desc = dl.out_ref.desc;                                                 \
             dl_fwd.out_ref.data = std::move(dl.out_ref.data);                                      \
                                                                                                    \
-            dl_fwd.saveMean_ref     = tensor<AccDataType>(this->derivedBnDesc);                    \
-            dl_fwd.saveVariance_ref = tensor<AccDataType>(this->derivedBnDesc);                    \
+            dl_fwd.saveMean_ref         = tensor<AccDataType>(this->derivedBnDesc);                \
+            dl_fwd.saveVariance_ref     = tensor<AccDataType>(this->derivedBnDesc);                \
             dl_fwd.runMean_ref.desc     = runMean.desc;                                            \
             dl_fwd.runMean_ref.data     = std::move(runMean.data);                                 \
             dl_fwd.runVariance_ref.desc = runVar.desc;                                             \
@@ -558,11 +559,11 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
                                                                                                    \
             test::ComputeCPUBNFwdTrain(dl_fwd);                                                    \
                                                                                                    \
-            dl.input.data       = std::move(dl_fwd.input.data);                                    \
-            dl.bnScale.data     = std::move(dl_fwd.scale.data);                                    \
-            dl.out_ref.data     = std::move(dl_fwd.out_ref.data);                                  \
-            dl.savedMean        = std::move(dl_fwd.saveMean_ref);                                  \
-            dl.savedInvVar      = std::move(dl_fwd.saveVariance_ref);                              \
+            dl.input.data   = std::move(dl_fwd.input.data);                                        \
+            dl.bnScale.data = std::move(dl_fwd.scale.data);                                        \
+            dl.out_ref.data = std::move(dl_fwd.out_ref.data);                                      \
+            dl.savedMean    = std::move(dl_fwd.saveMean_ref);                                      \
+            dl.savedInvVar  = std::move(dl_fwd.saveVariance_ref);                                  \
                                                                                                    \
             EnsureValidLayout(dl.input, miopenTensorNCDHW);                                        \
             EnsureValidLayout(dl.dy, miopenTensorNCDHW);                                           \
@@ -621,7 +622,8 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             tensor<AccDataType> gpu_saveMean(saveMean.desc);                                       \
             gpu_saveMean.data = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());      \
             tensor<AccDataType> gpu_saveInvVar(saveInvVar.desc);                                   \
-            gpu_saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());\
+            gpu_saveInvVar.data =                                                                  \
+                handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());                  \
                                                                                                    \
             tensor<data_type> dy_input{miopenTensorNCDHW,                                          \
                                        std::vector<std::size_t>{n, c, d, h, w}};                   \
@@ -661,9 +663,9 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             tensor<data_type> gpu_dx(dx_output.desc);                                              \
             gpu_dx.data = handle.Read<data_type>(dx_dev, dx_output.data.size());                   \
             tensor<AccDataType> gpu_dscale(dscale.desc);                                           \
-            gpu_dscale.data = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
+            gpu_dscale.data = handle.Read<AccDataType>(dscale_dev, dscale.data.size());            \
             tensor<AccDataType> gpu_dshift(dshift.desc);                                           \
-            gpu_dshift.data = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
+            gpu_dshift.data = handle.Read<AccDataType>(dshift_dev, dshift.data.size());            \
                                                                                                    \
             typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
