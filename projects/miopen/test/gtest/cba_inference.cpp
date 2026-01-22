@@ -614,26 +614,12 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
 
 class GPU_CbaInference_FP32 : public testing::TestWithParam<CbaTestCase>
 {
-    void SetUp() override
-    {
-        prng::reset_seed();
-        if(!IsTestSupportedByDevice(Gpu::All))
-        {
-            GTEST_SKIP();
-        }
-    }
+    void SetUp() override { prng::reset_seed(); }
 };
 
 class GPU_CbaInference_FP16 : public testing::TestWithParam<CbaTestCase>
 {
-    void SetUp() override
-    {
-        prng::reset_seed();
-        if(!IsTestSupportedByDevice(Gpu::All))
-        {
-            GTEST_SKIP();
-        }
-    }
+    void SetUp() override { prng::reset_seed(); }
 };
 
 TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference) { RunCbaInferenceTest<float>(GetParam()); }
