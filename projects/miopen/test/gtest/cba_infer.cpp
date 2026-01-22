@@ -170,6 +170,18 @@ inline auto gcbaInferParamGenFull(Configs configs, TensorTypes tensorTypes)
 
 } // namespace
 
+using GPU_ConvBiasActivInfer_FP32                  = CBAInferBase<float>;
+using GPU_ConvBiasActivInferFusionCompileStep_FP32 = CBAInferBase<float>;
+using GPU_ConvBiasActivInfer_FP16                  = CBAInferBase<half_float::half>;
+
+using GPU_ConvGrpBiasActivInfer_BFP16 = CBAInferBase<bfloat16, GroupConvTestConfig<2u>>;
+using GPU_ConvGrpBiasActivInfer_FP16  = CBAInferBase<float16, GroupConvTestConfig<2u>>;
+using GPU_ConvGrpBiasActivInfer_FP32  = CBAInferBase<float, GroupConvTestConfig<2u>>;
+
+using GPU_ConvGrpBiasActivInfer3D_BFP16 = CBAInferBase<bfloat16, GroupConvTestConfig<3u>>;
+using GPU_ConvGrpBiasActivInfer3D_FP16  = CBAInferBase<float16, GroupConvTestConfig<3u>>;
+using GPU_ConvGrpBiasActivInfer3D_FP32  = CBAInferBase<float, GroupConvTestConfig<3u>>;
+
 TEST_P(GPU_ConvBiasActivInfer_FP32, ConvBiasActivAsm1x1UFloat)
 {
     RunTunableSolver<miopen::solver::fusion::ConvBiasActivAsm1x1U>();

@@ -12,6 +12,8 @@
 #include <vector>
 #include <limits>
 
+namespace {
+
 using ptr_FusionPlanDesc = MIOPEN_MANAGE_PTR(miopenFusionPlanDescriptor_t, miopenDestroyFusionPlan);
 using ptr_FusionPlanArgs = MIOPEN_MANAGE_PTR(miopenOperatorArgs_t, miopenDestroyOperatorArgs);
 using ptr_ActivationDesc = MIOPEN_MANAGE_PTR(miopenActivationDescriptor_t,
@@ -226,8 +228,6 @@ struct verify_forward_conv_bias_activ
     }
 };
 
-namespace {
-
 struct CbaTestCase
 {
     std::vector<int> input_dims;   // [N, C, H, W]
@@ -252,7 +252,6 @@ struct CbaTestCase
     }
 };
 
-template <typename T>
 std::vector<CbaTestCase> GetCbaTestCases()
 {
     return {
@@ -271,6 +270,56 @@ std::vector<CbaTestCase> GetCbaTestCases()
         {{16, 32, 8, 8},
          {64, 32, 5, 5},
          {1, 1, 2, 2, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{64, 1024, 14, 14},
+         {2048, 1024, 1, 1},
+         {0, 0, 2, 2, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{64, 1024, 14, 14},
+         {256, 1024, 1, 1},
+         {0, 0, 1, 1, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{64, 128, 28, 28},
+         {128, 128, 3, 3},
+         {1, 1, 1, 1, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{64, 3, 224, 224},
+         {64, 3, 7, 7},
+         {3, 3, 2, 2, 1, 1},
+         true,
+         "default",
+         true,
+         3,
+         0.5,
+         0.5,
+         0.5},
+        {{100, 3, 32, 32},
+         {64, 3, 3, 3},
+         {1, 1, 1, 1, 1, 1},
          true,
          "default",
          true,
@@ -563,8 +612,6 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
     }
 }
 
-} // namespace
-
 class GPU_CbaInference_FP32 : public testing::TestWithParam<CbaTestCase>
 {
     void SetUp() override
@@ -596,8 +643,8 @@ TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
     RunCbaInferenceTest<half_float::half>(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn(GetCbaTestCases<float>()));
+} // namespace
 
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_CbaInference_FP16,
-                         testing::ValuesIn(GetCbaTestCases<half_float::half>()));
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn(GetCbaTestCases()));
+
+INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn(GetCbaTestCases()));
