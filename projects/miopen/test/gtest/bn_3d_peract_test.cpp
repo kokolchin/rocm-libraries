@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <cmath>
+#include <utility>
 
 #include "get_handle.hpp"
 #include "tensor_holder.hpp"
@@ -44,28 +45,24 @@ struct DLModuleHelper
         tensor<AccDataType> runMean_ref;
         tensor<AccDataType> runVariance_ref;
 
-        miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
-        double epsilon                    = MIO_BN_TEST_EPSILON;
-        double averageFactor              = MIO_BN_TEST_EXPAVGFACTOR;
-        bool useInverseVariance           = false;
-        miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
-        double activ_alpha                = 1.0;
-        double activ_beta                 = 0.0;
-        double activ_gamma                = 1.0;
+        miopenBatchNormMode_t bn_mode      = miopenBNPerActivation;
+        double epsilon                     = MIO_BN_TEST_EPSILON;
+        double averageFactor               = MIO_BN_TEST_EXPAVGFACTOR;
+        bool useInverseVariance            = false;
+        miopenActivationMode_t activ_mode  = miopenActivationPASTHRU;
+        double activ_alpha                 = 1.0;
+        double activ_beta                  = 0.0;
+        double activ_gamma                 = 1.0;
     };
 
-    static void MoveTo(tensor<T>& src, tensor<T>& dst)
+    template <typename U>
+    static void MoveTo(tensor<U>& src, tensor<U>& dst)
     {
         dst.desc = src.desc;
         dst.data = std::move(src.data);
     }
-    static void MoveTo(tensor<AccDataType>& src, tensor<AccDataType>& dst)
-    {
-        dst.desc = src.desc;
-        dst.data = std::move(src.data);
-    }
-    static void MoveBack(tensor<T>& src, tensor<T>& dst) { dst.data = std::move(src.data); }
-    static void MoveBack(tensor<AccDataType>& src, tensor<AccDataType>& dst)
+    template <typename U>
+    static void MoveBack(tensor<U>& src, tensor<U>& dst)
     {
         dst.data = std::move(src.data);
     }
@@ -344,16 +341,17 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
     double tolerance    = 5e-3;
 };
+
 using GPU_Bn3dPerAct_FP32  = GPU_Bn3dPerAct<float>;
 using GPU_Bn3dPerAct_FP16  = GPU_Bn3dPerAct<half_float::half>;
 using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
 using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
 
-} // namespace
-
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
     {                                                                                              \
+        using AccDataType     = typename fixture::AccDataType;                                     \
+        using Helper          = DLModuleHelper<data_type, AccDataType>;                            \
         const auto& test_case = this->GetParam();                                                  \
         auto&& handle         = get_handle();                                                      \
                                                                                                    \
@@ -392,8 +390,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());          \
             runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());            \
                                                                                                    \
-            using Helper = DLModuleHelper<data_type, AccDataType>;                                 \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
             Helper::MoveTo(output, dl.output);                                                     \
             Helper::MoveTo(out_ref, dl.out_ref);                                                   \
@@ -462,8 +459,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
                                                                                                    \
             output.data = handle.Read<data_type>(out_dev, output.data.size());                     \
                                                                                                    \
-            using Helper = DLModuleHelper<data_type, AccDataType>;                                 \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
             Helper::MoveTo(output, dl.output);                                                     \
             Helper::MoveTo(out_ref, dl.out_ref);                                                   \
@@ -481,7 +477,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl.estVariance, this->derived_layout);                               \
             if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)                  \
             {                                                                                      \
-                typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                               \
+                typename fixture::DLModule dl_fwd;                                                 \
                 dl_fwd.input.desc            = dl.input.desc;                                      \
                 dl_fwd.input.data            = std::move(dl.input.data);                           \
                 dl_fwd.out_ref.desc          = dl.out_ref.desc;                                    \
@@ -499,12 +495,12 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);                                \
                 EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);                                \
                 test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
-                dl.input.data         = std::move(dl_fwd.input.data);                              \
-                dl.out_ref.data       = std::move(dl_fwd.out_ref.data);                            \
-                dl.scale.data         = std::move(dl_fwd.scale.data);                              \
-                dl.shift.data         = std::move(dl_fwd.shift.data);                              \
-                dl.estMean.data       = std::move(dl_fwd.saveMean_ref.data);                       \
-                dl.estVariance.data   = std::move(dl_fwd.saveVariance_ref.data);                   \
+                dl.input.data       = std::move(dl_fwd.input.data);                                \
+                dl.out_ref.data     = std::move(dl_fwd.out_ref.data);                              \
+                dl.scale.data       = std::move(dl_fwd.scale.data);                                \
+                dl.shift.data       = std::move(dl_fwd.shift.data);                                \
+                dl.estMean.data     = std::move(dl_fwd.saveMean_ref.data);                         \
+                dl.estVariance.data = std::move(dl_fwd.saveVariance_ref.data);                     \
                 dl.useInverseVariance = true;                                                      \
             }                                                                                      \
             test::ComputeCPUBNInference(dl);                                                       \
@@ -559,8 +555,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
                                                                                                    \
-            using Helper = DLModuleHelper<data_type, AccDataType>;                                 \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
             Helper::MoveTo(output, dl.output);                                                     \
             Helper::MoveTo(dy_input, dl.dy);                                                       \
@@ -576,7 +571,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl.dScale_ref, this->derived_layout);                                \
             EnsureValidLayout(dl.dBias_ref, this->derived_layout);                                 \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                                   \
+            typename fixture::DLModule dl_fwd;                                                     \
             dl_fwd.input.desc        = dl.input.desc;                                              \
             dl_fwd.input.data        = std::move(dl.input.data);                                   \
             dl_fwd.output.desc       = dl.output.desc;                                             \
@@ -703,8 +698,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
                                                                                                    \
-            using Helper = DLModuleHelper<data_type, AccDataType>;                                 \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
             Helper::MoveTo(output, dl.output);                                                     \
             Helper::MoveTo(dy_input, dl.dy);                                                       \
@@ -757,3 +751,5 @@ INSTANTIATE_TEST_SUITE_P(Full,
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_BFP16,
                          testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
+
+} // namespace
