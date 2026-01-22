@@ -228,6 +228,36 @@ struct verify_forward_conv_bias_activ
     }
 };
 
+template <typename T, typename Verifier>
+void VerifyAndValidate(const Verifier& verifier)
+{
+    auto cpu_result = verifier.cpu();
+    auto gpu_result = verifier.gpu();
+
+    // Compare results
+    EXPECT_EQ(miopen::range_distance(cpu_result), miopen::range_distance(gpu_result));
+
+    using value_type       = T;
+    const double tolerance = 80.0;
+    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
+
+    EXPECT_LE(rms_error, threshold)
+        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
+
+    if(rms_error > threshold)
+    {
+        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
+        std::cout << "Max diff: " << mxdiff << std::endl;
+        const auto idx = miopen::mismatch_idx(cpu_result, gpu_result, miopen::float_equal);
+        if(idx < miopen::range_distance(cpu_result))
+        {
+            std::cout << "Mismatch at " << idx << ": " << cpu_result[idx]
+                      << " != " << gpu_result[idx] << std::endl;
+        }
+    }
+}
+
 struct CbaTestCase
 {
     std::vector<int> input_dims;   // [N, C, H, W]
@@ -501,103 +531,33 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
             {
                 if(test_case.test_activ)
                 {
-                    verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
-                                                               input,
-                                                               weights,
-                                                               filter,
-                                                               test_case.bias_mode,
-                                                               bias,
-                                                               ptr_activdesc.get(),
-                                                               workspace_size};
-
-                    auto cpu_result = verifier.cpu();
-                    auto gpu_result = verifier.gpu();
-
-                    // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result),
-                              miopen::range_distance(gpu_result));
-
-                    using value_type       = T;
-                    const double tolerance = 80.0;
-                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
-                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
-
-                    EXPECT_LE(rms_error, threshold)
-                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
-
-                    if(rms_error > threshold)
-                    {
-                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
-                        std::cout << "Max diff: " << mxdiff << std::endl;
-                        const auto idx =
-                            miopen::mismatch_idx(cpu_result, gpu_result, miopen::float_equal);
-                        if(idx < miopen::range_distance(cpu_result))
-                        {
-                            std::cout << "Mismatch at " << idx << ": " << cpu_result[idx]
-                                      << " != " << gpu_result[idx] << std::endl;
-                        }
-                    }
+                    VerifyAndValidate<T>(verify_forward_conv_bias_activ<T>{ptr_fusionplan.get(),
+                                                                           input,
+                                                                           weights,
+                                                                           filter,
+                                                                           test_case.bias_mode,
+                                                                           bias,
+                                                                           ptr_activdesc.get(),
+                                                                           workspace_size});
                 }
                 else
                 {
-                    verify_forward_conv_bias<T> verifier{
-                        ptr_fusionplan.get(), input, weights, filter, bias, workspace_size};
-
-                    auto cpu_result = verifier.cpu();
-                    auto gpu_result = verifier.gpu();
-
-                    // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result),
-                              miopen::range_distance(gpu_result));
-
-                    using value_type       = T;
-                    const double tolerance = 80.0;
-                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
-                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
-
-                    EXPECT_LE(rms_error, threshold)
-                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
-
-                    if(rms_error > threshold)
-                    {
-                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
-                        std::cout << "Max diff: " << mxdiff << std::endl;
-                    }
+                    VerifyAndValidate<T>(verify_forward_conv_bias<T>{
+                        ptr_fusionplan.get(), input, weights, filter, bias, workspace_size});
                 }
             }
             else
             {
                 if(test_case.test_activ)
                 {
-                    verify_forward_conv_bias_activ<T> verifier{ptr_fusionplan.get(),
-                                                               input,
-                                                               weights,
-                                                               filter,
-                                                               test_case.bias_mode,
-                                                               bias,
-                                                               ptr_activdesc.get(),
-                                                               workspace_size};
-
-                    auto cpu_result = verifier.cpu();
-                    auto gpu_result = verifier.gpu();
-
-                    // Compare results
-                    EXPECT_EQ(miopen::range_distance(cpu_result),
-                              miopen::range_distance(gpu_result));
-
-                    using value_type       = T;
-                    const double tolerance = 80.0;
-                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
-                    const double rms_error = miopen::rms_range(cpu_result, gpu_result);
-
-                    EXPECT_LE(rms_error, threshold)
-                        << "RMS error: " << rms_error << " exceeds threshold: " << threshold;
-
-                    if(rms_error > threshold)
-                    {
-                        const auto mxdiff = miopen::max_diff(cpu_result, gpu_result);
-                        std::cout << "Max diff: " << mxdiff << std::endl;
-                    }
+                    VerifyAndValidate<T>(verify_forward_conv_bias_activ<T>{ptr_fusionplan.get(),
+                                                                           input,
+                                                                           weights,
+                                                                           filter,
+                                                                           test_case.bias_mode,
+                                                                           bias,
+                                                                           ptr_activdesc.get(),
+                                                                           workspace_size});
                 }
             }
         }
