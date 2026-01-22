@@ -44,14 +44,14 @@ struct DLModuleHelper
         tensor<AccDataType> runMean_ref;
         tensor<AccDataType> runVariance_ref;
 
-        miopenBatchNormMode_t bn_mode      = miopenBNPerActivation;
-        double epsilon                     = MIO_BN_TEST_EPSILON;
-        double averageFactor               = MIO_BN_TEST_EXPAVGFACTOR;
-        bool useInverseVariance            = false;
-        miopenActivationMode_t activ_mode  = miopenActivationPASTHRU;
-        double activ_alpha                 = 1.0;
-        double activ_beta                  = 0.0;
-        double activ_gamma                 = 1.0;
+        miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
+        double epsilon                    = MIO_BN_TEST_EPSILON;
+        double averageFactor              = MIO_BN_TEST_EXPAVGFACTOR;
+        bool useInverseVariance           = false;
+        miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
+        double activ_alpha                = 1.0;
+        double activ_beta                 = 0.0;
+        double activ_gamma                = 1.0;
     };
 
     static void MoveTo(tensor<T>& src, tensor<T>& dst)
@@ -64,10 +64,7 @@ struct DLModuleHelper
         dst.desc = src.desc;
         dst.data = std::move(src.data);
     }
-    static void MoveBack(tensor<T>& src, tensor<T>& dst)
-    {
-        dst.data = std::move(src.data);
-    }
+    static void MoveBack(tensor<T>& src, tensor<T>& dst) { dst.data = std::move(src.data); }
     static void MoveBack(tensor<AccDataType>& src, tensor<AccDataType>& dst)
     {
         dst.data = std::move(src.data);
@@ -188,7 +185,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         auto&& handle = get_handle();
 
         std::vector<std::size_t> current_shape = {n, c, d, h, w};
-        auto& cache                           = GetCache();
+        auto& cache                            = GetCache();
 
         if(cache.shape == current_shape && !cache.input.data.empty())
         {
@@ -267,16 +264,16 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         // Cache current state for the next test only if it's still valid
         if(!input.data.empty())
         {
-            auto& cache     = GetCache();
-            cache.shape     = {n, c, d, h, w};
-            cache.input     = std::move(input);
-            cache.scale     = std::move(scale);
-            cache.shift     = std::move(shift);
-            cache.runMean   = std::move(runMean);
-            cache.runVar    = std::move(runVar);
-            cache.in_dev    = std::move(in_dev);
-            cache.scale_dev = std::move(scale_dev);
-            cache.shift_dev = std::move(shift_dev);
+            auto& cache       = GetCache();
+            cache.shape       = {n, c, d, h, w};
+            cache.input       = std::move(input);
+            cache.scale       = std::move(scale);
+            cache.shift       = std::move(shift);
+            cache.runMean     = std::move(runMean);
+            cache.runVar      = std::move(runVar);
+            cache.in_dev      = std::move(in_dev);
+            cache.scale_dev   = std::move(scale_dev);
+            cache.shift_dev   = std::move(shift_dev);
             cache.runMean_dev = std::move(runMean_dev);
             cache.runVar_dev  = std::move(runVar_dev);
         }
@@ -485,29 +482,29 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)                  \
             {                                                                                      \
                 typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                               \
-                dl_fwd.input.desc       = dl.input.desc;                                           \
-                dl_fwd.input.data       = std::move(dl.input.data);                                \
-                dl_fwd.out_ref.desc     = dl.out_ref.desc;                                         \
-                dl_fwd.out_ref.data     = std::move(dl.out_ref.data);                              \
-                dl_fwd.scale.desc       = dl.scale.desc;                                           \
-                dl_fwd.scale.data       = std::move(dl.scale.data);                                \
-                dl_fwd.shift.desc       = dl.shift.desc;                                           \
-                dl_fwd.shift.data       = std::move(dl.shift.data);                                \
-                dl_fwd.saveMean_ref.desc = dl.estMean.desc;                                         \
-                dl_fwd.saveMean_ref.data = std::move(dl.estMean.data);                             \
+                dl_fwd.input.desc            = dl.input.desc;                                      \
+                dl_fwd.input.data            = std::move(dl.input.data);                           \
+                dl_fwd.out_ref.desc          = dl.out_ref.desc;                                    \
+                dl_fwd.out_ref.data          = std::move(dl.out_ref.data);                         \
+                dl_fwd.scale.desc            = dl.scale.desc;                                      \
+                dl_fwd.scale.data            = std::move(dl.scale.data);                           \
+                dl_fwd.shift.desc            = dl.shift.desc;                                      \
+                dl_fwd.shift.data            = std::move(dl.shift.data);                           \
+                dl_fwd.saveMean_ref.desc     = dl.estMean.desc;                                    \
+                dl_fwd.saveMean_ref.data     = std::move(dl.estMean.data);                         \
                 dl_fwd.saveVariance_ref.desc = dl.estVariance.desc;                                \
                 dl_fwd.saveVariance_ref.data = std::move(dl.estVariance.data);                     \
-                dl_fwd.runMean_ref.desc  = dl_fwd.saveMean_ref.desc;                               \
-                dl_fwd.runVariance_ref.desc = dl_fwd.saveVariance_ref.desc;                        \
+                dl_fwd.runMean_ref.desc      = dl_fwd.saveMean_ref.desc;                           \
+                dl_fwd.runVariance_ref.desc  = dl_fwd.saveVariance_ref.desc;                       \
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);                                \
                 EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);                                \
                 test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
-                dl.input.data       = std::move(dl_fwd.input.data);                                \
-                dl.out_ref.data     = std::move(dl_fwd.out_ref.data);                              \
-                dl.scale.data       = std::move(dl_fwd.scale.data);                                \
-                dl.shift.data       = std::move(dl_fwd.shift.data);                                \
-                dl.estMean.data     = std::move(dl_fwd.saveMean_ref.data);                         \
-                dl.estVariance.data = std::move(dl_fwd.saveVariance_ref.data);                     \
+                dl.input.data         = std::move(dl_fwd.input.data);                              \
+                dl.out_ref.data       = std::move(dl_fwd.out_ref.data);                            \
+                dl.scale.data         = std::move(dl_fwd.scale.data);                              \
+                dl.shift.data         = std::move(dl_fwd.shift.data);                              \
+                dl.estMean.data       = std::move(dl_fwd.saveMean_ref.data);                       \
+                dl.estVariance.data   = std::move(dl_fwd.saveVariance_ref.data);                   \
                 dl.useInverseVariance = true;                                                      \
             }                                                                                      \
             test::ComputeCPUBNInference(dl);                                                       \
@@ -580,25 +577,26 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl.dBias_ref, this->derived_layout);                                 \
                                                                                                    \
             typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                                   \
-            dl_fwd.input.desc   = dl.input.desc;                                                   \
-            dl_fwd.input.data   = std::move(dl.input.data);                                        \
-            dl_fwd.output.desc  = dl.output.desc;                                                  \
-            dl_fwd.output.data  = std::move(dl.output.data);                                       \
-            dl_fwd.out_ref.desc = dl.out_ref.desc;                                                 \
-            dl_fwd.out_ref.data = std::move(dl.out_ref.data);                                      \
-            dl_fwd.scale.desc   = dl.bnScale.desc;                                                 \
-            dl_fwd.scale.data   = std::move(dl.bnScale.data);                                      \
-            dl_fwd.shift.desc   = shift.desc;                                                      \
-            dl_fwd.shift.data   = std::move(shift.data);                                           \
-            dl_fwd.saveMean_ref.desc =                                                             \
-                miopen::TensorDescriptor(miopen_type<AccDataType>{}, this->derived_layout, this->derivedBnDesc.GetLengths()); \
+            dl_fwd.input.desc        = dl.input.desc;                                              \
+            dl_fwd.input.data        = std::move(dl.input.data);                                   \
+            dl_fwd.output.desc       = dl.output.desc;                                             \
+            dl_fwd.output.data       = std::move(dl.output.data);                                  \
+            dl_fwd.out_ref.desc      = dl.out_ref.desc;                                            \
+            dl_fwd.out_ref.data      = std::move(dl.out_ref.data);                                 \
+            dl_fwd.scale.desc        = dl.bnScale.desc;                                            \
+            dl_fwd.scale.data        = std::move(dl.bnScale.data);                                 \
+            dl_fwd.shift.desc        = shift.desc;                                                 \
+            dl_fwd.shift.data        = std::move(shift.data);                                      \
+            dl_fwd.saveMean_ref.desc = miopen::TensorDescriptor(miopen_type<AccDataType>{},        \
+                                                                this->derived_layout,              \
+                                                                this->derivedBnDesc.GetLengths()); \
             dl_fwd.saveMean_ref.data.resize(dl_fwd.saveMean_ref.desc.GetElementSpace());           \
             dl_fwd.saveVariance_ref.desc = dl_fwd.saveMean_ref.desc;                               \
             dl_fwd.saveVariance_ref.data.resize(dl_fwd.saveVariance_ref.desc.GetElementSpace());   \
             dl_fwd.runMean_ref.desc     = runMean.desc;                                            \
             dl_fwd.runMean_ref.data     = std::move(runMean.data);                                 \
             dl_fwd.runVariance_ref.desc = runVar.desc;                                             \
-            dl_fwd.runVariance_ref.data = std::move(runVar.data);                                 \
+            dl_fwd.runVariance_ref.data = std::move(runVar.data);                                  \
             EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);                                    \
             EnsureValidLayout(dl_fwd.output, miopenTensorNCDHW);                                   \
             EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);                                    \
@@ -609,10 +607,10 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl_fwd.runMean_ref, this->derived_layout);                           \
             EnsureValidLayout(dl_fwd.runVariance_ref, this->derived_layout);                       \
             test::ComputeCPUBNFwdTrain(dl_fwd);                                                    \
-            dl.input.data   = std::move(dl_fwd.input.data);                                        \
-            dl.output.data  = std::move(dl_fwd.output.data);                                       \
-            dl.out_ref.data = std::move(dl_fwd.out_ref.data);                                      \
-            dl.bnScale.data = std::move(dl_fwd.scale.data);                                        \
+            dl.input.data       = std::move(dl_fwd.input.data);                                    \
+            dl.output.data      = std::move(dl_fwd.output.data);                                   \
+            dl.out_ref.data     = std::move(dl_fwd.out_ref.data);                                  \
+            dl.bnScale.data     = std::move(dl_fwd.scale.data);                                    \
             dl.savedMean.desc   = dl_fwd.saveMean_ref.desc;                                        \
             dl.savedMean.data   = std::move(dl_fwd.saveMean_ref.data);                             \
             dl.savedInvVar.desc = dl_fwd.saveVariance_ref.desc;                                    \
