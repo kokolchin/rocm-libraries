@@ -536,7 +536,9 @@ void RunCbaInferenceTest(const CbaTestCase& test_case)
 
         if(miopenError != miopenStatusSuccess)
         {
-            GTEST_SKIP() << "CBA Inference plan not supported";
+            std::stringstream ss;
+            ss << "CBA Inference plan not supported for: " << test_case;
+            GTEST_SKIP() << ss.str();
         }
         else if(input.desc.GetLengths().at(1) == weights.desc.GetLengths().at(1) &&
                 wei_h > 2 * fpad_h && wei_w > 2 * fpad_w && input_h >= (2 * fpad_h + wei_h) &&
