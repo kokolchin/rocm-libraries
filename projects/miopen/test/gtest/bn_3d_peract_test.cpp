@@ -45,14 +45,14 @@ struct DLModuleHelper
         tensor<AccDataType> runMean_ref;
         tensor<AccDataType> runVariance_ref;
 
-        miopenBatchNormMode_t bn_mode      = miopenBNPerActivation;
-        double epsilon                     = MIO_BN_TEST_EPSILON;
-        double averageFactor               = MIO_BN_TEST_EXPAVGFACTOR;
-        bool useInverseVariance            = false;
-        miopenActivationMode_t activ_mode  = miopenActivationPASTHRU;
-        double activ_alpha                 = 1.0;
-        double activ_beta                  = 0.0;
-        double activ_gamma                 = 1.0;
+        miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
+        double epsilon                    = MIO_BN_TEST_EPSILON;
+        double averageFactor              = MIO_BN_TEST_EXPAVGFACTOR;
+        bool useInverseVariance           = false;
+        miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
+        double activ_alpha                = 1.0;
+        double activ_beta                 = 0.0;
+        double activ_gamma                = 1.0;
     };
 
     template <typename U>
@@ -352,11 +352,12 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
             /* Read GPU results into separate vectors to avoid overwriting initial state */        \
-            auto gpu_output     = handle.Read<data_type>(out_dev, output.data.size());             \
-            auto gpu_saveMean   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());    \
-            auto gpu_saveInvVar = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());\
-            auto gpu_runMean    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());      \
-            auto gpu_runVar     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());        \
+            auto gpu_output   = handle.Read<data_type>(out_dev, output.data.size());               \
+            auto gpu_saveMean = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());      \
+            auto gpu_saveInvVar =                                                                  \
+                handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());                  \
+            auto gpu_runMean = handle.Read<AccDataType>(runMean_dev, runMean.data.size());         \
+            auto gpu_runVar  = handle.Read<AccDataType>(runVar_dev, runVar.data.size());           \
                                                                                                    \
             typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
@@ -380,7 +381,7 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
                                                                                                    \
             test::ComputeCPUBNFwdTrain(dl);                                                        \
                                                                                                    \
-            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                 \
+            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                \
             test::CompareTensor(gpu_saveMean, dl.saveMean_ref, tolerance);                         \
             test::CompareTensor(gpu_saveInvVar, dl.saveVariance_ref, tolerance);                   \
             test::CompareTensor(gpu_runMean, dl.runMean_ref, tolerance);                           \
@@ -458,16 +459,16 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);                                \
                 EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);                                \
                 test::ComputeCPUBNFwdTrain(dl_fwd);                                                \
-                dl.input.data       = std::move(dl_fwd.input.data);                                \
-                dl.out_ref.data     = std::move(dl_fwd.out_ref.data);                              \
-                dl.scale.data       = std::move(dl_fwd.scale.data);                                \
-                dl.shift.data       = std::move(dl_fwd.shift.data);                                \
-                dl.estMean.data     = std::move(dl_fwd.saveMean_ref.data);                         \
-                dl.estVariance.data = std::move(dl_fwd.saveVariance_ref.data);                     \
+                dl.input.data         = std::move(dl_fwd.input.data);                              \
+                dl.out_ref.data       = std::move(dl_fwd.out_ref.data);                            \
+                dl.scale.data         = std::move(dl_fwd.scale.data);                              \
+                dl.shift.data         = std::move(dl_fwd.shift.data);                              \
+                dl.estMean.data       = std::move(dl_fwd.saveMean_ref.data);                       \
+                dl.estVariance.data   = std::move(dl_fwd.saveVariance_ref.data);                   \
                 dl.useInverseVariance = true;                                                      \
             }                                                                                      \
             test::ComputeCPUBNInference(dl);                                                       \
-            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                 \
+            test::CompareTensor(gpu_output, dl.out_ref, tolerance);                                \
                                                                                                    \
             Helper::MoveBack(dl.input, input);                                                     \
             Helper::MoveBack(dl.scale, scale);                                                     \
@@ -514,8 +515,8 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
             auto gpu_dx     = handle.Read<data_type>(dx_dev, dx_output.data.size());               \
-            auto gpu_dscale = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
-            auto gpu_dshift = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
+            auto gpu_dscale = handle.Read<AccDataType>(dscale_dev, dscale.data.size());            \
+            auto gpu_dshift = handle.Read<AccDataType>(dshift_dev, dshift.data.size());            \
                                                                                                    \
             typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
@@ -524,21 +525,21 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             Helper::MoveTo(out_ref, dl.out_ref);                                                   \
                                                                                                    \
             typename fixture::DLModule dl_fwd;                                                     \
-            dl_fwd.input.desc        = dl.input.desc;                                              \
-            dl_fwd.input.data        = std::move(dl.input.data);                                   \
-            dl_fwd.scale.desc        = dl.bnScale.desc;                                            \
-            dl_fwd.scale.data        = std::move(dl.bnScale.data);                                 \
-            dl_fwd.shift.desc        = shift.desc;                                                 \
-            dl_fwd.shift.data        = std::move(shift.data);                                      \
-            dl_fwd.out_ref.desc      = dl.out_ref.desc;                                            \
-            dl_fwd.out_ref.data      = std::move(dl.out_ref.data);                                 \
+            dl_fwd.input.desc   = dl.input.desc;                                                   \
+            dl_fwd.input.data   = std::move(dl.input.data);                                        \
+            dl_fwd.scale.desc   = dl.bnScale.desc;                                                 \
+            dl_fwd.scale.data   = std::move(dl.bnScale.data);                                      \
+            dl_fwd.shift.desc   = shift.desc;                                                      \
+            dl_fwd.shift.data   = std::move(shift.data);                                           \
+            dl_fwd.out_ref.desc = dl.out_ref.desc;                                                 \
+            dl_fwd.out_ref.data = std::move(dl.out_ref.data);                                      \
                                                                                                    \
-            dl_fwd.saveMean_ref.desc     = this->derivedBnDesc;                                    \
+            dl_fwd.saveMean_ref.desc = this->derivedBnDesc;                                        \
             dl_fwd.saveMean_ref.data.resize(dl_fwd.saveMean_ref.desc.GetElementSpace());           \
             dl_fwd.saveVariance_ref.desc = dl_fwd.saveMean_ref.desc;                               \
             dl_fwd.saveVariance_ref.data.resize(dl_fwd.saveVariance_ref.desc.GetElementSpace());   \
-            dl_fwd.runMean_ref.desc      = runMean.desc;                                            \
-            dl_fwd.runMean_ref.data      = std::move(runMean.data);                                 \
+            dl_fwd.runMean_ref.desc     = runMean.desc;                                            \
+            dl_fwd.runMean_ref.data     = std::move(runMean.data);                                 \
             dl_fwd.runVariance_ref.desc = runVar.desc;                                             \
             dl_fwd.runVariance_ref.data = std::move(runVar.data);                                  \
                                                                                                    \
@@ -607,8 +608,9 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
                                                                                                    \
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
-            auto gpu_saveMean   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());    \
-            auto gpu_saveInvVar = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());\
+            auto gpu_saveMean = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());      \
+            auto gpu_saveInvVar =                                                                  \
+                handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());                  \
                                                                                                    \
             tensor<data_type> dy_input{miopenTensorNCDHW,                                          \
                                        std::vector<std::size_t>{n, c, d, h, w}};                   \
@@ -646,8 +648,8 @@ using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
             ASSERT_EQ(status, miopenStatusSuccess);                                                \
                                                                                                    \
             auto gpu_dx     = handle.Read<data_type>(dx_dev, dx_output.data.size());               \
-            auto gpu_dscale = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
-            auto gpu_dshift = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
+            auto gpu_dscale = handle.Read<AccDataType>(dscale_dev, dscale.data.size());            \
+            auto gpu_dshift = handle.Read<AccDataType>(dshift_dev, dshift.data.size());            \
                                                                                                    \
             typename fixture::DLModule dl;                                                         \
             Helper::MoveTo(input, dl.input);                                                       \
