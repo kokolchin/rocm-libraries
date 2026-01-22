@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 #include "get_handle.hpp"
 #include "gtest_common.hpp"
+#include "conv_test_base.hpp"
 #include "../conv_common.hpp"
 #include "../fusionHost.hpp"
 #include "../random.hpp"
