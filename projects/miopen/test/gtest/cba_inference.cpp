@@ -292,7 +292,7 @@ std::vector<CbaTestCase> GetCbaTestCases()
     {
         for(int amode : {1, 2, 3}) // LOGISTIC, TANH, RELU
         {
-            result.push_back({{static_cast<int>(net.N),
+            result.push_back({{1, // Batch size 1 to match CTest default and improve performance
                                static_cast<int>(net.C),
                                static_cast<int>(net.H),
                                static_cast<int>(net.W)},
@@ -321,7 +321,7 @@ std::vector<CbaTestCase> GetCbaTestCases()
     {
         for(int amode : {3, 5, 8}) // RELU, ABS, LEAKYRELU
         {
-            result.push_back({{static_cast<int>(net.N),
+            result.push_back({{1, // Batch size 1
                                static_cast<int>(net.C),
                                static_cast<int>(net.H),
                                static_cast<int>(net.W)},
@@ -349,7 +349,7 @@ std::vector<CbaTestCase> GetCbaTestCases()
     {
         for(int amode : {1, 3}) // LOGISTIC, RELU
         {
-            result.push_back({{static_cast<int>(net.N),
+            result.push_back({{1, // Batch size 1
                                static_cast<int>(net.C),
                                static_cast<int>(net.H),
                                static_cast<int>(net.W)},
@@ -378,6 +378,7 @@ std::vector<CbaTestCase> GetCbaTestCases()
 template <typename T>
 void RunCbaInferenceTest(const CbaTestCase& test_case)
 {
+    std::cout << "[        ] " << test_case << std::endl;
     uint64_t max_value = miopen_type<T>{} == miopenHalf ? 5 : 17;
 
     // Create input tensor
