@@ -294,10 +294,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
     double tolerance    = 5e-3;
 };
-using GPU_Bn3dPerAct_FP32 = GPU_Bn3dPerAct<float>;
-using GPU_Bn3dPerAct_FP16 = GPU_Bn3dPerAct<half_float::half>;
-using GPU_Bn3dPerAct_BF16 = GPU_Bn3dPerAct<bfloat16>;
-using GPU_Bn3dPerAct_FP64 = GPU_Bn3dPerAct<double>;
+using GPU_Bn3dPerAct_FP32  = GPU_Bn3dPerAct<float>;
+using GPU_Bn3dPerAct_FP16  = GPU_Bn3dPerAct<half_float::half>;
+using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
+using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
 
 #define TEST_PERACT_3D(fixture, data_type)                                                         \
     TEST_P(fixture, Test)                                                                          \
@@ -622,16 +622,16 @@ using GPU_Bn3dPerAct_FP64 = GPU_Bn3dPerAct<double>;
 
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP32, float)
 TEST_PERACT_3D(GPU_Bn3dPerAct_FP16, half_float::half)
-TEST_PERACT_3D(GPU_Bn3dPerAct_BF16, bfloat16)
+TEST_PERACT_3D(GPU_Bn3dPerAct_BFP16, bfloat16)
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
 // FP32 runs with all 5 types (including UseEstimated) to reach the 299 tests reported by ctest
-INSTANTIATE_TEST_SUITE_P(Smoke,
+INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP32,
                          testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Full)));
-INSTANTIATE_TEST_SUITE_P(Smoke,
+INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP16,
                          testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_Bn3dPerAct_BF16,
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3dPerAct_BFP16,
                          testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
