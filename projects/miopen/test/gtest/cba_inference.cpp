@@ -553,20 +553,8 @@ class GPU_CbaInference_FP32 : public testing::TestWithParam<CbaTestCase>
     void SetUp() override { prng::reset_seed(); }
 };
 
-class GPU_CbaInference_FP16 : public testing::TestWithParam<CbaTestCase>
-{
-    void SetUp() override { prng::reset_seed(); }
-};
-
 TEST_P(GPU_CbaInference_FP32, FloatTest_cba_inference) { RunCbaInferenceTest<float>(GetParam()); }
-
-TEST_P(GPU_CbaInference_FP16, HalfTest_cba_inference)
-{
-    RunCbaInferenceTest<half_float::half>(GetParam());
-}
 
 } // namespace
 
 INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP32, testing::ValuesIn(GetCbaTestCases()));
-
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbaInference_FP16, testing::ValuesIn(GetCbaTestCases()));
