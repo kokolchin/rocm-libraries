@@ -284,80 +284,94 @@ struct CbaTestCase
 
 std::vector<CbaTestCase> GetCbaTestCases()
 {
-    return {
-        // input_dims, weights_dims, pads_strides_dilations, bias_mode, pad_mode, test_activ,
-        // activ_mode, alpha, beta, gamma
-        {{16, 32, 8, 8},
-         {64, 32, 5, 5},
-         {0, 0, 1, 1, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{16, 32, 8, 8},
-         {64, 32, 5, 5},
-         {1, 1, 2, 2, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{64, 1024, 14, 14},
-         {2048, 1024, 1, 1},
-         {0, 0, 2, 2, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{64, 1024, 14, 14},
-         {256, 1024, 1, 1},
-         {0, 0, 1, 1, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{64, 128, 28, 28},
-         {128, 128, 3, 3},
-         {1, 1, 1, 1, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{64, 3, 224, 224},
-         {64, 3, 7, 7},
-         {3, 3, 2, 2, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-        {{100, 3, 32, 32},
-         {64, 3, 3, 3},
-         {1, 1, 1, 1, 1, 1},
-         true,
-         "default",
-         true,
-         3,
-         0.5,
-         0.5,
-         0.5},
-    };
+    std::vector<CbaTestCase> result;
+    auto networks = GetNetwork1<ConvTestCaseBase>();
+    // Add ResNet50 cases with multiple activation modes
+    for(const auto& net : networks)
+    {
+        for(int amode : {1, 2, 3}) // LOGISTIC, TANH, RELU
+        {
+            result.push_back({{static_cast<int>(net.N),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.H),
+                               static_cast<int>(net.W)},
+                              {static_cast<int>(net.k),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.y),
+                               static_cast<int>(net.x)},
+                              {static_cast<int>(net.pad_y),
+                               static_cast<int>(net.pad_x),
+                               static_cast<int>(net.stride_y),
+                               static_cast<int>(net.stride_x),
+                               static_cast<int>(net.dilation_y),
+                               static_cast<int>(net.dilation_x)},
+                              true,
+                              "default",
+                              true,
+                              amode,
+                              0.5,
+                              0.5,
+                              0.5});
+        }
+    }
+    // Add additional configurations to reach around 87 cases per data type
+    auto additional_networks = ConvTestConfigs<ConvTestCaseBase>();
+    for(const auto& net : additional_networks)
+    {
+        for(int amode : {3, 5, 8}) // RELU, ABS, LEAKYRELU
+        {
+            result.push_back({{static_cast<int>(net.N),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.H),
+                               static_cast<int>(net.W)},
+                              {static_cast<int>(net.k),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.y),
+                               static_cast<int>(net.x)},
+                              {static_cast<int>(net.pad_y),
+                               static_cast<int>(net.pad_x),
+                               static_cast<int>(net.stride_y),
+                               static_cast<int>(net.stride_x),
+                               static_cast<int>(net.dilation_y),
+                               static_cast<int>(net.dilation_x)},
+                              true,
+                              "default",
+                              true,
+                              amode,
+                              0.5,
+                              0.5,
+                              0.5});
+        }
+    }
+    auto step_networks = GetNetworkForFusionCompileStepTest<ConvTestCaseBase>();
+    for(const auto& net : step_networks)
+    {
+        for(int amode : {1, 3}) // LOGISTIC, RELU
+        {
+            result.push_back({{static_cast<int>(net.N),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.H),
+                               static_cast<int>(net.W)},
+                              {static_cast<int>(net.k),
+                               static_cast<int>(net.C),
+                               static_cast<int>(net.y),
+                               static_cast<int>(net.x)},
+                              {static_cast<int>(net.pad_y),
+                               static_cast<int>(net.pad_x),
+                               static_cast<int>(net.stride_y),
+                               static_cast<int>(net.stride_x),
+                               static_cast<int>(net.dilation_y),
+                               static_cast<int>(net.dilation_x)},
+                              true,
+                              "default",
+                              true,
+                              amode,
+                              0.5,
+                              0.5,
+                              0.5});
+        }
+    }
+    return result;
 }
 
 template <typename T>
