@@ -247,8 +247,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             cache.scale     = std::move(scale);
             cache.shift     = std::move(shift);
             cache.in_dev    = std::move(in_dev);
-            cache.scale_dev = std::move(cache.scale_dev);
-            cache.shift_dev = std::move(cache.shift_dev);
+            cache.scale_dev = std::move(scale_dev);
+            cache.shift_dev = std::move(shift_dev);
         }
     }
 
