@@ -313,19 +313,24 @@ std::vector<CbaTestCase> GetCbaTestCases()
 
             for(auto stride : {1, 2})
             {
-                result.push_back({{1, in[1], in[2], in[3]},
-                                  {wei[0], wei[1], wei[2], wei[3]},
-                                  {0, 0, stride, stride, 1, 1},
-                                  true,
-                                  "default",
-                                  true,
-                                  3,
-                                  0.5,
-                                  0.5,
-                                  0.5});
+                // Dimension requirements check (matching logic in RunCbaInferenceTest)
+                // fpad_h = 0, fpad_w = 0, wei_h = wei[2], wei_w = wei[3]
+                if(in[2] >= wei[2] && in[3] >= wei[3] && wei[2] > 0 && wei[3] > 0)
+                {
+                    result.push_back({{1, in[1], in[2], in[3]},
+                                      {wei[0], wei[1], wei[2], wei[3]},
+                                      {0, 0, stride, stride, 1, 1},
+                                      true,
+                                      "default",
+                                      true,
+                                      3,
+                                      0.5,
+                                      0.5,
+                                      0.5});
 
-                if(result.size() >= 87)
-                    return result;
+                    if(result.size() >= 87)
+                        return result;
+                }
             }
         }
     }
