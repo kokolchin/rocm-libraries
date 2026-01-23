@@ -241,8 +241,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         if(this->GetParam().test_type == BN3DPerActTestType::ForwardTraining ||
            this->GetParam().test_type == BN3DPerActTestType::ForwardInferenceUseEstimated)
         {
-            handle.WriteTo(runMean.data, runMean_dev);
-            handle.WriteTo(runVar.data, runVar_dev);
+            handle.WriteTo(
+                runMean.data.data(), runMean_dev, runMean.data.size() * sizeof(AccDataType));
+            handle.WriteTo(
+                runVar.data.data(), runVar_dev, runVar.data.size() * sizeof(AccDataType));
         }
 
         output = tensor<T>{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
