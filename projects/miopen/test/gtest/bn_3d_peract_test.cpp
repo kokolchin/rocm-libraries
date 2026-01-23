@@ -607,6 +607,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         }
     }
 };
+
 using GPU_Bn3dPerAct_FP32  = GPU_Bn3dPerAct<float>;
 using GPU_Bn3dPerAct_FP16  = GPU_Bn3dPerAct<half_float::half>;
 using GPU_Bn3dPerAct_BFP16 = GPU_Bn3dPerAct<bfloat16>;
