@@ -598,14 +598,8 @@ TEST_P(GPU_Bn3dPerAct_FP16, Test) { this->RunTest(); }
 TEST_P(GPU_Bn3dPerAct_BFP16, Test) { this->RunTest(); }
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
-INSTANTIATE_TEST_SUITE_P(Full,
-                         GPU_Bn3dPerAct_FP32,
-                         testing::ValuesIn(GetBN3DPerActTestCases()));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3dPerAct_FP32, testing::ValuesIn(GetBN3DPerActTestCases()));
 
-INSTANTIATE_TEST_SUITE_P(Full,
-                         GPU_Bn3dPerAct_FP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases()));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3dPerAct_FP16, testing::ValuesIn(GetBN3DPerActTestCases()));
 
-INSTANTIATE_TEST_SUITE_P(Full,
-                         GPU_Bn3dPerAct_BFP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases()));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3dPerAct_BFP16, testing::ValuesIn(GetBN3DPerActTestCases()));
