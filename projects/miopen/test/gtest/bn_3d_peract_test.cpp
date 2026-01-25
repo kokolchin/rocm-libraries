@@ -17,6 +17,10 @@
 #include "network_data.hpp"
 
 namespace {
+#ifndef COMPATIBLE_WITH_CTEST
+#define COMPATIBLE_WITH_CTEST false
+#endif
+
 constexpr double MIO_BN_TEST_EPSILON      = 1e-5;
 constexpr double MIO_BN_TEST_EXPAVGFACTOR = 0.1;
 
@@ -41,20 +45,14 @@ struct BN3DPerActTestCase
     }
 };
 
-enum class BN3DPerActTestSet
-{
-    Standard, // 4 types: FwdTrain, FwdInferenceRecalc, BwdRecalc, BwdUseSaved
-    Full      // 5 types: includes ForwardInferenceUseEstimated
-};
-
 std::vector<BN3DPerActTestCase>
-GetBN3DPerActTestCases(BN3DPerActTestSet test_set = BN3DPerActTestSet::Standard)
+GetBN3DPerActTestCases(bool include_use_estimated = true)
 {
     std::vector<BN3DPerActTestCase> test_cases;
     // Match ctest behavior:
     // FP32 runs 5 types (Full), while FP16/BF16 run 4 types (Standard)
     std::vector<BN3DPerActTestType> types;
-    if(test_set == BN3DPerActTestSet::Full)
+    if(include_use_estimated)
     {
         types = {BN3DPerActTestType::ForwardTraining,
                  BN3DPerActTestType::ForwardInferenceRecalc,
@@ -297,7 +295,14 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     void RunTest()
     {
         const auto& test_case = this->GetParam();
-        auto&& handle         = get_handle();
+
+        if(test_case.test_type == BN3DPerActTestType::ForwardInferenceUseEstimated &&
+           (std::is_same_v<T, half_float::half> || std::is_same_v<T, bfloat16>))
+        {
+            GTEST_SKIP() << "ForwardInferenceUseEstimated not supported for half precision 3D BN";
+        }
+
+        auto&& handle = get_handle();
 
         switch(test_case.test_type)
         {
@@ -620,13 +625,15 @@ TEST_P(GPU_Bn3dPerAct_FP16, Test) { this->RunTest(); }
 TEST_P(GPU_Bn3dPerAct_BFP16, Test) { this->RunTest(); }
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
-// FP32 runs with all 5 types (including UseEstimated) to reach the 299 tests reported by ctest
+// FP32 always runs with all 5 types (Full)
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP32,
-                         testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Full)));
+                         testing::ValuesIn(GetBN3DPerActTestCases(true)));
+
+// FP16/BFP16 will include skipped tests if COMPATIBLE_WITH_CTEST is false
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
+                         testing::ValuesIn(GetBN3DPerActTestCases(!COMPATIBLE_WITH_CTEST)));
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_BFP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases(BN3DPerActTestSet::Standard)));
+                         testing::ValuesIn(GetBN3DPerActTestCases(!COMPATIBLE_WITH_CTEST)));
