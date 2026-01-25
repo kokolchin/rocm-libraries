@@ -374,6 +374,7 @@ struct cbna_fusion_driver : test_driver
 
         if(input_c != wei_c)
         {
+            std::cout << "SKIPPED (Channel mismatch): input_c=" << input_c << " != wei_c=" << wei_c << std::endl;
             return;
         }
 
@@ -381,7 +382,10 @@ struct cbna_fusion_driver : test_driver
         {
 
             if(stride_h == 0 || stride_w == 0)
+            {
+                std::cout << "SKIPPED (Invalid stride SAME): stride_h=" << stride_h << " stride_w=" << stride_w << std::endl;
                 return;
+            }
             auto _pad_h = (input_h % stride_h == 0)
                               ? (std::max(static_cast<int>(wei_h - stride_h), 0))
                               : (std::max(static_cast<int>(wei_h - (input_h % stride_h)), 0));
@@ -396,12 +400,18 @@ struct cbna_fusion_driver : test_driver
             int out_w = std::ceil(static_cast<double>(input_w) / stride_w);
 
             if(out_h <= 0 || out_w <= 0)
+            {
+                std::cout << "SKIPPED (Invalid output SAME): out_h=" << out_h << " out_w=" << out_w << std::endl;
                 return;
+            }
         }
         else if(fpaddingMode == miopenPaddingValid)
         {
             if(stride_h == 0 || stride_w == 0)
+            {
+                std::cout << "SKIPPED (Invalid stride VALID): stride_h=" << stride_h << " stride_w=" << stride_w << std::endl;
                 return;
+            }
             filter.pads[1] = 0;
             filter.pads[0] = 0;
 
@@ -409,7 +419,10 @@ struct cbna_fusion_driver : test_driver
             int out_w = std::ceil(static_cast<double>(input_w - wei_w + 1) / stride_w);
 
             if(out_h <= 0 || out_w <= 0)
+            {
+                std::cout << "SKIPPED (Invalid output VALID): out_h=" << out_h << " out_w=" << out_w << std::endl;
                 return;
+            }
         }
 
         if(batchnormMode == 1)
@@ -456,6 +469,7 @@ struct cbna_fusion_driver : test_driver
 
         // Compile
         ++total_cnt;
+        std::cout << "Testing case #" << total_cnt << ": input=[" << input.desc.GetLengths()[0] << "," << input.desc.GetLengths()[1] << "," << input.desc.GetLengths()[2] << "," << input.desc.GetLengths()[3] << "] weights=[" << weights.desc.GetLengths()[0] << "," << weights.desc.GetLengths()[1] << "," << weights.desc.GetLengths()[2] << "," << weights.desc.GetLengths()[3] << "] stride=[" << filter.strides[0] << "," << filter.strides[1] << "]" << std::endl;
         miopenStatus_t miopenError = miopenCompileFusionPlan(&handle, ptr_fusionplan.get());
         if(miopenError != miopenStatusSuccess)
         {
@@ -518,6 +532,10 @@ struct cbna_fusion_driver : test_driver
                                                                    estVariance,
                                                                    bnmode});
             }
+        }
+        else
+        {
+            std::cout << "SKIPPED (Dimension requirements): input_h=" << input_h << " input_w=" << input_w << " wei_h=" << wei_h << " wei_w=" << wei_w << " fpad_h=" << fpad_h << " fpad_w=" << fpad_w << std::endl;
         }
     }
 };
