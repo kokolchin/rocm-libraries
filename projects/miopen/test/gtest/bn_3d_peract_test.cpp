@@ -17,12 +17,9 @@
 #include "network_data.hpp"
 
 namespace {
-#ifndef COMPATIBLE_WITH_CTEST
-#define COMPATIBLE_WITH_CTEST false
-#endif
-
 constexpr double MIO_BN_TEST_EPSILON      = 1e-5;
 constexpr double MIO_BN_TEST_EXPAVGFACTOR = 0.1;
+constexpr double MIO_BN_TEST_TOLERANCE    = 0.5;
 
 enum class BN3DPerActTestType
 {
@@ -45,42 +42,24 @@ struct BN3DPerActTestCase
     }
 };
 
-std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases(bool include_use_estimated = true)
+std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases()
 {
     std::vector<BN3DPerActTestCase> test_cases;
-    // Match ctest behavior:
-    // FP32 runs 5 types (Full), while FP16/BF16 run 4 types (Standard)
-    std::vector<BN3DPerActTestType> types;
-    if(include_use_estimated)
-    {
-        types = {BN3DPerActTestType::ForwardTraining,
-                 BN3DPerActTestType::ForwardInferenceRecalc,
-                 BN3DPerActTestType::ForwardInferenceUseEstimated,
-                 BN3DPerActTestType::BackwardRecalc,
-                 BN3DPerActTestType::BackwardUseSaved};
-    }
-    else
-    {
-        types = {BN3DPerActTestType::ForwardTraining,
-                 BN3DPerActTestType::ForwardInferenceRecalc,
-                 BN3DPerActTestType::BackwardRecalc,
-                 BN3DPerActTestType::BackwardUseSaved};
-    }
+    const std::vector<BN3DPerActTestType> types = {BN3DPerActTestType::ForwardTraining,
+                                                   BN3DPerActTestType::ForwardInferenceRecalc,
+                                                   BN3DPerActTestType::ForwardInferenceUseEstimated,
+                                                   BN3DPerActTestType::BackwardRecalc,
+                                                   BN3DPerActTestType::BackwardUseSaved};
 
-    // Use batch size factor 4 to match ctest behavior (like other BN 3D tests)
+    // Use batch size factor 4 to match ctest behavior
     for(const auto& shape : get_3d_bn_peract_inputs(4))
     {
         const auto n = shape[0];
-        // Match ctest logic: skip ALL test cases when n == 1 (not just training/backward)
-        // From bn_peract_test.cpp: if(n == 1) { return; }
         if(n == 1)
-        {
-            continue; // Skip all test cases for batch size 1
-        }
+            continue;
+
         for(const auto& type : types)
-        {
             test_cases.push_back({shape[0], shape[1], shape[2], shape[3], shape[4], type});
-        }
     }
     return test_cases;
 }
@@ -186,13 +165,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         runVar_dev  = handle.Write(runVar.data);
         out_dev     = handle.Write(output.data);
 
-        if(std::is_same_v<T, float> || std::is_same_v<T, double>)
-            tolerance =
-                0.5; // Increased tolerance for 3D PerAct (matches ctest which shows errors ~0.3)
-        else if(std::is_same_v<T, bfloat16>)
-            tolerance = 0.5; // Same tolerance for bfloat16
-        else
-            tolerance = 0.5; // Same tolerance for other types
+        // Increased tolerance for 3D PerAct (matches ctest which shows errors ~0.3)
+        tolerance = MIO_BN_TEST_TOLERANCE;
     }
 
     // Helper to ensure tensor descriptor has valid layout (GetLayout_t() may return 0 or invalid
@@ -289,7 +263,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     float beta          = 0.0f;
     double epsilon      = MIO_BN_TEST_EPSILON;
     double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
-    double tolerance    = 5e-3;
+    double tolerance    = MIO_BN_TEST_TOLERANCE;
 
     void RunTest()
     {
@@ -624,15 +598,14 @@ TEST_P(GPU_Bn3dPerAct_FP16, Test) { this->RunTest(); }
 TEST_P(GPU_Bn3dPerAct_BFP16, Test) { this->RunTest(); }
 
 // Match ctest: only run FP32, FP16, and BF16 (like 2D BN peract test)
-// FP32 always runs with all 5 types (Full)
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP32,
-                         testing::ValuesIn(GetBN3DPerActTestCases(true)));
+                         testing::ValuesIn(GetBN3DPerActTestCases()));
 
-// FP16/BFP16 will include skipped tests if COMPATIBLE_WITH_CTEST is false
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_FP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases(!COMPATIBLE_WITH_CTEST)));
+                         testing::ValuesIn(GetBN3DPerActTestCases()));
+
 INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3dPerAct_BFP16,
-                         testing::ValuesIn(GetBN3DPerActTestCases(!COMPATIBLE_WITH_CTEST)));
+                         testing::ValuesIn(GetBN3DPerActTestCases()));
