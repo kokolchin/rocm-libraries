@@ -45,8 +45,7 @@ struct BN3DPerActTestCase
     }
 };
 
-std::vector<BN3DPerActTestCase>
-GetBN3DPerActTestCases(bool include_use_estimated = true)
+std::vector<BN3DPerActTestCase> GetBN3DPerActTestCases(bool include_use_estimated = true)
 {
     std::vector<BN3DPerActTestCase> test_cases;
     // Match ctest behavior:
