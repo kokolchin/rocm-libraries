@@ -510,7 +510,7 @@ struct cbna_fusion_driver : test_driver
             }
             else
             {
-                exit(EXIT_SUCCESS); // NOLINT (concurrency-mt-unsafe)
+                // exit(EXIT_SUCCESS); // NOLINT (concurrency-mt-unsafe)
             }
 #endif
             output = get_output_tensor(filter, input, weights);
