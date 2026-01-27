@@ -311,8 +311,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -344,7 +342,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.runMean_ref, derived_layout);
             EnsureValidLayout(dl.runVariance_ref, derived_layout);
 
-            test::ComputeCPUBNFwdTrain(dl);
+            test::ComputeCPUBNFwdTrain<T, AccDataType>(dl);
             test::CompareTensor(output, out_ref, tolerance);
             test::CompareTensor(saveMean, saveMean_ref, tolerance);
             test::CompareTensor(saveInvVar, saveInvVar_ref, tolerance);
@@ -383,8 +381,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -413,8 +409,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 struct
                 {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                     tensor<T> input;
                     tensor<AccDataType> out_ref;
                     tensor<AccDataType> scale;
@@ -439,12 +433,12 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);
                 EnsureValidLayout(dl_fwd.out_ref, bn_layout);
-                test::ComputeCPUBNFwdTrain(dl_fwd);
+                test::ComputeCPUBNFwdTrain<T, AccDataType>(dl_fwd);
                 dl.estMean.desc       = dl_fwd.saveMean_ref.desc;
                 dl.estVariance.desc   = dl_fwd.saveVariance_ref.desc;
                 dl.useInverseVariance = true;
             }
-            test::ComputeCPUBNInference(dl);
+            test::ComputeCPUBNInference<T, AccDataType>(dl);
             test::CompareTensor(output, out_ref, tolerance);
             break;
         }
@@ -493,8 +487,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<T> dy;
                 tensor<T> out_ref;
@@ -530,8 +522,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -563,13 +553,13 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl_fwd.runMean_ref, derived_layout);
             EnsureValidLayout(dl_fwd.runVariance_ref, derived_layout);
 
-            test::ComputeCPUBNFwdTrain(dl_fwd);
+            test::ComputeCPUBNFwdTrain<T, AccDataType>(dl_fwd);
             dl.savedMean.desc   = dl_fwd.saveMean_ref.desc;
             dl.savedInvVar.desc = dl_fwd.saveVariance_ref.desc;
             EnsureValidLayout(dl.savedMean, derived_layout);
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
-            test::ComputeCPUBNBwd(dl);
+            test::ComputeCPUBNBwd<T, AccDataType>(dl);
             test::CompareTensor(dx_output, dx_output_ref, tolerance);
             test::CompareTensor(dscale, dscale_ref, tolerance);
             test::CompareTensor(dshift, dshift_ref, tolerance);
@@ -648,8 +638,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                using InputDataType = T;
-                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<T> dy;
                 tensor<T> out_ref;
@@ -685,7 +673,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.savedMean, derived_layout);
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
-            test::ComputeCPUBNBwd(dl);
+            test::ComputeCPUBNBwd<T, AccDataType>(dl);
             test::CompareTensor(dx_output, dx_output_ref, tolerance);
             test::CompareTensor(dscale, dscale_ref, tolerance);
             test::CompareTensor(dshift, dshift_ref, tolerance);

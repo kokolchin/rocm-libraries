@@ -34,7 +34,7 @@
 #include "../fusionHost.hpp"
 
 namespace test {
-template <typename DLModule>
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNInference(DLModule& dl_module)
 {
     int size{0};
@@ -82,7 +82,7 @@ void ComputeCPUBNInference(DLModule& dl_module)
     }
 }
 
-template <typename DLModule>
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNBwd(DLModule& dl_module)
 {
     int size{0};
@@ -137,7 +137,7 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     }
 }
 
-template <typename DLModule>
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNFwdTrain(DLModule& dl_module)
 {
     int size{0};
