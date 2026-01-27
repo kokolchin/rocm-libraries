@@ -80,7 +80,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         w              = tc.w;
 
         // Match ctest logic: skip ALL test cases when n == 1
-        // From bn_peract_test.cpp: if(n == 1) { return; }
         if(n == 1)
         {
             GTEST_SKIP() << "Invalid batch size for batch norm tests";
@@ -93,23 +92,19 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         // Get layout from input before creating out_ref to ensure consistency
         auto input_layout_opt = input.desc.GetLayoutEnum();
-        bn_layout = (input_layout_opt && input_layout_opt.value() != 0) ? input_layout_opt.value()
-                                                                        : miopenTensorNCDHW;
-        // Ensure bn_layout is valid (should never be 0)
+        bn_layout             = (input_layout_opt && input_layout_opt.value() != 0)
+                                    ? input_layout_opt.value()
+                                    : miopenTensorNCDHW;
         if(bn_layout == 0)
-        {
             bn_layout = miopenTensorNCDHW;
-        }
+
         out_ref = tensor<AccDataType>{bn_layout, std::vector<std::size_t>{n, c, d, h, w}};
 
         input.generate(uniform_signed_initializer<T>(2e-3, 1000));
 
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
-        // Ensure derivedBnDesc has a valid layout (DeriveBNTensorDescriptor doesn't preserve
-        // layout) derivedBnDesc is 4D (CxDxHxW), so use 4D layout, not 5D bn_layout
         auto derived_num_dims = derivedBnDesc.GetLengths().size();
-        // Always set derived_layout to a valid default based on dimensions
-        derived_layout = (derived_num_dims == 5) ? miopenTensorNCDHW : miopenTensorNCHW;
+        derived_layout        = (derived_num_dims == 5) ? miopenTensorNCDHW : miopenTensorNCHW;
 
         bool need_fix           = false;
         auto derived_layout_opt = derivedBnDesc.GetLayoutEnum();
@@ -119,35 +114,30 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         }
         else if(derived_num_dims == 4)
         {
-            // For 4D, only accept valid 4D layouts
             auto layout_val = derived_layout_opt.value();
             if(layout_val != miopenTensorNCHW && layout_val != miopenTensorNHWC &&
                layout_val != miopenTensorCHWN && layout_val != miopenTensorNCHWc4 &&
                layout_val != miopenTensorNCHWc8 && layout_val != miopenTensorCHWNc4 &&
                layout_val != miopenTensorCHWNc8)
-            {
                 need_fix = true;
-            }
         }
         else if(derived_num_dims == 5)
         {
-            // For 5D, only accept valid 5D layouts
             auto layout_val = derived_layout_opt.value();
             if(layout_val != miopenTensorNCDHW && layout_val != miopenTensorNDHWC)
-            {
                 need_fix = true;
-            }
         }
         else
         {
-            // For other dimensions, always fix
             need_fix = true;
         }
+
         if(need_fix)
         {
             derivedBnDesc = miopen::TensorDescriptor(
                 derivedBnDesc.GetType(), derived_layout, derivedBnDesc.GetLengths());
         }
+
         scale   = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
         shift   = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
         runMean = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
@@ -165,37 +155,23 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         runVar_dev  = handle.Write(runVar.data);
         out_dev     = handle.Write(output.data);
 
-        // Increased tolerance for 3D PerAct (matches ctest which shows errors ~0.3)
         tolerance = MIO_BN_TEST_TOLERANCE;
     }
 
-    // Helper to ensure tensor descriptor has valid layout (GetLayout_t() may return 0 or invalid
-    // layout)
     template <typename TensorType>
     static void EnsureValidLayout(TensorType& t, miopenTensorLayout_t default_layout)
     {
         auto layout_t = t.desc.GetLayout_t();
         auto num_dims = t.desc.GetLengths().size();
 
-        // Determine correct layout based on number of dimensions
         miopenTensorLayout_t valid_layout;
         if(num_dims == 5)
-        {
-            // For 5D tensors, only NCDHW and NDHWC are supported
             valid_layout = miopenTensorNCDHW;
-        }
         else if(num_dims == 4)
-        {
-            // For 4D tensors, use NCHW as default
             valid_layout = miopenTensorNCHW;
-        }
         else
-        {
-            // For other dimensions, use provided default
             valid_layout = default_layout;
-        }
 
-        // If current layout is 0 or invalid for this dimension, recreate with correct layout
         if(layout_t == 0 ||
            (num_dims == 5 && layout_t != miopenTensorNCDHW && layout_t != miopenTensorNDHWC) ||
            (num_dims == 4 && layout_t != miopenTensorNCHW && layout_t != miopenTensorNHWC &&
@@ -207,40 +183,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         }
     }
 
-    // Helper for ComputeCPUBN* functions from test_operations.hpp
-    struct DLModule
-    {
-        tensor<T> input;
-        tensor<T> output;
-        tensor<AccDataType> out_ref;
-        tensor<AccDataType> scale;
-        tensor<AccDataType> shift;
-        tensor<AccDataType> estMean;
-        tensor<AccDataType> estVariance;
-        tensor<T> dy;
-        tensor<AccDataType> bnScale;
-        tensor<AccDataType> bnBias;
-        tensor<AccDataType> dScale_ref;
-        tensor<AccDataType> dBias_ref;
-        tensor<AccDataType> savedMean;
-        tensor<AccDataType> savedInvVar;
-        tensor<AccDataType> saveMean_ref;
-        tensor<AccDataType> saveVariance_ref;
-        tensor<AccDataType> runMean_ref;
-        tensor<AccDataType> runVariance_ref;
-
-        miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-        double epsilon                = MIO_BN_TEST_EPSILON;
-        double averageFactor          = MIO_BN_TEST_EXPAVGFACTOR;
-        bool useInverseVariance       = false;
-
-        // Fields required by test_operations.hpp
-        miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
-        double activ_alpha                = 1.0;
-        double activ_beta                 = 0.0;
-        double activ_gamma                = 1.0;
-    };
-
     std::size_t n, c, d, h, w;
     tensor<T> input;
     tensor<T> output;
@@ -251,7 +193,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     tensor<AccDataType> runVar;
     miopen::TensorDescriptor derivedBnDesc;
     miopenTensorLayout_t bn_layout;
-    miopenTensorLayout_t derived_layout; // Layout for 4D derived tensors (scale, shift, etc.)
+    miopenTensorLayout_t derived_layout;
     miopen::Allocator::ManageDataPtr in_dev;
     miopen::Allocator::ManageDataPtr scale_dev;
     miopen::Allocator::ManageDataPtr shift_dev;
@@ -280,8 +222,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         switch(test_case.test_type)
         {
         case BN3DPerActTestType::ForwardTraining: {
-            tensor<AccDataType> saveMean{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            tensor<AccDataType> saveInvVar{this->derived_layout, this->derivedBnDesc.GetLengths()};
+            tensor<AccDataType> saveMean{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> saveInvVar{derived_layout, derivedBnDesc.GetLengths()};
             auto saveMean_dev   = handle.Write(saveMean.data);
             auto saveInvVar_dev = handle.Write(saveInvVar.data);
 
@@ -305,31 +247,45 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             ASSERT_EQ(status, miopenStatusSuccess);
 
-            output.data     = handle.Read<T>(out_dev, output.data.size());
+            output.data     = handle.Read<T>(out_dev.get(), output.data.size());
             saveMean.data   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());
             saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());
-            runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());
-            runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());
+            runMean.data    = handle.Read<AccDataType>(runMean_dev.get(), runMean.data.size());
+            runVar.data     = handle.Read<AccDataType>(runVar_dev.get(), runVar.data.size());
 
-            typename GPU_Bn3dPerAct<T>::DLModule dl;
-            dl.input            = input;
-            dl.output           = output;
-            dl.out_ref          = out_ref;
-            dl.scale            = scale;
-            dl.shift            = shift;
-            dl.saveMean_ref     = saveMean;
-            dl.saveVariance_ref = saveInvVar;
-            dl.runMean_ref      = runMean;
-            dl.runVariance_ref  = runVar;
+            struct
+            {
+                const tensor<T>& input;
+                tensor<AccDataType>& out_ref;
+                const tensor<AccDataType>& scale;
+                const tensor<AccDataType>& shift;
+                double epsilon;
+                double averageFactor;
+                tensor<AccDataType>& saveMean_ref;
+                tensor<AccDataType>& saveVariance_ref;
+                tensor<AccDataType>& runMean_ref;
+                tensor<AccDataType>& runVariance_ref;
+                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+            } dl{input,
+                 out_ref,
+                 scale,
+                 shift,
+                 epsilon,
+                 expAvgFactor,
+                 saveMean,
+                 saveInvVar,
+                 runMean,
+                 runVar};
+
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
-            EnsureValidLayout(dl.output, miopenTensorNCDHW);
-            EnsureValidLayout(dl.out_ref, this->bn_layout);
-            EnsureValidLayout(dl.scale, this->derived_layout);
-            EnsureValidLayout(dl.shift, this->derived_layout);
-            EnsureValidLayout(dl.saveMean_ref, this->derived_layout);
-            EnsureValidLayout(dl.saveVariance_ref, this->derived_layout);
-            EnsureValidLayout(dl.runMean_ref, this->derived_layout);
-            EnsureValidLayout(dl.runVariance_ref, this->derived_layout);
+            EnsureValidLayout(dl.out_ref, bn_layout);
+            EnsureValidLayout(dl.scale, derived_layout);
+            EnsureValidLayout(dl.shift, derived_layout);
+            EnsureValidLayout(dl.saveMean_ref, derived_layout);
+            EnsureValidLayout(dl.saveVariance_ref, derived_layout);
+            EnsureValidLayout(dl.runMean_ref, derived_layout);
+            EnsureValidLayout(dl.runVariance_ref, derived_layout);
+
             test::ComputeCPUBNFwdTrain(dl);
             test::CompareTensor(output, dl.out_ref, tolerance);
             test::CompareTensor(saveMean, dl.saveMean_ref, tolerance);
@@ -365,37 +321,56 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             ASSERT_EQ(status, miopenStatusSuccess);
 
-            output.data = handle.Read<T>(out_dev, output.data.size());
+            output.data = handle.Read<T>(out_dev.get(), output.data.size());
 
-            typename GPU_Bn3dPerAct<T>::DLModule dl;
-            dl.input              = input;
-            dl.output             = output;
-            dl.out_ref            = out_ref;
-            dl.scale              = scale;
-            dl.shift              = shift;
-            dl.estMean            = runMean;
-            dl.estVariance        = runVar;
-            dl.useInverseVariance = false;
+            struct
+            {
+                const tensor<T>& input;
+                tensor<AccDataType>& out_ref;
+                const tensor<AccDataType>& scale;
+                const tensor<AccDataType>& shift;
+                tensor<AccDataType>& estMean;
+                tensor<AccDataType>& estVariance;
+                double epsilon;
+                bool useInverseVariance       = false;
+                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+            } dl{input, out_ref, scale, shift, runMean, runVar, epsilon};
+
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
-            EnsureValidLayout(dl.output, miopenTensorNCDHW);
-            EnsureValidLayout(dl.out_ref, this->bn_layout);
-            EnsureValidLayout(dl.scale, this->derived_layout);
-            EnsureValidLayout(dl.shift, this->derived_layout);
-            EnsureValidLayout(dl.estMean, this->derived_layout);
-            EnsureValidLayout(dl.estVariance, this->derived_layout);
+            EnsureValidLayout(dl.out_ref, bn_layout);
+            EnsureValidLayout(dl.scale, derived_layout);
+            EnsureValidLayout(dl.shift, derived_layout);
+            EnsureValidLayout(dl.estMean, derived_layout);
+            EnsureValidLayout(dl.estVariance, derived_layout);
+
             if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)
             {
-                typename GPU_Bn3dPerAct<T>::DLModule dl_fwd;
-                dl_fwd.input            = input;
-                dl_fwd.out_ref          = out_ref;
-                dl_fwd.scale            = scale;
-                dl_fwd.shift            = shift;
-                dl_fwd.saveMean_ref     = runMean;
-                dl_fwd.saveVariance_ref = runVar;
-                dl_fwd.runMean_ref      = runMean;
-                dl_fwd.runVariance_ref  = runVar;
+                struct
+                {
+                    const tensor<T>& input;
+                    tensor<AccDataType>& out_ref;
+                    const tensor<AccDataType>& scale;
+                    const tensor<AccDataType>& shift;
+                    double epsilon;
+                    double averageFactor;
+                    tensor<AccDataType>& saveMean_ref;
+                    tensor<AccDataType>& saveVariance_ref;
+                    tensor<AccDataType>& runMean_ref;
+                    tensor<AccDataType>& runVariance_ref;
+                    miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+                } dl_fwd{input,
+                         out_ref,
+                         scale,
+                         shift,
+                         epsilon,
+                         expAvgFactor,
+                         runMean,
+                         runVar,
+                         runMean,
+                         runVar};
+
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);
-                EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);
+                EnsureValidLayout(dl_fwd.out_ref, bn_layout);
                 test::ComputeCPUBNFwdTrain(dl_fwd);
                 dl.estMean            = dl_fwd.saveMean_ref;
                 dl.estVariance        = dl_fwd.saveVariance_ref;
@@ -411,8 +386,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             auto dy_dev = handle.Write(dy_input.data);
 
             tensor<T> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
-            tensor<AccDataType> dscale{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            tensor<AccDataType> dshift{this->derived_layout, this->derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dscale{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dshift{derived_layout, derivedBnDesc.GetLengths()};
             auto dx_dev     = handle.Write(dx_output.data);
             auto dscale_dev = handle.Write(dscale.data);
             auto dshift_dev = handle.Write(dshift.data);
@@ -443,48 +418,66 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());
 
-            typename GPU_Bn3dPerAct<T>::DLModule dl;
-            dl.input      = input;
-            dl.output     = output;
-            dl.dy         = dy_input;
-            dl.out_ref    = out_ref;
-            dl.bnScale    = scale;
-            dl.dScale_ref = dscale;
-            dl.dBias_ref  = dshift;
-            EnsureValidLayout(dl.input, miopenTensorNCDHW);
-            EnsureValidLayout(dl.output, miopenTensorNCDHW);
-            EnsureValidLayout(dl.dy, miopenTensorNCDHW);
-            EnsureValidLayout(dl.out_ref, this->bn_layout);
-            EnsureValidLayout(dl.bnScale, this->derived_layout);
-            EnsureValidLayout(dl.dScale_ref, this->derived_layout);
-            EnsureValidLayout(dl.dBias_ref, this->derived_layout);
+            struct
+            {
+                const tensor<T>& input;
+                const tensor<T>& dy;
+                tensor<AccDataType>& out_ref;
+                const tensor<AccDataType>& bnScale;
+                tensor<AccDataType>& dScale_ref;
+                tensor<AccDataType>& dBias_ref;
+                tensor<AccDataType>& savedMean;
+                tensor<AccDataType>& savedInvVar;
+                double epsilon;
+                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+            } dl{input, dy_input, out_ref, scale, dscale, dshift, runMean, runVar, epsilon};
 
-            typename GPU_Bn3dPerAct<T>::DLModule dl_fwd;
-            dl_fwd.input   = input;
-            dl_fwd.output  = output;
-            dl_fwd.out_ref = out_ref;
-            dl_fwd.scale   = scale;
-            dl_fwd.shift   = shift;
-            dl_fwd.saveMean_ref =
-                tensor<AccDataType>{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            dl_fwd.saveVariance_ref =
-                tensor<AccDataType>{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            dl_fwd.runMean_ref     = runMean;
-            dl_fwd.runVariance_ref = runVar;
+            EnsureValidLayout(dl.input, miopenTensorNCDHW);
+            EnsureValidLayout(dl.dy, miopenTensorNCDHW);
+            EnsureValidLayout(dl.out_ref, bn_layout);
+            EnsureValidLayout(dl.bnScale, derived_layout);
+            EnsureValidLayout(dl.dScale_ref, derived_layout);
+            EnsureValidLayout(dl.dBias_ref, derived_layout);
+
+            struct
+            {
+                const tensor<T>& input;
+                tensor<AccDataType>& out_ref;
+                const tensor<AccDataType>& scale;
+                const tensor<AccDataType>& shift;
+                double epsilon;
+                double averageFactor;
+                tensor<AccDataType>& saveMean_ref;
+                tensor<AccDataType>& saveVariance_ref;
+                tensor<AccDataType>& runMean_ref;
+                tensor<AccDataType>& runVariance_ref;
+                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+            } dl_fwd{input,
+                     out_ref,
+                     scale,
+                     shift,
+                     epsilon,
+                     expAvgFactor,
+                     runMean,
+                     runVar,
+                     runMean,
+                     runVar};
+
             EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);
-            EnsureValidLayout(dl_fwd.output, miopenTensorNCDHW);
-            EnsureValidLayout(dl_fwd.out_ref, this->bn_layout);
-            EnsureValidLayout(dl_fwd.scale, this->derived_layout);
-            EnsureValidLayout(dl_fwd.shift, this->derived_layout);
-            EnsureValidLayout(dl_fwd.saveMean_ref, this->derived_layout);
-            EnsureValidLayout(dl_fwd.saveVariance_ref, this->derived_layout);
-            EnsureValidLayout(dl_fwd.runMean_ref, this->derived_layout);
-            EnsureValidLayout(dl_fwd.runVariance_ref, this->derived_layout);
+            EnsureValidLayout(dl_fwd.out_ref, bn_layout);
+            EnsureValidLayout(dl_fwd.scale, derived_layout);
+            EnsureValidLayout(dl_fwd.shift, derived_layout);
+            EnsureValidLayout(dl_fwd.saveMean_ref, derived_layout);
+            EnsureValidLayout(dl_fwd.saveVariance_ref, derived_layout);
+            EnsureValidLayout(dl_fwd.runMean_ref, derived_layout);
+            EnsureValidLayout(dl_fwd.runVariance_ref, derived_layout);
+
             test::ComputeCPUBNFwdTrain(dl_fwd);
             dl.savedMean   = dl_fwd.saveMean_ref;
             dl.savedInvVar = dl_fwd.saveVariance_ref;
-            EnsureValidLayout(dl.savedMean, this->derived_layout);
-            EnsureValidLayout(dl.savedInvVar, this->derived_layout);
+            EnsureValidLayout(dl.savedMean, derived_layout);
+            EnsureValidLayout(dl.savedInvVar, derived_layout);
+
             test::ComputeCPUBNBwd(dl);
             test::CompareTensor(dx_output, dl.out_ref, tolerance);
             test::CompareTensor(dscale, dl.dScale_ref, tolerance);
@@ -492,8 +485,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             break;
         }
         case BN3DPerActTestType::BackwardUseSaved: {
-            tensor<AccDataType> saveMean{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            tensor<AccDataType> saveInvVar{this->derived_layout, this->derivedBnDesc.GetLengths()};
+            tensor<AccDataType> saveMean{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> saveInvVar{derived_layout, derivedBnDesc.GetLengths()};
             auto saveMean_dev   = handle.Write(saveMean.data);
             auto saveInvVar_dev = handle.Write(saveInvVar.data);
 
@@ -525,8 +518,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             auto dy_dev = handle.Write(dy_input.data);
 
             tensor<T> dx_output{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
-            tensor<AccDataType> dscale{this->derived_layout, this->derivedBnDesc.GetLengths()};
-            tensor<AccDataType> dshift{this->derived_layout, this->derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dscale{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dshift{derived_layout, derivedBnDesc.GetLengths()};
             auto dx_dev     = handle.Write(dx_output.data);
             auto dscale_dev = handle.Write(dscale.data);
             auto dshift_dev = handle.Write(dshift.data);
@@ -557,25 +550,29 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());
 
-            typename GPU_Bn3dPerAct<T>::DLModule dl;
-            dl.input       = input;
-            dl.output      = output;
-            dl.dy          = dy_input;
-            dl.out_ref     = out_ref;
-            dl.bnScale     = scale;
-            dl.dScale_ref  = dscale;
-            dl.dBias_ref   = dshift;
-            dl.savedMean   = saveMean;
-            dl.savedInvVar = saveInvVar;
+            struct
+            {
+                const tensor<T>& input;
+                const tensor<T>& dy;
+                tensor<AccDataType>& out_ref;
+                const tensor<AccDataType>& bnScale;
+                tensor<AccDataType>& dScale_ref;
+                tensor<AccDataType>& dBias_ref;
+                tensor<AccDataType>& savedMean;
+                tensor<AccDataType>& savedInvVar;
+                double epsilon;
+                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
+            } dl{input, dy_input, out_ref, scale, dscale, dshift, saveMean, saveInvVar, epsilon};
+
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
-            EnsureValidLayout(dl.output, miopenTensorNCDHW);
             EnsureValidLayout(dl.dy, miopenTensorNCDHW);
-            EnsureValidLayout(dl.out_ref, this->bn_layout);
-            EnsureValidLayout(dl.bnScale, this->derived_layout);
-            EnsureValidLayout(dl.dScale_ref, this->derived_layout);
-            EnsureValidLayout(dl.dBias_ref, this->derived_layout);
-            EnsureValidLayout(dl.savedMean, this->derived_layout);
-            EnsureValidLayout(dl.savedInvVar, this->derived_layout);
+            EnsureValidLayout(dl.out_ref, bn_layout);
+            EnsureValidLayout(dl.bnScale, derived_layout);
+            EnsureValidLayout(dl.dScale_ref, derived_layout);
+            EnsureValidLayout(dl.dBias_ref, derived_layout);
+            EnsureValidLayout(dl.savedMean, derived_layout);
+            EnsureValidLayout(dl.savedInvVar, derived_layout);
+
             test::ComputeCPUBNBwd(dl);
             test::CompareTensor(dx_output, dl.out_ref, tolerance);
             test::CompareTensor(dscale, dl.dScale_ref, tolerance);
