@@ -69,6 +69,42 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 {
     using AccDataType = std::conditional_t<std::is_same_v<T, double>, double, float>;
 
+    static tensor<T> pool_input;
+    static tensor<AccDataType> pool_scale;
+    static tensor<AccDataType> pool_shift;
+    static tensor<AccDataType> pool_runMean;
+    static tensor<AccDataType> pool_runVar;
+
+    static void SetUpTestSuite()
+    {
+        auto test_cases   = GetBN3DPerActTestCases();
+        std::size_t max_n = 0, max_c = 0, max_d = 0, max_h = 0, max_w = 0;
+        for(const auto& tc : test_cases)
+        {
+            max_n = std::max(max_n, tc.n);
+            max_c = std::max(max_c, tc.c);
+            max_d = std::max(max_d, tc.d);
+            max_h = std::max(max_h, tc.h);
+            max_w = std::max(max_w, tc.w);
+        }
+
+        // Pre-allocate and generate data for the largest possible shape
+        // For 3D BN Per-Activation, derived tensors are 1xCxDxHxW
+        pool_input = tensor<T>{miopenTensorNCDHW, {max_n, max_c, max_d, max_h, max_w}};
+        pool_input.generate(uniform_signed_initializer<T>(2e-3, 1000));
+
+        std::vector<std::size_t> derived_lens = {1, max_c, max_d, max_h, max_w};
+        pool_scale   = tensor<AccDataType>{miopenTensorNCDHW, derived_lens};
+        pool_shift   = tensor<AccDataType>{miopenTensorNCDHW, derived_lens};
+        pool_runMean = tensor<AccDataType>{miopenTensorNCDHW, derived_lens};
+        pool_runVar  = tensor<AccDataType>{miopenTensorNCDHW, derived_lens};
+
+        pool_scale.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
+        pool_shift.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
+        pool_runMean.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
+        pool_runVar.generate(uniform_unsigned_initializer<AccDataType>(2e-3, 1000));
+    }
+
     void SetUp() override
     {
         prng::reset_seed();
@@ -100,7 +136,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         out_ref = tensor<AccDataType>{bn_layout, std::vector<std::size_t>{n, c, d, h, w}};
 
-        input.generate(uniform_signed_initializer<T>(2e-3, 1000));
+        std::copy(
+            pool_input.data.begin(), pool_input.data.begin() + input.data.size(), input.data.begin());
 
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
         auto derived_num_dims = derivedBnDesc.GetLengths().size();
@@ -143,10 +180,16 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         runMean = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
         runVar  = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
 
-        scale.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
-        shift.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
-        runMean.generate(uniform_signed_initializer<AccDataType>(2e-3, 1000));
-        runVar.generate(uniform_unsigned_initializer<AccDataType>(2e-3, 1000));
+        std::copy(
+            pool_scale.data.begin(), pool_scale.data.begin() + scale.data.size(), scale.data.begin());
+        std::copy(
+            pool_shift.data.begin(), pool_shift.data.begin() + shift.data.size(), shift.data.begin());
+        std::copy(pool_runMean.data.begin(),
+                  pool_runMean.data.begin() + runMean.data.size(),
+                  runMean.data.begin());
+        std::copy(pool_runVar.data.begin(),
+                  pool_runVar.data.begin() + runVar.data.size(),
+                  runVar.data.begin());
 
         in_dev      = handle.Write(input.data);
         scale_dev   = handle.Write(scale.data);
@@ -582,6 +625,17 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         }
     }
 };
+
+template <typename T>
+tensor<T> GPU_Bn3dPerAct<T>::pool_input;
+template <typename T>
+tensor<typename GPU_Bn3dPerAct<T>::AccDataType> GPU_Bn3dPerAct<T>::pool_scale;
+template <typename T>
+tensor<typename GPU_Bn3dPerAct<T>::AccDataType> GPU_Bn3dPerAct<T>::pool_shift;
+template <typename T>
+tensor<typename GPU_Bn3dPerAct<T>::AccDataType> GPU_Bn3dPerAct<T>::pool_runMean;
+template <typename T>
+tensor<typename GPU_Bn3dPerAct<T>::AccDataType> GPU_Bn3dPerAct<T>::pool_runVar;
 
 using GPU_Bn3dPerAct_FP32  = GPU_Bn3dPerAct<float>;
 using GPU_Bn3dPerAct_FP16  = GPU_Bn3dPerAct<half_float::half>;
