@@ -470,13 +470,17 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 tensor<T>& dy;
                 tensor<AccDataType>& out_ref;
                 tensor<AccDataType>& bnScale;
+                tensor<AccDataType>& bnBias;
                 tensor<AccDataType>& dScale_ref;
                 tensor<AccDataType>& dBias_ref;
                 tensor<AccDataType>& savedMean;
                 tensor<AccDataType>& savedInvVar;
                 double epsilon;
-                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-            } dl{input, dy_input, out_ref, scale, dscale, dshift, runMean, runVar, epsilon};
+                miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
+                miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
+                double activ_alpha                = 1.0;
+                double activ_beta                 = 0.0;
+            } dl{input, dy_input, out_ref, scale, shift, dscale, dshift, runMean, runVar, epsilon};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
             EnsureValidLayout(dl.dy, miopenTensorNCDHW);
@@ -602,13 +606,17 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 tensor<T>& dy;
                 tensor<AccDataType>& out_ref;
                 tensor<AccDataType>& bnScale;
+                tensor<AccDataType>& bnBias;
                 tensor<AccDataType>& dScale_ref;
                 tensor<AccDataType>& dBias_ref;
                 tensor<AccDataType>& savedMean;
                 tensor<AccDataType>& savedInvVar;
                 double epsilon;
-                miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-            } dl{input, dy_input, out_ref, scale, dscale, dshift, saveMean, saveInvVar, epsilon};
+                miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
+                miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
+                double activ_alpha                = 1.0;
+                double activ_beta                 = 0.0;
+            } dl{input, dy_input, out_ref, scale, shift, dscale, dshift, saveMean, saveInvVar, epsilon};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
             EnsureValidLayout(dl.dy, miopenTensorNCDHW);
