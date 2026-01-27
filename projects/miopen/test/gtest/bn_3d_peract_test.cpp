@@ -298,6 +298,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());
             runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());
 
+            // Local view struct to avoid vector copies and address reviewer concerns
             struct
             {
                 tensor<T>& input;
