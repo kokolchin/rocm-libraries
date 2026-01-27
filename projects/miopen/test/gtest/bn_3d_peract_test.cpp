@@ -21,6 +21,15 @@ constexpr double MIO_BN_TEST_EPSILON      = 1e-5;
 constexpr double MIO_BN_TEST_EXPAVGFACTOR = 0.1;
 constexpr double MIO_BN_TEST_TOLERANCE    = 0.5;
 
+// Helper struct to provide a view of a tensor with a local descriptor copy
+// to avoid modifying class members during CPU verification reshaping.
+template <typename U>
+struct TensorView
+{
+    miopen::TensorDescriptor desc;
+    std::vector<U>& data;
+};
+
 enum class BN3DPerActTestType
 {
     ForwardTraining,
@@ -264,15 +273,6 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         }
 
         auto&& handle = get_handle();
-
-        // Helper struct to provide a view of a tensor with a local descriptor copy
-        // to avoid modifying class members during CPU verification reshaping.
-        template <typename U>
-        struct TensorView
-        {
-            miopen::TensorDescriptor desc;
-            std::vector<U>& data;
-        };
 
         switch(test_case.test_type)
         {
