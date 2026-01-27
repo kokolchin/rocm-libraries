@@ -237,7 +237,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
     }
 
     // Helper for ComputeCPUBN* functions from test_operations.hpp
-    struct DLModule
+    struct CpuVerifyTensors
     {
         tensor<T> input;
         tensor<T> output;
@@ -342,7 +342,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());          \
             runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());            \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl;                                       \
             dl.input            = input;                                                           \
             dl.output           = output;                                                          \
             dl.out_ref          = out_ref;                                                         \
@@ -399,7 +399,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
                                                                                                    \
             output.data = handle.Read<data_type>(out_dev, output.data.size());                     \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl;                                       \
             dl.input              = input;                                                         \
             dl.output             = output;                                                        \
             dl.out_ref            = out_ref;                                                       \
@@ -417,7 +417,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl.estVariance, this->derived_layout);                               \
             if(test_case.test_type == BN3DPerActTestType::ForwardInferenceRecalc)                  \
             {                                                                                      \
-                typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                               \
+                typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl_fwd;                               \
                 dl_fwd.input            = input;                                                   \
                 dl_fwd.out_ref          = out_ref;                                                 \
                 dl_fwd.scale            = scale;                                                   \
@@ -477,7 +477,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl;                                       \
             dl.input      = input;                                                                 \
             dl.output     = output;                                                                \
             dl.dy         = dy_input;                                                              \
@@ -493,7 +493,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             EnsureValidLayout(dl.dScale_ref, this->derived_layout);                                \
             EnsureValidLayout(dl.dBias_ref, this->derived_layout);                                 \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl_fwd;                                   \
+            typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl_fwd;                                   \
             dl_fwd.input   = input;                                                                \
             dl_fwd.output  = output;                                                               \
             dl_fwd.out_ref = out_ref;                                                              \
@@ -594,7 +594,7 @@ using GPU_Bn3dPerAct_FP64  = GPU_Bn3dPerAct<double>;
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());             \
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());             \
                                                                                                    \
-            typename GPU_Bn3dPerAct<data_type>::DLModule dl;                                       \
+            typename GPU_Bn3dPerAct<data_type>::CpuVerifyTensors dl;                                       \
             dl.input       = input;                                                                \
             dl.output      = output;                                                               \
             dl.dy          = dy_input;                                                             \
