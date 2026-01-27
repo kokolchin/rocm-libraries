@@ -53,24 +53,24 @@ void ComputeCPUBNInference(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostInference(dl_module.input,
-                                      dl_module.out_ref,
-                                      dl_module.scale,
-                                      dl_module.shift,
+        batchNormSpatialHostInference(dl_module.input.data,
+                                      dl_module.out_ref.data,
+                                      dl_module.scale.data,
+                                      dl_module.shift.data,
                                       dl_module.epsilon,
-                                      dl_module.estMean,
-                                      dl_module.estVariance,
+                                      dl_module.estMean.data,
+                                      dl_module.estVariance.data,
                                       dl_module.useInverseVariance);
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActivHostInference(dl_module.input,
-                                       dl_module.out_ref,
-                                       dl_module.scale,
-                                       dl_module.shift,
+        batchNormPerActivHostInference(dl_module.input.data,
+                                       dl_module.out_ref.data,
+                                       dl_module.scale.data,
+                                       dl_module.shift.data,
                                        dl_module.epsilon,
-                                       dl_module.estMean,
-                                       dl_module.estVariance,
+                                       dl_module.estMean.data,
+                                       dl_module.estVariance.data,
                                        dl_module.useInverseVariance);
     }
     else
@@ -103,29 +103,29 @@ void ComputeCPUBNBwd(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostBwdTrain(dl_module.input,
-                                     dl_module.dy,
-                                     dl_module.out_ref,
-                                     dl_module.bnScale,
-                                     dl_module.bnBias,
-                                     dl_module.dScale_ref,
-                                     dl_module.dBias_ref,
-                                     dl_module.savedMean,
-                                     dl_module.savedInvVar,
+        batchNormSpatialHostBwdTrain(dl_module.input.data,
+                                     dl_module.dy.data,
+                                     dl_module.out_ref.data,
+                                     dl_module.bnScale.data,
+                                     dl_module.bnBias.data,
+                                     dl_module.dScale_ref.data,
+                                     dl_module.dBias_ref.data,
+                                     dl_module.savedMean.data,
+                                     dl_module.savedInvVar.data,
                                      dl_module.activ_mode,
                                      dl_module.activ_beta,
                                      dl_module.activ_alpha);
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActHostBwdTrain(dl_module.input,
-                                    dl_module.dy,
-                                    dl_module.out_ref,
-                                    dl_module.bnScale,
-                                    dl_module.dScale_ref,
-                                    dl_module.dBias_ref,
-                                    dl_module.savedMean,
-                                    dl_module.savedInvVar);
+        batchNormPerActHostBwdTrain(dl_module.input.data,
+                                    dl_module.dy.data,
+                                    dl_module.out_ref.data,
+                                    dl_module.bnScale.data,
+                                    dl_module.dScale_ref.data,
+                                    dl_module.dBias_ref.data,
+                                    dl_module.savedMean.data,
+                                    dl_module.savedInvVar.data);
     }
     else
     {
@@ -157,29 +157,29 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostFwdTrain(dl_module.input,
-                                     dl_module.out_ref,
-                                     dl_module.scale,
-                                     dl_module.shift,
+        batchNormSpatialHostFwdTrain(dl_module.input.data,
+                                     dl_module.out_ref.data,
+                                     dl_module.scale.data,
+                                     dl_module.shift.data,
                                      dl_module.epsilon,
                                      dl_module.averageFactor,
-                                     dl_module.saveMean_ref,
-                                     dl_module.saveVariance_ref,
-                                     dl_module.runMean_ref,
-                                     dl_module.runVariance_ref);
+                                     dl_module.saveMean_ref.data,
+                                     dl_module.saveVariance_ref.data,
+                                     dl_module.runMean_ref.data,
+                                     dl_module.runVariance_ref.data);
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActHostFwdTrain(dl_module.input,
-                                    dl_module.out_ref,
-                                    dl_module.scale,
-                                    dl_module.shift,
+        batchNormPerActHostFwdTrain(dl_module.input.data,
+                                    dl_module.out_ref.data,
+                                    dl_module.scale.data,
+                                    dl_module.shift.data,
                                     dl_module.epsilon,
                                     dl_module.averageFactor,
-                                    dl_module.saveMean_ref,
-                                    dl_module.saveVariance_ref,
-                                    dl_module.runMean_ref,
-                                    dl_module.runVariance_ref);
+                                    dl_module.saveMean_ref.data,
+                                    dl_module.saveVariance_ref.data,
+                                    dl_module.runMean_ref.data,
+                                    dl_module.runVariance_ref.data);
     }
     else
     {
