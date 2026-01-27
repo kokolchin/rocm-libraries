@@ -154,7 +154,9 @@ struct tensor
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-    tensor() : desc(miopen_type<T>{}) {}
+    
+    tensor(const miopen::TensorDescriptor& d, const std::vector<T>& data_) : desc(d), data(data_) {}
+tensor() : desc(miopen_type<T>{}) {}
 
 #if defined(__clang__) || defined(__GNUG__)
 #pragma GCC diagnostic pop
