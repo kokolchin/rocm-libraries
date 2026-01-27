@@ -488,8 +488,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 tensor<T>& input;
                 tensor<AccDataType>& out_ref;
-                const tensor<AccDataType>& scale;
-                const tensor<AccDataType>& shift;
+                tensor<AccDataType>& scale;
+                tensor<AccDataType>& shift;
                 double epsilon;
                 double averageFactor;
                 tensor<AccDataType>& saveMean_ref;
