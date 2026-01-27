@@ -343,11 +343,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.runVariance_ref, derived_layout);
 
             test::ComputeCPUBNFwdTrain<T, AccDataType>(dl);
-            test::CompareTensor(output, out_ref, tolerance);
-            test::CompareTensor(saveMean, saveMean_ref, tolerance);
-            test::CompareTensor(saveInvVar, saveInvVar_ref, tolerance);
-            test::CompareTensor(runMean, runMean_ref, tolerance);
-            test::CompareTensor(runVar, runVar_ref, tolerance);
+            test::CompareTensor(output, dl.out_ref, tolerance);
+            test::CompareTensor(saveMean, dl.saveMean_ref, tolerance);
+            test::CompareTensor(saveInvVar, dl.saveVariance_ref, tolerance);
+            test::CompareTensor(runMean, dl.runMean_ref, tolerance);
+            test::CompareTensor(runVar, dl.runVariance_ref, tolerance);
             break;
         }
         case BN3DPerActTestType::ForwardInferenceRecalc:
@@ -439,7 +439,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 dl.useInverseVariance = true;
             }
             test::ComputeCPUBNInference<T, AccDataType>(dl);
-            test::CompareTensor(output, out_ref, tolerance);
+            test::CompareTensor(output, dl.out_ref, tolerance);
             break;
         }
         case BN3DPerActTestType::BackwardRecalc: {
@@ -560,9 +560,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
             test::ComputeCPUBNBwd<T, AccDataType>(dl);
-            test::CompareTensor(dx_output, dx_output_ref, tolerance);
-            test::CompareTensor(dscale, dscale_ref, tolerance);
-            test::CompareTensor(dshift, dshift_ref, tolerance);
+            test::CompareTensor(dx_output, dl.out_ref, tolerance);
+            test::CompareTensor(dscale, dl.dScale_ref, tolerance);
+            test::CompareTensor(dshift, dl.dBias_ref, tolerance);
             break;
         }
         case BN3DPerActTestType::BackwardUseSaved: {
@@ -674,9 +674,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
             test::ComputeCPUBNBwd<T, AccDataType>(dl);
-            test::CompareTensor(dx_output, dx_output_ref, tolerance);
-            test::CompareTensor(dscale, dscale_ref, tolerance);
-            test::CompareTensor(dshift, dshift_ref, tolerance);
+            test::CompareTensor(dx_output, dl.out_ref, tolerance);
+            test::CompareTensor(dscale, dl.dScale_ref, tolerance);
+            test::CompareTensor(dshift, dl.dBias_ref, tolerance);
             break;
         }
         }
