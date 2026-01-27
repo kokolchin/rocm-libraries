@@ -90,7 +90,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         // Pre-allocate and generate data for the largest possible shape
         // For 3D BN Per-Activation, derived tensors are 1xCxDxHxW
-        pool_input = tensor<T>{miopenTensorNCDHW, {max_n, max_c, max_d, max_h, max_w}};
+        pool_input = tensor<T>{miopenTensorNCDHW, std::vector<std::size_t>{max_n, max_c, max_d, max_h, max_w}};
         pool_input.generate(uniform_signed_initializer<T>(2e-3, 1000));
 
         std::vector<std::size_t> derived_lens = {1, max_c, max_d, max_h, max_w};
