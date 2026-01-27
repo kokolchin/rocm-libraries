@@ -312,7 +312,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             struct
             {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -384,7 +384,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             struct
             {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -414,7 +414,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 struct
                 {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                     tensor<T> input;
                     tensor<AccDataType> out_ref;
                     tensor<AccDataType> scale;
@@ -494,7 +494,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             struct
             {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<T> dy;
                 tensor<T> out_ref;
@@ -531,7 +531,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             struct
             {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<AccDataType> out_ref;
                 tensor<AccDataType> scale;
@@ -649,7 +649,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             struct
             {
                 using InputDataType = T;
-                using AccDataType   = typename GPU_Bn3dPerAct<T>::AccDataType;
+                using AccDataType = typename GPU_Bn3dPerAct<T>::AccDataType;
                 tensor<T> input;
                 tensor<T> dy;
                 tensor<T> out_ref;
