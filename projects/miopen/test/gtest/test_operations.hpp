@@ -53,24 +53,24 @@ void ComputeCPUBNInference(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostInference(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                      tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                      tensor<typename DLModule::AccDataType>{dl_module.scale.desc, dl_module.scale.data},
-                                      tensor<typename DLModule::AccDataType>{dl_module.shift.desc, dl_module.shift.data},
+        batchNormSpatialHostInference(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                      tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                      tensor<typename DLModule::AccDataType>(dl_module.scale.desc, dl_module.scale.data),
+                                      tensor<typename DLModule::AccDataType>(dl_module.shift.desc, dl_module.shift.data),
                                       dl_module.epsilon,
-                                      tensor<typename DLModule::AccDataType>{dl_module.estMean.desc, dl_module.estMean.data},
-                                      tensor<typename DLModule::AccDataType>{dl_module.estVariance.desc, dl_module.estVariance.data},
+                                      tensor<typename DLModule::AccDataType>(dl_module.estMean.desc, dl_module.estMean.data),
+                                      tensor<typename DLModule::AccDataType>(dl_module.estVariance.desc, dl_module.estVariance.data),
                                       dl_module.useInverseVariance);
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActivHostInference(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                       tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                       tensor<typename DLModule::AccDataType>{dl_module.scale.desc, dl_module.scale.data},
-                                       tensor<typename DLModule::AccDataType>{dl_module.shift.desc, dl_module.shift.data},
+        batchNormPerActivHostInference(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                       tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                       tensor<typename DLModule::AccDataType>(dl_module.scale.desc, dl_module.scale.data),
+                                       tensor<typename DLModule::AccDataType>(dl_module.shift.desc, dl_module.shift.data),
                                        dl_module.epsilon,
-                                       tensor<typename DLModule::AccDataType>{dl_module.estMean.desc, dl_module.estMean.data},
-                                       tensor<typename DLModule::AccDataType>{dl_module.estVariance.desc, dl_module.estVariance.data},
+                                       tensor<typename DLModule::AccDataType>(dl_module.estMean.desc, dl_module.estMean.data),
+                                       tensor<typename DLModule::AccDataType>(dl_module.estVariance.desc, dl_module.estVariance.data),
                                        dl_module.useInverseVariance);
     }
     else
@@ -104,29 +104,29 @@ void ComputeCPUBNBwd(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostBwdTrain(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                     tensor<typename DLModule::InputDataType>{dl_module.dy.desc, dl_module.dy.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.bnScale.desc, dl_module.bnScale.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.bnBias.desc, dl_module.bnBias.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.dScale_ref.desc, dl_module.dScale_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.dBias_ref.desc, dl_module.dBias_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.savedMean.desc, dl_module.savedMean.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.savedInvVar.desc, dl_module.savedInvVar.data},
+        batchNormSpatialHostBwdTrain(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                     tensor<typename DLModule::InputDataType>(dl_module.dy.desc, dl_module.dy.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.bnScale.desc, dl_module.bnScale.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.bnBias.desc, dl_module.bnBias.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.dScale_ref.desc, dl_module.dScale_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.dBias_ref.desc, dl_module.dBias_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.savedMean.desc, dl_module.savedMean.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.savedInvVar.desc, dl_module.savedInvVar.data),
                                      dl_module.activ_mode,
                                      dl_module.activ_beta,
                                      dl_module.activ_alpha);
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActHostBwdTrain(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                    tensor<typename DLModule::InputDataType>{dl_module.dy.desc, dl_module.dy.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.bnScale.desc, dl_module.bnScale.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.dScale_ref.desc, dl_module.dScale_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.dBias_ref.desc, dl_module.dBias_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.savedMean.desc, dl_module.savedMean.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.savedInvVar.desc, dl_module.savedInvVar.data});
+        batchNormPerActHostBwdTrain(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                    tensor<typename DLModule::InputDataType>(dl_module.dy.desc, dl_module.dy.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.bnScale.desc, dl_module.bnScale.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.dScale_ref.desc, dl_module.dScale_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.dBias_ref.desc, dl_module.dBias_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.savedMean.desc, dl_module.savedMean.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.savedInvVar.desc, dl_module.savedInvVar.data));
     }
     else
     {
@@ -158,29 +158,29 @@ void ComputeCPUBNFwdTrain(DLModule& dl_module)
 
     if(dl_module.bn_mode == miopenBNSpatial)
     {
-        batchNormSpatialHostFwdTrain(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.scale.desc, dl_module.scale.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.shift.desc, dl_module.shift.data},
+        batchNormSpatialHostFwdTrain(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.scale.desc, dl_module.scale.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.shift.desc, dl_module.shift.data),
                                      dl_module.epsilon,
                                      dl_module.averageFactor,
-                                     tensor<typename DLModule::AccDataType>{dl_module.saveMean_ref.desc, dl_module.saveMean_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.saveVariance_ref.desc, dl_module.saveVariance_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.runMean_ref.desc, dl_module.runMean_ref.data},
-                                     tensor<typename DLModule::AccDataType>{dl_module.runVariance_ref.desc, dl_module.runVariance_ref.data});
+                                     tensor<typename DLModule::AccDataType>(dl_module.saveMean_ref.desc, dl_module.saveMean_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.saveVariance_ref.desc, dl_module.saveVariance_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.runMean_ref.desc, dl_module.runMean_ref.data),
+                                     tensor<typename DLModule::AccDataType>(dl_module.runVariance_ref.desc, dl_module.runVariance_ref.data));
     }
     else if(dl_module.bn_mode == miopenBNPerActivation)
     {
-        batchNormPerActHostFwdTrain(tensor<typename DLModule::InputDataType>{dl_module.input.desc, dl_module.input.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.out_ref.desc, dl_module.out_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.scale.desc, dl_module.scale.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.shift.desc, dl_module.shift.data},
+        batchNormPerActHostFwdTrain(tensor<typename DLModule::InputDataType>(dl_module.input.desc, dl_module.input.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.out_ref.desc, dl_module.out_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.scale.desc, dl_module.scale.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.shift.desc, dl_module.shift.data),
                                     dl_module.epsilon,
                                     dl_module.averageFactor,
-                                    tensor<typename DLModule::AccDataType>{dl_module.saveMean_ref.desc, dl_module.saveMean_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.saveVariance_ref.desc, dl_module.saveVariance_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.runMean_ref.desc, dl_module.runMean_ref.data},
-                                    tensor<typename DLModule::AccDataType>{dl_module.runVariance_ref.desc, dl_module.runVariance_ref.data});
+                                    tensor<typename DLModule::AccDataType>(dl_module.saveMean_ref.desc, dl_module.saveMean_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.saveVariance_ref.desc, dl_module.saveVariance_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.runMean_ref.desc, dl_module.runMean_ref.data),
+                                    tensor<typename DLModule::AccDataType>(dl_module.runVariance_ref.desc, dl_module.runVariance_ref.data));
     }
     else
     {
