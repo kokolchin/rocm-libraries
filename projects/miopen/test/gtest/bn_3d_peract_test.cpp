@@ -128,16 +128,16 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
         // Get layout from input before creating out_ref to ensure consistency
         auto input_layout_opt = input.desc.GetLayoutEnum();
-        bn_layout             = (input_layout_opt && input_layout_opt.value() != 0)
-                                    ? input_layout_opt.value()
-                                    : miopenTensorNCDHW;
+        bn_layout = (input_layout_opt && input_layout_opt.value() != 0) ? input_layout_opt.value()
+                                                                        : miopenTensorNCDHW;
         if(bn_layout == 0)
             bn_layout = miopenTensorNCDHW;
 
         out_ref = tensor<AccDataType>{bn_layout, std::vector<std::size_t>{n, c, d, h, w}};
 
-        std::copy(
-            pool_input.data.begin(), pool_input.data.begin() + input.data.size(), input.data.begin());
+        std::copy(pool_input.data.begin(),
+                  pool_input.data.begin() + input.data.size(),
+                  input.data.begin());
 
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
         auto derived_num_dims = derivedBnDesc.GetLengths().size();
@@ -180,10 +180,12 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
         runMean = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
         runVar  = tensor<AccDataType>{derived_layout, derivedBnDesc.GetLengths()};
 
-        std::copy(
-            pool_scale.data.begin(), pool_scale.data.begin() + scale.data.size(), scale.data.begin());
-        std::copy(
-            pool_shift.data.begin(), pool_shift.data.begin() + shift.data.size(), shift.data.begin());
+        std::copy(pool_scale.data.begin(),
+                  pool_scale.data.begin() + scale.data.size(),
+                  scale.data.begin());
+        std::copy(pool_shift.data.begin(),
+                  pool_shift.data.begin() + shift.data.size(),
+                  shift.data.begin());
         std::copy(pool_runMean.data.begin(),
                   pool_runMean.data.begin() + runMean.data.size(),
                   runMean.data.begin());
