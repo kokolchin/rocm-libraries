@@ -23,12 +23,7 @@ constexpr double MIO_BN_TEST_TOLERANCE    = 0.5;
 
 // Helper struct to provide a view of a tensor with a local descriptor copy
 // to avoid modifying class members during CPU verification reshaping.
-template <typename U>
-struct TensorView
-{
-    miopen::TensorDescriptor desc;
-    std::vector<U>& data;
-};
+
 
 enum class BN3DPerActTestType
 {
@@ -318,27 +313,27 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                TensorView<T> input;
-                TensorView<AccDataType> out_ref;
-                TensorView<AccDataType> scale;
-                TensorView<AccDataType> shift;
+                tensor<T> input;
+                tensor<AccDataType> out_ref;
+                tensor<AccDataType> scale;
+                tensor<AccDataType> shift;
                 double epsilon;
                 double averageFactor;
-                TensorView<AccDataType> saveMean_ref;
-                TensorView<AccDataType> saveVariance_ref;
-                TensorView<AccDataType> runMean_ref;
-                TensorView<AccDataType> runVariance_ref;
+                tensor<AccDataType> saveMean_ref;
+                tensor<AccDataType> saveVariance_ref;
+                tensor<AccDataType> runMean_ref;
+                tensor<AccDataType> runVariance_ref;
                 miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-            } dl{{input.desc, input.data},
-                 {out_ref.desc, out_ref.data},
-                 {scale.desc, scale.data},
-                 {shift.desc, shift.data},
+            } dl{input,
+                 out_ref,
+                 scale,
+                 shift,
                  epsilon,
                  expAvgFactor,
-                 {saveMean_ref.desc, saveMean_ref.data},
-                 {saveInvVar_ref.desc, saveInvVar_ref.data},
-                 {runMean_ref.desc, runMean_ref.data},
-                 {runVar_ref.desc, runVar_ref.data}};
+                 saveMean_ref,
+                 saveInvVar_ref,
+                 runMean_ref,
+                 runVar_ref};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
             EnsureValidLayout(dl.out_ref, bn_layout);
@@ -390,21 +385,21 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                TensorView<T> input;
-                TensorView<AccDataType> out_ref;
-                TensorView<AccDataType> scale;
-                TensorView<AccDataType> shift;
-                TensorView<AccDataType> estMean;
-                TensorView<AccDataType> estVariance;
+                tensor<T> input;
+                tensor<AccDataType> out_ref;
+                tensor<AccDataType> scale;
+                tensor<AccDataType> shift;
+                tensor<AccDataType> estMean;
+                tensor<AccDataType> estVariance;
                 double epsilon;
                 bool useInverseVariance       = false;
                 miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-            } dl{{input.desc, input.data},
-                 {out_ref.desc, out_ref.data},
-                 {scale.desc, scale.data},
-                 {shift.desc, shift.data},
-                 {runMean.desc, runMean.data},
-                 {runVar.desc, runVar.data},
+            } dl{input,
+                 out_ref,
+                 scale,
+                 shift,
+                 runMean,
+                 runVar,
                  epsilon};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
@@ -420,27 +415,27 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                    TensorView<T> input;
-                    TensorView<AccDataType> out_ref;
-                    TensorView<AccDataType> scale;
-                    TensorView<AccDataType> shift;
+                    tensor<T> input;
+                    tensor<AccDataType> out_ref;
+                    tensor<AccDataType> scale;
+                    tensor<AccDataType> shift;
                     double epsilon;
                     double averageFactor;
-                    TensorView<AccDataType> saveMean_ref;
-                    TensorView<AccDataType> saveVariance_ref;
-                    TensorView<AccDataType> runMean_ref;
-                    TensorView<AccDataType> runVariance_ref;
+                    tensor<AccDataType> saveMean_ref;
+                    tensor<AccDataType> saveVariance_ref;
+                    tensor<AccDataType> runMean_ref;
+                    tensor<AccDataType> runVariance_ref;
                     miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-                } dl_fwd{{input.desc, input.data},
-                         {out_ref.desc, out_ref.data},
-                         {scale.desc, scale.data},
-                         {shift.desc, shift.data},
+                } dl_fwd{input,
+                         out_ref,
+                         scale,
+                         shift,
                          epsilon,
                          expAvgFactor,
-                         {runMean.desc, runMean.data},
-                         {runVar.desc, runVar.data},
-                         {runMean.desc, runMean.data},
-                         {runVar.desc, runVar.data}};
+                         runMean,
+                         runVar,
+                         runMean,
+                         runVar};
 
                 EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);
                 EnsureValidLayout(dl_fwd.out_ref, bn_layout);
@@ -500,29 +495,29 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                TensorView<T> input;
-                TensorView<T> dy;
-                TensorView<T> out_ref;
-                TensorView<AccDataType> bnScale;
-                TensorView<AccDataType> bnBias;
-                TensorView<AccDataType> dScale_ref;
-                TensorView<AccDataType> dBias_ref;
-                TensorView<AccDataType> savedMean;
-                TensorView<AccDataType> savedInvVar;
+                tensor<T> input;
+                tensor<T> dy;
+                tensor<T> out_ref;
+                tensor<AccDataType> bnScale;
+                tensor<AccDataType> bnBias;
+                tensor<AccDataType> dScale_ref;
+                tensor<AccDataType> dBias_ref;
+                tensor<AccDataType> savedMean;
+                tensor<AccDataType> savedInvVar;
                 double epsilon;
                 miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
                 miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
                 double activ_alpha                = 1.0;
                 double activ_beta                 = 0.0;
-            } dl{{input.desc, input.data},
-                 {dy_input.desc, dy_input.data},
-                 {dx_output_ref.desc, dx_output_ref.data},
-                 {scale.desc, scale.data},
-                 {shift.desc, shift.data},
-                 {dscale_ref.desc, dscale_ref.data},
-                 {dshift_ref.desc, dshift_ref.data},
-                 {runMean.desc, runMean.data},
-                 {runVar.desc, runVar.data},
+            } dl{input,
+                 dy_input,
+                 dx_output_ref,
+                 scale,
+                 shift,
+                 dscale_ref,
+                 dshift_ref,
+                 runMean,
+                 runVar,
                  epsilon};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
@@ -537,27 +532,27 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                TensorView<T> input;
-                TensorView<AccDataType> out_ref;
-                TensorView<AccDataType> scale;
-                TensorView<AccDataType> shift;
+                tensor<T> input;
+                tensor<AccDataType> out_ref;
+                tensor<AccDataType> scale;
+                tensor<AccDataType> shift;
                 double epsilon;
                 double averageFactor;
-                TensorView<AccDataType> saveMean_ref;
-                TensorView<AccDataType> saveVariance_ref;
-                TensorView<AccDataType> runMean_ref;
-                TensorView<AccDataType> runVariance_ref;
+                tensor<AccDataType> saveMean_ref;
+                tensor<AccDataType> saveVariance_ref;
+                tensor<AccDataType> runMean_ref;
+                tensor<AccDataType> runVariance_ref;
                 miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-            } dl_fwd{{input.desc, input.data},
-                     {out_ref.desc, out_ref.data},
-                     {scale.desc, scale.data},
-                     {shift.desc, shift.data},
+            } dl_fwd{input,
+                     out_ref,
+                     scale,
+                     shift,
                      epsilon,
                      expAvgFactor,
-                     {runMean.desc, runMean.data},
-                     {runVar.desc, runVar.data},
-                     {runMean.desc, runMean.data},
-                     {runVar.desc, runVar.data}};
+                     runMean,
+                     runVar,
+                     runMean,
+                     runVar};
 
             EnsureValidLayout(dl_fwd.input, miopenTensorNCDHW);
             EnsureValidLayout(dl_fwd.out_ref, bn_layout);
@@ -655,29 +650,29 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 using InputDataType = T;
                 using AccDataType   = AccDataType;
-                TensorView<T> input;
-                TensorView<T> dy;
-                TensorView<T> out_ref;
-                TensorView<AccDataType> bnScale;
-                TensorView<AccDataType> bnBias;
-                TensorView<AccDataType> dScale_ref;
-                TensorView<AccDataType> dBias_ref;
-                TensorView<AccDataType> savedMean;
-                TensorView<AccDataType> savedInvVar;
+                tensor<T> input;
+                tensor<T> dy;
+                tensor<T> out_ref;
+                tensor<AccDataType> bnScale;
+                tensor<AccDataType> bnBias;
+                tensor<AccDataType> dScale_ref;
+                tensor<AccDataType> dBias_ref;
+                tensor<AccDataType> savedMean;
+                tensor<AccDataType> savedInvVar;
                 double epsilon;
                 miopenBatchNormMode_t bn_mode     = miopenBNPerActivation;
                 miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
                 double activ_alpha                = 1.0;
                 double activ_beta                 = 0.0;
-            } dl{{input.desc, input.data},
-                 {dy_input.desc, dy_input.data},
-                 {dx_output_ref.desc, dx_output_ref.data},
-                 {scale.desc, scale.data},
-                 {shift.desc, shift.data},
-                 {dscale_ref.desc, dscale_ref.data},
-                 {dshift_ref.desc, dshift_ref.data},
-                 {saveMean.desc, saveMean.data},
-                 {saveInvVar.desc, saveInvVar.data},
+            } dl{input,
+                 dy_input,
+                 dx_output_ref,
+                 scale,
+                 shift,
+                 dscale_ref,
+                 dshift_ref,
+                 saveMean,
+                 saveInvVar,
                  epsilon};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
