@@ -292,15 +292,15 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             ASSERT_EQ(status, miopenStatusSuccess);
 
-            output.data     = handle.Read<T>(out_dev.get(), output.data.size());
+            output.data     = handle.Read<T>(out_dev, output.data.size());
             saveMean.data   = handle.Read<AccDataType>(saveMean_dev, saveMean.data.size());
             saveInvVar.data = handle.Read<AccDataType>(saveInvVar_dev, saveInvVar.data.size());
-            runMean.data    = handle.Read<AccDataType>(runMean_dev.get(), runMean.data.size());
-            runVar.data     = handle.Read<AccDataType>(runVar_dev.get(), runVar.data.size());
+            runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());
+            runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());
 
             struct
             {
-                const tensor<T>& input;
+                tensor<T>& input;
                 tensor<AccDataType>& out_ref;
                 const tensor<AccDataType>& scale;
                 const tensor<AccDataType>& shift;
@@ -366,11 +366,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             ASSERT_EQ(status, miopenStatusSuccess);
 
-            output.data = handle.Read<T>(out_dev.get(), output.data.size());
+            output.data = handle.Read<T>(out_dev, output.data.size());
 
             struct
             {
-                const tensor<T>& input;
+                tensor<T>& input;
                 tensor<AccDataType>& out_ref;
                 const tensor<AccDataType>& scale;
                 const tensor<AccDataType>& shift;
@@ -392,7 +392,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 struct
                 {
-                    const tensor<T>& input;
+                    tensor<T>& input;
                     tensor<AccDataType>& out_ref;
                     const tensor<AccDataType>& scale;
                     const tensor<AccDataType>& shift;
@@ -465,7 +465,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                const tensor<T>& input;
+                tensor<T>& input;
                 const tensor<T>& dy;
                 tensor<AccDataType>& out_ref;
                 const tensor<AccDataType>& bnScale;
@@ -486,7 +486,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                const tensor<T>& input;
+                tensor<T>& input;
                 tensor<AccDataType>& out_ref;
                 const tensor<AccDataType>& scale;
                 const tensor<AccDataType>& shift;
@@ -597,7 +597,7 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
-                const tensor<T>& input;
+                tensor<T>& input;
                 const tensor<T>& dy;
                 tensor<AccDataType>& out_ref;
                 const tensor<AccDataType>& bnScale;
