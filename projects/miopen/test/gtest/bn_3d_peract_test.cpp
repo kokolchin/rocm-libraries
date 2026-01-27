@@ -316,6 +316,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                 TensorView<T> input;
                 TensorView<AccDataType> out_ref;
                 TensorView<AccDataType> scale;
@@ -386,6 +388,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                 TensorView<T> input;
                 TensorView<AccDataType> out_ref;
                 TensorView<AccDataType> scale;
@@ -414,6 +418,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             {
                 struct
                 {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                     TensorView<T> input;
                     TensorView<AccDataType> out_ref;
                     TensorView<AccDataType> scale;
@@ -492,6 +498,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                 TensorView<T> input;
                 TensorView<T> dy;
                 TensorView<T> out_ref;
@@ -527,6 +535,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                 TensorView<T> input;
                 TensorView<AccDataType> out_ref;
                 TensorView<AccDataType> scale;
@@ -643,6 +653,8 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             struct
             {
+                using InputDataType = T;
+                using AccDataType   = AccDataType;
                 TensorView<T> input;
                 TensorView<T> dy;
                 TensorView<T> out_ref;
