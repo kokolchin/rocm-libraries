@@ -308,6 +308,12 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             runMean.data    = handle.Read<AccDataType>(runMean_dev, runMean.data.size());
             runVar.data     = handle.Read<AccDataType>(runVar_dev, runVar.data.size());
 
+            // Create separate tensors for CPU reference results
+            tensor<AccDataType> saveMean_ref{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> saveInvVar_ref{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> runMean_ref{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> runVar_ref{derived_layout, derivedBnDesc.GetLengths()};
+
             struct
             {
                 TensorView<T> input;
@@ -327,10 +333,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                  {shift.desc, shift.data},
                  epsilon,
                  expAvgFactor,
-                 {saveMean.desc, saveMean.data},
-                 {saveInvVar.desc, saveInvVar.data},
-                 {runMean.desc, runMean.data},
-                 {runVar.desc, runVar.data}};
+                 {saveMean_ref.desc, saveMean_ref.data},
+                 {saveInvVar_ref.desc, saveInvVar_ref.data},
+                 {runMean_ref.desc, runMean_ref.data},
+                 {runVar_ref.desc, runVar_ref.data}};
 
             EnsureValidLayout(dl.input, miopenTensorNCDHW);
             EnsureValidLayout(dl.out_ref, bn_layout);
@@ -343,10 +349,10 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
 
             test::ComputeCPUBNFwdTrain(dl);
             test::CompareTensor(output, out_ref, tolerance);
-            test::CompareTensor(saveMean, dl.saveMean_ref.data, tolerance);
-            test::CompareTensor(saveInvVar, dl.saveVariance_ref.data, tolerance);
-            test::CompareTensor(runMean, dl.runMean_ref.data, tolerance);
-            test::CompareTensor(runVar, dl.runVariance_ref.data, tolerance);
+            test::CompareTensor(saveMean, saveMean_ref, tolerance);
+            test::CompareTensor(saveInvVar, saveInvVar_ref, tolerance);
+            test::CompareTensor(runMean, runMean_ref, tolerance);
+            test::CompareTensor(runVar, runVar_ref, tolerance);
             break;
         }
         case BN3DPerActTestType::ForwardInferenceRecalc:
@@ -479,6 +485,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());
 
+            // Create separate tensors for CPU reference results
+            tensor<T> dx_output_ref{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
+            tensor<AccDataType> dscale_ref{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dshift_ref{derived_layout, derivedBnDesc.GetLengths()};
+
             struct
             {
                 TensorView<T> input;
@@ -497,11 +508,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 double activ_beta                 = 0.0;
             } dl{{input.desc, input.data},
                  {dy_input.desc, dy_input.data},
-                 {dx_output.desc, dx_output.data},
+                 {dx_output_ref.desc, dx_output_ref.data},
                  {scale.desc, scale.data},
                  {shift.desc, shift.data},
-                 {dscale.desc, dscale.data},
-                 {dshift.desc, dshift.data},
+                 {dscale_ref.desc, dscale_ref.data},
+                 {dshift_ref.desc, dshift_ref.data},
                  {runMean.desc, runMean.data},
                  {runVar.desc, runVar.data},
                  epsilon};
@@ -554,9 +565,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
             test::ComputeCPUBNBwd(dl);
-            test::CompareTensor(dx_output, dl.out_ref.data, tolerance);
-            test::CompareTensor(dscale, dl.dScale_ref.data, tolerance);
-            test::CompareTensor(dshift, dl.dBias_ref.data, tolerance);
+            test::CompareTensor(dx_output, dx_output_ref, tolerance);
+            test::CompareTensor(dscale, dscale_ref, tolerance);
+            test::CompareTensor(dshift, dshift_ref, tolerance);
             break;
         }
         case BN3DPerActTestType::BackwardUseSaved: {
@@ -625,6 +636,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             dscale.data    = handle.Read<AccDataType>(dscale_dev, dscale.data.size());
             dshift.data    = handle.Read<AccDataType>(dshift_dev, dshift.data.size());
 
+            // Create separate tensors for CPU reference results
+            tensor<T> dx_output_ref{miopenTensorNCDHW, std::vector<std::size_t>{n, c, d, h, w}};
+            tensor<AccDataType> dscale_ref{derived_layout, derivedBnDesc.GetLengths()};
+            tensor<AccDataType> dshift_ref{derived_layout, derivedBnDesc.GetLengths()};
+
             struct
             {
                 TensorView<T> input;
@@ -643,11 +659,11 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
                 double activ_beta                 = 0.0;
             } dl{{input.desc, input.data},
                  {dy_input.desc, dy_input.data},
-                 {dx_output.desc, dx_output.data},
+                 {dx_output_ref.desc, dx_output_ref.data},
                  {scale.desc, scale.data},
                  {shift.desc, shift.data},
-                 {dscale.desc, dscale.data},
-                 {dshift.desc, dshift.data},
+                 {dscale_ref.desc, dscale_ref.data},
+                 {dshift_ref.desc, dshift_ref.data},
                  {saveMean.desc, saveMean.data},
                  {saveInvVar.desc, saveInvVar.data},
                  epsilon};
@@ -663,9 +679,9 @@ struct GPU_Bn3dPerAct : public ::testing::TestWithParam<BN3DPerActTestCase>
             EnsureValidLayout(dl.savedInvVar, derived_layout);
 
             test::ComputeCPUBNBwd(dl);
-            test::CompareTensor(dx_output, dl.out_ref.data, tolerance);
-            test::CompareTensor(dscale, dl.dScale_ref.data, tolerance);
-            test::CompareTensor(dshift, dl.dBias_ref.data, tolerance);
+            test::CompareTensor(dx_output, dx_output_ref, tolerance);
+            test::CompareTensor(dscale, dscale_ref, tolerance);
+            test::CompareTensor(dshift, dshift_ref, tolerance);
             break;
         }
         }
