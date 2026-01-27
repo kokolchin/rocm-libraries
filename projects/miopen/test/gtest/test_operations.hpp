@@ -96,6 +96,7 @@ void ComputeCPUBNBwd(DLModule& dl_module)
     ReshapeIfNeeded(dl_module.dy.desc);
     ReshapeIfNeeded(dl_module.out_ref.desc);
     ReshapeIfNeeded(dl_module.bnScale.desc);
+    ReshapeIfNeeded(dl_module.bnBias.desc);
     ReshapeIfNeeded(dl_module.dScale_ref.desc);
     ReshapeIfNeeded(dl_module.dBias_ref.desc);
     ReshapeIfNeeded(dl_module.savedMean.desc);
