@@ -31,31 +31,6 @@ enum class BN3DPerActTestType
 
 struct BN3DPerActTestCase
 {
-    
-    // CPU Verification Tensors (Zero-Copy)
-    tensor<T> dy;
-    tensor<AccDataType> bnScale;
-    tensor<AccDataType> bnBias;
-    tensor<AccDataType> dScale_ref;
-    tensor<AccDataType> dBias_ref;
-    tensor<AccDataType> savedMean;
-    tensor<AccDataType> savedInvVar;
-    tensor<AccDataType> saveMean_ref;
-    tensor<AccDataType> saveVariance_ref;
-    tensor<AccDataType> runMean_ref;
-    tensor<AccDataType> runVariance_ref;
-    tensor<AccDataType> estMean;
-    tensor<AccDataType> estVariance;
-
-    miopenBatchNormMode_t bn_mode = miopenBNPerActivation;
-    bool useInverseVariance       = false;
-    double averageFactor          = MIO_BN_TEST_EXPAVGFACTOR;
-
-    miopenActivationMode_t activ_mode = miopenActivationPASTHRU;
-    double activ_alpha                = 1.0;
-    double activ_beta                 = 0.0;
-    double activ_gamma                = 1.0;
-
     std::size_t n, c, d, h, w;
     BN3DPerActTestType test_type;
 
