@@ -32,159 +32,123 @@
 #include "../fusionHost.hpp"
 
 namespace test {
-template <typename DLModule>
+
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNInference(DLModule& dl_module)
 {
     int size{0};
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
-    // In case of NxCxDxHxW
-    auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5 && desc.GetNumDims() == 5)
-        {
-            desc = miopen::BuildReshaped4DTensorDescriptor(desc);
-        }
-    };
-    ReshapeIfNeeded(dl_module.input.desc);
-    ReshapeIfNeeded(dl_module.out_ref.desc);
-    ReshapeIfNeeded(dl_module.scale.desc);
-    ReshapeIfNeeded(dl_module.shift.desc);
-    ReshapeIfNeeded(dl_module.estMean.desc);
-    ReshapeIfNeeded(dl_module.estVariance.desc);
+    
+    if(size == 5)
+    {
+        auto orig_in = dl_module.input.desc; auto orig_out = dl_module.out_ref.desc;
+        auto orig_sc = dl_module.scale.desc; auto orig_sh = dl_module.shift.desc;
+        auto orig_em = dl_module.estMean.desc; auto orig_ev = dl_module.estVariance.desc;
 
-    if(dl_module.bn_mode == miopenBNSpatial)
-    {
-        batchNormSpatialHostInference(dl_module.input,
-                                      dl_module.out_ref,
-                                      dl_module.scale,
-                                      dl_module.shift,
-                                      dl_module.epsilon,
-                                      dl_module.estMean,
-                                      dl_module.estVariance,
-                                      dl_module.useInverseVariance);
-    }
-    else if(dl_module.bn_mode == miopenBNPerActivation)
-    {
-        batchNormPerActivHostInference(dl_module.input,
-                                       dl_module.out_ref,
-                                       dl_module.scale,
-                                       dl_module.shift,
-                                       dl_module.epsilon,
-                                       dl_module.estMean,
-                                       dl_module.estVariance,
-                                       dl_module.useInverseVariance);
+        dl_module.input.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.input.desc);
+        dl_module.out_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.out_ref.desc);
+        dl_module.scale.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.scale.desc);
+        dl_module.shift.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.shift.desc);
+        dl_module.estMean.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.estMean.desc);
+        dl_module.estVariance.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.estVariance.desc);
+
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostInference(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.estMean, dl_module.estVariance, dl_module.useInverseVariance);
+        else
+            batchNormPerActivHostInference(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.estMean, dl_module.estVariance, dl_module.useInverseVariance);
+
+        dl_module.input.desc = orig_in; dl_module.out_ref.desc = orig_out;
+        dl_module.scale.desc = orig_sc; dl_module.shift.desc = orig_sh;
+        dl_module.estMean.desc = orig_em; dl_module.estVariance.desc = orig_ev;
     }
     else
     {
-        std::cout << "\nUnknown inference batch miopenBatchNormMode_t\n";
-        exit(EXIT_FAILURE);
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostInference(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.estMean, dl_module.estVariance, dl_module.useInverseVariance);
+        else
+            batchNormPerActivHostInference(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.estMean, dl_module.estVariance, dl_module.useInverseVariance);
     }
 }
 
-template <typename DLModule>
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNBwd(DLModule& dl_module)
 {
     int size{0};
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
-    // In case of NxCxDxHxW
-    auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5 && desc.GetNumDims() == 5)
-        {
-            desc = miopen::BuildReshaped4DTensorDescriptor(desc);
-        }
-    };
-    ReshapeIfNeeded(dl_module.input.desc);
-    ReshapeIfNeeded(dl_module.dy.desc);
-    ReshapeIfNeeded(dl_module.out_ref.desc);
-    ReshapeIfNeeded(dl_module.bnScale.desc);
-    ReshapeIfNeeded(dl_module.dScale_ref.desc);
-    ReshapeIfNeeded(dl_module.dBias_ref.desc);
-    ReshapeIfNeeded(dl_module.savedMean.desc);
-    ReshapeIfNeeded(dl_module.savedInvVar.desc);
+    
+    if(size == 5)
+    {
+        auto orig_in = dl_module.input.desc; auto orig_dy = dl_module.dy.desc;
+        auto orig_out = dl_module.out_ref.desc; auto orig_bs = dl_module.bnScale.desc;
+        auto orig_ds = dl_module.dScale_ref.desc; auto orig_db = dl_module.dBias_ref.desc;
+        auto orig_sm = dl_module.savedMean.desc; auto orig_sv = dl_module.savedInvVar.desc;
 
-    if(dl_module.bn_mode == miopenBNSpatial)
-    {
-        batchNormSpatialHostBwdTrain(dl_module.input,
-                                     dl_module.dy,
-                                     dl_module.out_ref,
-                                     dl_module.bnScale,
-                                     dl_module.bnBias,
-                                     dl_module.dScale_ref,
-                                     dl_module.dBias_ref,
-                                     dl_module.savedMean,
-                                     dl_module.savedInvVar,
-                                     dl_module.activ_mode,
-                                     dl_module.activ_beta,
-                                     dl_module.activ_alpha);
-    }
-    else if(dl_module.bn_mode == miopenBNPerActivation)
-    {
-        batchNormPerActHostBwdTrain(dl_module.input,
-                                    dl_module.dy,
-                                    dl_module.out_ref,
-                                    dl_module.bnScale,
-                                    dl_module.dScale_ref,
-                                    dl_module.dBias_ref,
-                                    dl_module.savedMean,
-                                    dl_module.savedInvVar);
+        dl_module.input.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.input.desc);
+        dl_module.dy.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.dy.desc);
+        dl_module.out_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.out_ref.desc);
+        dl_module.bnScale.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.bnScale.desc);
+        dl_module.dScale_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.dScale_ref.desc);
+        dl_module.dBias_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.dBias_ref.desc);
+        dl_module.savedMean.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.savedMean.desc);
+        dl_module.savedInvVar.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.savedInvVar.desc);
+
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostBwdTrain(dl_module.input, dl_module.dy, dl_module.out_ref, dl_module.bnScale, dl_module.bnBias, dl_module.dScale_ref, dl_module.dBias_ref, dl_module.savedMean, dl_module.savedInvVar, dl_module.activ_mode, dl_module.activ_beta, dl_module.activ_alpha);
+        else
+            batchNormPerActHostBwdTrain(dl_module.input, dl_module.dy, dl_module.out_ref, dl_module.bnScale, dl_module.dScale_ref, dl_module.dBias_ref, dl_module.savedMean, dl_module.savedInvVar);
+
+        dl_module.input.desc = orig_in; dl_module.dy.desc = orig_dy;
+        dl_module.out_ref.desc = orig_out; dl_module.bnScale.desc = orig_bs;
+        dl_module.dScale_ref.desc = orig_ds; dl_module.dBias_ref.desc = orig_db;
+        dl_module.savedMean.desc = orig_sm; dl_module.savedInvVar.desc = orig_sv;
     }
     else
     {
-        std::cout << "\nUnknown BwdTrain batch miopenBatchNormMode_t\n";
-        exit(EXIT_FAILURE);
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostBwdTrain(dl_module.input, dl_module.dy, dl_module.out_ref, dl_module.bnScale, dl_module.bnBias, dl_module.dScale_ref, dl_module.dBias_ref, dl_module.savedMean, dl_module.savedInvVar, dl_module.activ_mode, dl_module.activ_beta, dl_module.activ_alpha);
+        else
+            batchNormPerActHostBwdTrain(dl_module.input, dl_module.dy, dl_module.out_ref, dl_module.bnScale, dl_module.dScale_ref, dl_module.dBias_ref, dl_module.savedMean, dl_module.savedInvVar);
     }
 }
 
-template <typename DLModule>
+template <typename T, typename AccDataType, typename DLModule>
 void ComputeCPUBNFwdTrain(DLModule& dl_module)
 {
     int size{0};
     miopenGetTensorDescriptorSize(&dl_module.input.desc, &size);
-    // In case of NxCxDxHxW
-    auto ReshapeIfNeeded = [size](auto& desc) {
-        if(size == 5 && desc.GetNumDims() == 5)
-        {
-            desc = miopen::BuildReshaped4DTensorDescriptor(desc);
-        }
-    };
-    ReshapeIfNeeded(dl_module.input.desc);
-    ReshapeIfNeeded(dl_module.out_ref.desc);
-    ReshapeIfNeeded(dl_module.scale.desc);
-    ReshapeIfNeeded(dl_module.shift.desc);
-    ReshapeIfNeeded(dl_module.saveMean_ref.desc);
-    ReshapeIfNeeded(dl_module.saveVariance_ref.desc);
-    ReshapeIfNeeded(dl_module.runMean_ref.desc);
-    ReshapeIfNeeded(dl_module.runVariance_ref.desc);
+    
+    if(size == 5)
+    {
+        auto orig_in = dl_module.input.desc; auto orig_out = dl_module.out_ref.desc;
+        auto orig_sc = dl_module.scale.desc; auto orig_sh = dl_module.shift.desc;
+        auto orig_sm = dl_module.saveMean_ref.desc; auto orig_sv = dl_module.saveVariance_ref.desc;
+        auto orig_rm = dl_module.runMean_ref.desc; auto orig_rv = dl_module.runVariance_ref.desc;
 
-    if(dl_module.bn_mode == miopenBNSpatial)
-    {
-        batchNormSpatialHostFwdTrain(dl_module.input,
-                                     dl_module.out_ref,
-                                     dl_module.scale,
-                                     dl_module.shift,
-                                     dl_module.epsilon,
-                                     dl_module.averageFactor,
-                                     dl_module.saveMean_ref,
-                                     dl_module.saveVariance_ref,
-                                     dl_module.runMean_ref,
-                                     dl_module.runVariance_ref);
-    }
-    else if(dl_module.bn_mode == miopenBNPerActivation)
-    {
-        batchNormPerActHostFwdTrain(dl_module.input,
-                                    dl_module.out_ref,
-                                    dl_module.scale,
-                                    dl_module.shift,
-                                    dl_module.epsilon,
-                                    dl_module.averageFactor,
-                                    dl_module.saveMean_ref,
-                                    dl_module.saveVariance_ref,
-                                    dl_module.runMean_ref,
-                                    dl_module.runVariance_ref);
+        dl_module.input.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.input.desc);
+        dl_module.out_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.out_ref.desc);
+        dl_module.scale.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.scale.desc);
+        dl_module.shift.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.shift.desc);
+        dl_module.saveMean_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.saveMean_ref.desc);
+        dl_module.saveVariance_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.saveVariance_ref.desc);
+        dl_module.runMean_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.runMean_ref.desc);
+        dl_module.runVariance_ref.desc = miopen::BuildReshaped4DTensorDescriptor(dl_module.runVariance_ref.desc);
+
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostFwdTrain(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.averageFactor, dl_module.saveMean_ref, dl_module.saveVariance_ref, dl_module.runMean_ref, dl_module.runVariance_ref);
+        else
+            batchNormPerActHostFwdTrain(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.averageFactor, dl_module.saveMean_ref, dl_module.saveVariance_ref, dl_module.runMean_ref, dl_module.runVariance_ref);
+
+        dl_module.input.desc = orig_in; dl_module.out_ref.desc = orig_out;
+        dl_module.scale.desc = orig_sc; dl_module.shift.desc = orig_sh;
+        dl_module.saveMean_ref.desc = orig_sm; dl_module.saveVariance_ref.desc = orig_sv;
+        dl_module.runMean_ref.desc = orig_rm; dl_module.runVariance_ref.desc = orig_rv;
     }
     else
     {
-        std::cout << "\nUnknown FwdTrain batch miopenBatchNormMode_t\n";
-        exit(EXIT_FAILURE);
+        if(dl_module.bn_mode == miopenBNSpatial)
+            batchNormSpatialHostFwdTrain(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.averageFactor, dl_module.saveMean_ref, dl_module.saveVariance_ref, dl_module.runMean_ref, dl_module.runVariance_ref);
+        else
+            batchNormPerActHostFwdTrain(dl_module.input, dl_module.out_ref, dl_module.scale, dl_module.shift, dl_module.epsilon, dl_module.averageFactor, dl_module.saveMean_ref, dl_module.saveVariance_ref, dl_module.runMean_ref, dl_module.runVariance_ref);
     }
 }
 
