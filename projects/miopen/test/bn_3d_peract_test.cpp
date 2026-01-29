@@ -48,6 +48,40 @@
 #include <cfloat>
 #include <iomanip>
 
+#include <chrono>
+#include <map>
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <iomanip>
+
+struct FunctionTimer
+{
+    FunctionTimer(const std::string& name) : mName(name), mStart(std::chrono::high_resolution_clock::now()) {}
+    ~FunctionTimer()
+    {
+        auto end = std::chrono::high_resolution_clock::now();
+        mFunctionTimes[mName] += std::chrono::duration_cast<std::chrono::microseconds>(end - mStart).count();
+    }
+
+    static void report()
+    {
+        std::cout << "\n=== CTest Function Timing Report ===\n";
+        for(const auto& pair : mFunctionTimes)
+        {
+            std::cout << std::left << std::setw(30) << pair.first << " : "
+                      << std::fixed << std::setprecision(3) << (pair.second / 1000000.0) << " sec\n";
+        }
+        std::cout << "====================================\n";
+    }
+
+    std::string mName;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
+    static std::map<std::string, long long> mFunctionTimes;
+};
+
+std::map<std::string, long long> FunctionTimer::mFunctionTimes;
+
 // Run CPU emulations in hierarchical reduction mode.
 //#define MIO_HEIRARCH_SEL 0
 #define MIO_BN_TEST_EXPAVGFACTOR 0.1
@@ -72,6 +106,7 @@ struct verify_forward_train_3d_bn_per_activation
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_forward_train_3d_bn_per_activation::cpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -207,6 +242,7 @@ struct verify_forward_train_3d_bn_per_activation
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_forward_train_3d_bn_per_activation::gpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -344,6 +380,7 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 
     tensor<T> cpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_recalc::cpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -429,6 +466,7 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 
     tensor<T> gpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_recalc::gpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -498,6 +536,7 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 
     tensor<T> cpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_use_est::cpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -555,6 +594,7 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 
     tensor<T> gpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_use_est::gpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -629,6 +669,7 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_use_saved::cpu");
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
@@ -718,6 +759,7 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_use_saved::gpu");
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
 #endif
@@ -817,6 +859,7 @@ struct verify_backward_3d_bn_per_activation_recalc
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_recalc::cpu");
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
 #endif
@@ -927,6 +970,7 @@ struct verify_backward_3d_bn_per_activation_recalc
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_recalc::gpu");
 #if(MIO_BN_TIME_EVERYTHING == 1)
         auto t_start = std::chrono::high_resolution_clock::now();
 #endif
@@ -1034,6 +1078,7 @@ struct batch_norm_3d_per_activation_driver : test_driver
 
     void run()
     {
+        FunctionTimer ft("Driver::run");
         std::size_t n, c, d, h, w;
         std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
         this->tolerance         = 200 * input.desc.GetElementSize();
@@ -1109,6 +1154,7 @@ int main(int argc, const char* argv[])
     auto t_start = std::chrono::high_resolution_clock::now();
 #endif
     test_drive<batch_norm_3d_per_activation_driver>(argc, argv);
+    FunctionTimer::report();
 
 #if(MIO_BN_TIME_EVERYTHING == 1)
     auto t_end = std::chrono::high_resolution_clock::now();
