@@ -1,0 +1,1184 @@
+// Copyright © Advanced Micro Devices, Inc., or its affiliates.
+// SPDX-License-Identifier:  MIT
+
+#include <cfloat>
+#include <cmath>
+#include <ctime>
+
+#include <array>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include <miopen/batch_norm.hpp>
+#include <miopen/miopen.h>
+#include <miopen/tensor.hpp>
+#include <miopen/activ.hpp>
+
+#include "driver.hpp"
+#include "get_handle.hpp"
+#include "gtest_common.hpp"
+#include "random.hpp"
+#include "tensor_holder.hpp"
+#include "test.hpp"
+#include "test_parameter_name_generator.hpp"
+#include "verify.hpp"
+
+#define MIO_BN_TEST_EXPAVGFACTOR 0.1
+#define MIO_BN_TEST_EPSILON 1e-5
+#define MIO_BN_USE_MIX_PREC 1
+#if MIO_BN_USE_MIX_PREC == 1
+#define PREC_TYPE float
+#else
+#define PREC_TYPE T
+#endif
+
+#include <chrono>
+#include <map>
+#include <fstream>
+#include <string>
+
+namespace {
+
+struct FunctionTimer
+{
+    FunctionTimer(const std::string& name) : mName(name), mStart(std::chrono::high_resolution_clock::now()) {}
+    ~FunctionTimer()
+    {
+        auto end = std::chrono::high_resolution_clock::now();
+        mFunctionTimes[mName] += std::chrono::duration_cast<std::chrono::microseconds>(end - mStart).count();
+    }
+
+    static void report()
+    {
+        if(mFunctionTimes.empty())
+        {
+            std::cout << "\n[FUNCTION TIMER] Error: No timing data collected!\n" << std::endl;
+            return;
+        }
+        std::cout << "\n=== Function Timing Report ===\n";
+        for(const auto& pair : mFunctionTimes)
+        {
+            std::cout << std::left << std::setw(30) << pair.first << " : "
+                      << std::fixed << std::setprecision(3) << (pair.second / 1000000.0) << " sec" << std::endl;
+        }
+        std::cout << "==============================\n" << std::endl;
+    }
+
+    std::string mName;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
+    static std::map<std::string, long long> mFunctionTimes;
+};
+
+std::map<std::string, long long> FunctionTimer::mFunctionTimes;
+
+struct GlobalTimerEnvironment : public ::testing::Environment
+{
+    void TearDown() override { FunctionTimer::report(); }
+};
+
+static ::testing::Environment* const timer_env =
+    ::testing::AddGlobalTestEnvironment(new GlobalTimerEnvironment);
+
+using TestCase = NamedContainer<std::vector<int>>;
+
+//****************************************************
+// FORWARD TRAIN
+//****************************************************
+template <class T, class U>
+struct verify_forward_train_3d_bn_per_activation
+{
+    const tensor<T> input;
+    const tensor<U> scale;
+    const tensor<U> shift;
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> cpu() const
+    {
+        double epsilon      = MIO_BN_TEST_EPSILON;
+        double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(input.desc.GetLengths());
+
+        auto out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(out.begin(), out.end(), 0);
+
+        auto derivedBnDesc = miopen::TensorDescriptor{};
+        miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
+
+        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
+        std::tie(rs_n_batch, rs_channels, rs_depth, rs_height, rs_width) =
+            miopen::tien<5>(derivedBnDesc.GetLengths());
+
+        tensor<U> runMean;
+        tensor<U> runVar;
+
+        if(input.desc.GetType() == miopenFloat)
+        {
+            runMean = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width}.generate(
+                tensor_elem_gen_integer{17});
+            runVar = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width}.generate(
+                tensor_elem_gen_integer{17});
+        }
+        else
+        {
+            prng::reset_seed();
+            runMean = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width};
+            runVar  = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width};
+
+            const double Data_scale = 0.001;
+            for(std::size_t i = 0; i < runMean.desc.GetElementSize(); i++)
+            {
+                runMean[i] = prng::gen_descreet_uniform_sign<U>(Data_scale, 100);
+                runVar[i]  = prng::gen_descreet_unsigned<U>(Data_scale, 100);
+            }
+        }
+
+        auto saveMean   = tensor<U>{1, channels, depth, height, width};
+        auto saveInvVar = tensor<U>{1, channels, depth, height, width};
+        const auto n    = static_cast<double>(n_batch);
+
+        const auto& strides = input.desc.GetStrides();
+        const auto& dstrides = derivedBnDesc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double mean_accum     = 0.;
+            double variance_accum = 0.;
+            double elemStd        = 0.;
+            double elemInvVar     = 0.;
+            double inhat          = 0.;
+            double newRunMean     = 0.;
+            double adjust         = 0.;
+
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean_accum += input.data[bidx * strides[0] + base_idx];
+            }
+            mean_accum /= n;
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = (input.data[bidx * strides[0] + base_idx] - mean_accum);
+                variance_accum += elemStd * elemStd;
+            }
+            variance_accum /= n;
+
+            elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = (input.data[bidx * strides[0] + base_idx] - mean_accum);
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
+
+            newRunMean = runMean.data[d_base_idx] * (1.0 - expAvgFactor);
+            runMean.data[d_base_idx] =
+                mean_accum * expAvgFactor + newRunMean; // newMean*factor + tmp
+
+            adjust = (n_batch == 1) ? variance_accum : (n / (n - 1.0)) * variance_accum;
+            runVar.data[d_base_idx] =
+                (1 - expAvgFactor) * runVar.data[d_base_idx] + expAvgFactor * adjust;
+
+            saveMean.data[d_base_idx]   = mean_accum;
+            saveInvVar.data[d_base_idx] = elemInvVar;
+        });
+
+        return std::make_tuple(out, runMean, runVar, saveMean, saveInvVar);
+    }
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> gpu() const
+    {
+        auto&& handle = get_handle();
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(input.desc.GetLengths());
+
+        auto out = input;
+        std::fill(out.begin(), out.end(), 0);
+
+        auto derivedBnDesc = miopen::TensorDescriptor{};
+        miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
+
+        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
+        std::tie(rs_n_batch, rs_channels, rs_depth, rs_height, rs_width) =
+            miopen::tien<5>(derivedBnDesc.GetLengths());
+
+        tensor<U> runMean;
+        tensor<U> runVar;
+
+        if(input.desc.GetType() == miopenFloat)
+        {
+            runMean = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width}.generate(
+                tensor_elem_gen_integer{17});
+            runVar = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width}.generate(
+                tensor_elem_gen_integer{17});
+        }
+        else
+        {
+            prng::reset_seed();
+            runMean = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width};
+            runVar  = tensor<U>{rs_n_batch, rs_channels, rs_depth, rs_height, rs_width};
+
+            const double Data_scale = 0.001;
+            for(std::size_t i = 0; i < runMean.desc.GetElementSize(); i++)
+            {
+                runMean[i] = prng::gen_descreet_uniform_sign<U>(Data_scale, 100);
+                runVar[i]  = prng::gen_descreet_unsigned<U>(Data_scale, 100);
+            }
+        }
+
+        auto saveMean   = tensor<U>{1, channels, depth, height, width};
+        auto saveInvVar = tensor<U>{1, channels, depth, height, width};
+
+        auto in_dev    = handle.Write(input.data);
+        auto scale_dev = handle.Write(scale.data);
+        auto shift_dev = handle.Write(shift.data);
+
+        auto runMean_dev    = handle.Write(runMean.data);
+        auto runVar_dev     = handle.Write(runVar.data);
+        auto saveMean_dev   = handle.Create<U>(channels * depth * height * width);
+        auto saveInvVar_dev = handle.Create<U>(channels * depth * height * width);
+        auto out_dev        = handle.Create<T>(n_batch * depth * channels * height * width);
+
+        double epsilon      = MIO_BN_TEST_EPSILON;
+        double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
+
+        float alpha = 1.;
+        float beta  = 0.;
+
+        miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
+        miopen::BatchNormForwardTraining(handle,
+                                         miopenBNPerActivation,
+                                         &alpha,
+                                         &beta,
+                                         miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                         in_dev.get(),
+                                         miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                         out_dev.get(),
+                                         miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         scale_dev.get(),
+                                         shift_dev.get(),
+                                         expAvgFactor,
+                                         runMean_dev.get(),
+                                         runVar_dev.get(),
+                                         epsilon,
+                                         saveMean_dev.get(),
+                                         saveInvVar_dev.get(),
+                                         actDesc);
+
+        saveMean.data   = handle.Read<U>(saveMean_dev, saveMean.data.size());
+        saveInvVar.data = handle.Read<U>(saveInvVar_dev, saveInvVar.data.size());
+        runMean.data    = handle.Read<U>(runMean_dev, runMean.data.size());
+        runVar.data     = handle.Read<U>(runVar_dev, runVar.data.size());
+        out.data        = handle.Read<T>(out_dev, out.data.size());
+
+        return std::make_tuple(out, runMean, runVar, saveMean, saveInvVar);
+    }
+
+    void fail(int badtensor) const
+    {
+        std::cout << "Forward Train Per Activation 3D Batch Normalization: " << std::endl;
+        std::cout << "Input tensor: " << input.desc.ToString() << std::endl;
+        switch(badtensor)
+        {
+        case(0): std::cout << "Output tensor output failed verification." << std::endl; break;
+        case(1): std::cout << "Running Mean output tensor failed verification." << std::endl; break;
+        case(2):
+            std::cout << "Running Variance output tensor failed verification." << std::endl;
+            break;
+        case(3): std::cout << "Saved Mean tensor failed verification." << std::endl; break;
+        case(4): std::cout << "Saved Variance tensor failed verification." << std::endl; break;
+        default: break;
+        }
+    }
+};
+
+//****************************************************
+// FORWARD INFERENCE
+//****************************************************
+template <class T, class U>
+struct verify_forward_infer_3d_bn_per_activation_recalc
+{
+    const tensor<T> input;
+    const tensor<U> scale;
+    const tensor<U> shift;
+
+    tensor<T> cpu() const
+    {
+        double epsilon = MIO_BN_TEST_EPSILON;
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(input.desc.GetLengths());
+
+        auto out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(out.begin(), out.end(), 0);
+
+        const auto n = static_cast<double>(n_batch);
+
+        const auto& strides = input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd        = 0.;
+            double elemInvVar     = 0.;
+            double mean_accum     = 0.;
+            double variance_accum = 0.;
+            double inhat          = 0.;
+
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            mean_accum = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean_accum += input.data[bidx * strides[0] + base_idx];
+            }
+            mean_accum /= n;
+
+            elemStd        = 0.;
+            variance_accum = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean_accum;
+                variance_accum += elemStd * elemStd;
+            }
+            variance_accum /= n;
+
+            elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean_accum;
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
+        });
+        return out;
+    }
+
+    tensor<T> gpu() const
+    {
+        auto&& handle = get_handle();
+        auto out      = input;
+        std::fill(out.begin(), out.end(), 0);
+
+        auto in_dev    = handle.Write(input.data);
+        auto scale_dev = handle.Write(scale.data);
+        auto shift_dev = handle.Write(shift.data);
+        auto out_dev   = handle.Write(out.data);
+
+        double epsilon = MIO_BN_TEST_EPSILON;
+        float alpha    = 1.;
+        float beta     = 0.;
+
+        miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
+        miopen::BatchNormForwardInference(handle,
+                                          miopenBNPerActivation,
+                                          &alpha,
+                                          &beta,
+                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                          in_dev.get(),
+                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                          out_dev.get(),
+                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          scale_dev.get(),
+                                          shift_dev.get(),
+                                          nullptr,
+                                          nullptr,
+                                          epsilon,
+                                          actDesc);
+        out.data = handle.Read<T>(out_dev, out.data.size());
+
+        return out;
+    }
+
+    void fail(int) const
+    {
+        std::cout << "Forward Inference Per Activation 3D Batch Normalization Recalc: "
+                  << std::endl;
+        std::cout << "Input tensor: " << input.desc.ToString() << std::endl;
+    }
+};
+
+template <class T, class U>
+struct verify_forward_infer_3d_bn_per_activation_use_est
+{
+    const tensor<T> input;
+    const tensor<U> scale;
+    const tensor<U> shift;
+    const tensor<U> estMean;
+    const tensor<U> estVar;
+
+    tensor<T> cpu() const
+    {
+        double epsilon = MIO_BN_TEST_EPSILON;
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(input.desc.GetLengths());
+
+        auto out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(out.begin(), out.end(), 0);
+
+        const auto& strides = input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd    = 0.;
+            double mean       = 0.;
+            double variance   = 0.;
+            double inhat      = 0.;
+            double elemInvVar = 0.;
+
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            mean       = estMean.data[d_base_idx];
+            variance   = estVar.data[d_base_idx];
+            elemInvVar = 1.0 / double(sqrt(variance + epsilon));
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean;
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
+        });
+        return out;
+    }
+
+    tensor<T> gpu() const
+    {
+        auto&& handle = get_handle();
+        auto out      = input;
+        std::fill(out.begin(), out.end(), 0);
+
+        auto in_dev      = handle.Write(input.data);
+        auto scale_dev   = handle.Write(scale.data);
+        auto shift_dev   = handle.Write(shift.data);
+        auto estMean_dev = handle.Write(estMean.data);
+        auto estVar_dev  = handle.Write(estVar.data);
+        auto out_dev     = handle.Write(out.data);
+
+        double epsilon = MIO_BN_TEST_EPSILON;
+        float alpha    = 1.;
+        float beta     = 0.;
+
+        miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
+        miopen::BatchNormForwardInference(handle,
+                                          miopenBNPerActivation,
+                                          &alpha,
+                                          &beta,
+                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                          in_dev.get(),
+                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                          out_dev.get(),
+                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          scale_dev.get(),
+                                          shift_dev.get(),
+                                          estMean_dev.get(),
+                                          estVar_dev.get(),
+                                          epsilon,
+                                          actDesc);
+        out.data = handle.Read<T>(out_dev, out.data.size());
+
+        return out;
+    }
+
+    void fail(int) const
+    {
+        std::cout << "Forward Inference Per Activation 3D Batch Normalization Use Estimated: "
+                  << std::endl;
+        std::cout << "Input tensor: " << input.desc.ToString() << std::endl;
+    }
+};
+
+//****************************************************
+// BACKWARDS PROPAGATION
+//****************************************************
+template <class T, class U>
+struct verify_backward_3d_bn_per_activation_use_saved
+{
+    const tensor<T> x_input;
+    const tensor<T> dy_input;
+    const tensor<U> scale;
+    const tensor<U> savedMean;
+    const tensor<U> savedInvVar;
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
+    {
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(x_input.desc.GetLengths());
+
+        auto dx_out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(dx_out.begin(), dx_out.end(), 0);
+
+        auto dscale = tensor<U>{1, channels, depth, height, width};
+        std::fill(dscale.begin(), dscale.end(), 0);
+
+        auto dshift = tensor<U>{1, channels, depth, height, width};
+        std::fill(dshift.begin(), dshift.end(), 0);
+
+        const auto n                  = static_cast<double>(n_batch);
+
+        const auto& strides = x_input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd    = 0.;
+            double mean       = 0.;
+            double elemInvVar = 0.;
+            double dyelem     = 0.;
+            double dxhat      = 0.;
+            double dxhathat   = 0.;
+            double tmp1       = 0.;
+
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            dxhat    = 0.;
+            dxhathat = 0.;
+
+            mean       = savedMean.data[d_base_idx];
+            elemInvVar = savedInvVar.data[d_base_idx];
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                dyelem           = dy_input.data[bidx * strides[0] + base_idx];
+                dshift.data[d_base_idx] += dyelem;
+                dscale.data[d_base_idx] += xhat_val * dyelem;
+                tmp1 = scale.data[d_base_idx] * dyelem;
+                dxhat += tmp1;
+                dxhathat += tmp1 * xhat_val;
+            }
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                tmp1        = xhat_val * dxhathat + dxhat;
+                double tmp2 = n_batch * (scale.data[d_base_idx] *
+                                         dy_input.data[bidx * strides[0] + base_idx]) -
+                              tmp1;
+                double tmp3                           = elemInvVar / (double(n));
+                dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
+            }
+        });
+        return std::make_tuple(dx_out, dscale, dshift);
+    }
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
+    {
+        auto&& handle  = get_handle();
+        double epsilon = MIO_BN_TEST_EPSILON;
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(x_input.desc.GetLengths());
+
+        auto dx_out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(dx_out.begin(), dx_out.end(), 0);
+
+        auto dscale = tensor<U>{1, channels, depth, height, width};
+        std::fill(dscale.begin(), dscale.end(), 0);
+
+        auto dshift = tensor<U>{1, channels, depth, height, width};
+        std::fill(dshift.begin(), dshift.end(), 0);
+
+        auto xin_dev         = handle.Write(x_input.data);
+        auto dyin_dev        = handle.Write(dy_input.data);
+        auto scale_dev       = handle.Write(scale.data);
+        auto dscale_dev      = handle.Write(dscale.data);
+        auto dshift_dev      = handle.Write(dshift.data);
+        auto dx_out_dev      = handle.Write(dx_out.data);
+        auto savedMean_dev   = handle.Write(savedMean.data);
+        auto savedInvVar_dev = handle.Write(savedInvVar.data);
+
+        float alpha = 1.;
+        float beta  = 0.;
+
+        miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
+        miopen::BatchNormBackward(handle,
+                                  miopenBNPerActivation,
+                                  &alpha,
+                                  &beta,
+                                  &alpha,
+                                  &beta,
+                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  xin_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  dyin_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  dx_out_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  scale_dev.get(),
+                                  nullptr,
+                                  dscale_dev.get(),
+                                  dshift_dev.get(),
+                                  epsilon,
+                                  savedMean_dev.get(),
+                                  savedInvVar_dev.get(),
+                                  actDesc);
+
+        dx_out.data = handle.Read<T>(dx_out_dev, dx_out.data.size());
+        dscale.data = handle.Read<U>(dscale_dev, dscale.data.size());
+        dshift.data = handle.Read<U>(dshift_dev, dshift.data.size());
+
+        return std::make_tuple(dx_out, dscale, dshift);
+    }
+
+    void fail(int badtensor) const
+    {
+        std::cout << "Backward 3D Batch Per ActivationNormalization Using Saved Mean and Variance: "
+                  << std::endl;
+        std::cout << "X Input tensor: " << x_input.desc.ToString() << std::endl;
+        std::cout << "Delta Y Input tensor: " << dy_input.desc.ToString() << std::endl;
+        switch(badtensor)
+        {
+        case(0):
+            std::cout << "Delta X output tensor output failed verification." << std::endl;
+            break;
+        case(1): std::cout << "Delta scale output tensor failed verification." << std::endl; break;
+        case(2): std::cout << "Delta shift output tensor failed verification." << std::endl; break;
+        default: break;
+        }
+    }
+};
+
+template <class T, class U>
+struct verify_backward_3d_bn_per_activation_recalc
+{
+    const tensor<T> x_input;
+    const tensor<T> dy_input;
+    const tensor<U> scale;
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
+    {
+        double epsilon = MIO_BN_TEST_EPSILON;
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(x_input.desc.GetLengths());
+
+        auto dx_out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(dx_out.begin(), dx_out.end(), 0);
+
+        auto dscale = tensor<U>{1, channels, depth, height, width};
+        std::fill(dscale.begin(), dscale.end(), 0);
+
+        auto dshift = tensor<U>{1, channels, depth, height, width};
+        std::fill(dshift.begin(), dshift.end(), 0);
+
+        const auto n                  = static_cast<double>(n_batch);
+
+        const auto& strides = x_input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd    = 0.;
+            double mean       = 0.;
+            double elemInvVar = 0.;
+            double dyelem     = 0.;
+            double variance   = 0.;
+            double dxhat      = 0.;
+            double dxhathat   = 0.;
+            double tmp1       = 0.;
+
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            mean = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean += x_input.data[bidx * strides[0] + base_idx];
+            }
+            mean /= n;
+
+            elemStd  = 0.;
+            variance = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                variance += elemStd * elemStd;
+            }
+            variance /= n;
+
+            elemInvVar = 1.0 / double(sqrt(variance + epsilon));
+
+            dxhat    = 0.;
+            dxhathat = 0.;
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                dyelem           = dy_input.data[bidx * strides[0] + base_idx];
+                dshift.data[d_base_idx] += dyelem;
+                dscale.data[d_base_idx] += xhat_val * dyelem;
+                tmp1 = scale.data[d_base_idx] * dyelem;
+                dxhat += tmp1;
+                dxhathat += tmp1 * xhat_val;
+            }
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                tmp1        = xhat_val * dxhathat + dxhat;
+                double tmp2 = n_batch * (scale.data[d_base_idx] *
+                                         dy_input.data[bidx * strides[0] + base_idx]) -
+                              tmp1;
+                double tmp3                           = elemInvVar / double(n);
+                dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
+            }
+        });
+        return std::make_tuple(dx_out, dscale, dshift);
+    }
+
+    std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
+    {
+        auto&& handle = get_handle();
+
+        std::size_t n_batch, channels, depth, height, width;
+        std::tie(n_batch, channels, depth, height, width) =
+            miopen::tien<5>(x_input.desc.GetLengths());
+
+        auto dx_out = tensor<T>{n_batch, channels, depth, height, width};
+        std::fill(dx_out.begin(), dx_out.end(), 0);
+
+        auto dscale = tensor<U>{1, channels, depth, height, width};
+        std::fill(dscale.begin(), dscale.end(), 0);
+
+        auto dshift = tensor<U>{1, channels, depth, height, width};
+        std::fill(dshift.begin(), dshift.end(), 0);
+
+        auto xin_dev    = handle.Write(x_input.data);
+        auto dyin_dev   = handle.Write(dy_input.data);
+        auto scale_dev  = handle.Write(scale.data);
+        auto dscale_dev = handle.Write(dscale.data);
+        auto dshift_dev = handle.Write(dshift.data);
+        auto dx_out_dev = handle.Write(dx_out.data);
+
+        double epsilon = MIO_BN_TEST_EPSILON;
+        float alpha    = 1.;
+        float beta     = 0.;
+
+        miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
+        miopen::BatchNormBackward(handle,
+                                  miopenBNPerActivation,
+                                  &alpha,
+                                  &beta,
+                                  &alpha,
+                                  &beta,
+                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  xin_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  dyin_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  dx_out_dev.get(),
+                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  scale_dev.get(),
+                                  nullptr,
+                                  dscale_dev.get(),
+                                  dshift_dev.get(),
+                                  epsilon,
+                                  nullptr,
+                                  nullptr,
+                                  actDesc);
+
+        dx_out.data = handle.Read<T>(dx_out_dev, dx_out.data.size());
+        dscale.data = handle.Read<U>(dscale_dev, dscale.data.size());
+        dshift.data = handle.Read<U>(dshift_dev, dshift.data.size());
+
+        return std::make_tuple(dx_out, dscale, dshift);
+    }
+
+    void fail(int badtensor) const
+    {
+        std::cout << "Backward 3D Batch Per Activation Normalization Recalc Mean and Variance: "
+                  << std::endl;
+        std::cout << "X Input tensor: " << x_input.desc.ToString() << std::endl;
+        std::cout << "Delta Y Input tensor: " << dy_input.desc.ToString() << std::endl;
+        switch(badtensor)
+        {
+        case(0):
+            std::cout << "Delta X output tensor output failed verification." << std::endl;
+            break;
+        case(1): std::cout << "Delta scale output tensor failed verification." << std::endl; break;
+        case(2): std::cout << "Delta shift output tensor failed verification." << std::endl; break;
+        default: break;
+        }
+    }
+};
+
+//====== DRIVERS ===========================================
+
+inline auto GenSmokeTestCases()
+{
+    return testing::Values(
+        NamedContainer<std::vector<int>>("dims", std::vector<int>{2, 2, 3, 4, 4}, "x"));
+}
+
+inline auto GetSmokeTestCases()
+{
+    static const auto cases = GenSmokeTestCases();
+    return cases;
+}
+
+inline auto GenFullTestCases()
+{
+    auto inputs = get_3d_bn_peract_inputs(4);
+    // Omit shapes with n=1 as CTest does
+    for(auto it = inputs.begin(); it != inputs.end();)
+    {
+        if((*it)[0] == 1)
+            it = inputs.erase(it);
+        else
+            ++it;
+    }
+    return MakeNamedParameterCollectionValues<std::vector<int>>("dims", inputs, "x");
+}
+
+inline auto GetFullTestCases()
+{
+    static const auto cases = GenFullTestCases();
+    return cases;
+}
+
+struct TestParameterNameGenerator
+{
+    std::string operator()(const testing::TestParamInfo<TestCase>& info) const
+    {
+        const auto& dims = info.param;
+        std::stringstream ss;
+        std::string str;
+
+        ss << "dims_" << GetRangeAsString(dims(), "x") << "_test_id_" << info.index;
+
+        str = ss.str();
+
+        // Name format only supports letters, numbers and underscores.
+        std::transform(str.begin(), str.end(), str.begin(), [](char c) {
+            return (c == '.') ? 'p' : (std::isalnum(c) ? c : '_');
+        });
+
+        return str;
+    }
+};
+
+} // namespace
+
+template <class R1, class R2>
+double rms_range_parallel(R1&& r1, R2&& r2)
+{
+    FunctionTimer ft("rms_range_parallel");
+    std::size_t n = miopen::range_distance(r1);
+    if(n != miopen::range_distance(r2))
+        return std::numeric_limits<double>::max();
+    if(n == 0)
+        return 0;
+
+    std::size_t num_threads = std::thread::hardware_concurrency();
+    if(num_threads == 0)
+        num_threads = 1;
+    // For small tensors, don't bother with threads
+    if(n < 10000)
+    {
+        return miopen::rms_range(r1, r2);
+    }
+
+    std::vector<double> partial_sq_diff(num_threads, 0.0);
+    std::vector<double> partial_mag1(num_threads, 0.0);
+    std::vector<double> partial_mag2(num_threads, 0.0);
+
+    std::size_t grainsize = (n + num_threads - 1) / num_threads;
+
+    miopen::par_for(num_threads, 1, [&](std::size_t t) {
+        std::size_t start = t * grainsize;
+        std::size_t end   = std::min(start + grainsize, n);
+        double local_sq   = 0.0;
+        double local_m1   = 0.0;
+        double local_m2   = 0.0;
+        auto it1          = r1.begin() + start;
+        auto it2          = r2.begin() + start;
+        for(std::size_t i = start; i < end; ++i, ++it1, ++it2)
+        {
+            double v1 = static_cast<double>(*it1);
+            double v2 = static_cast<double>(*it2);
+            double d  = v1 - v2;
+            local_sq += d * d;
+            local_m1 = std::max(local_m1, std::fabs(v1));
+            local_m2 = std::max(local_m2, std::fabs(v2));
+        }
+        partial_sq_diff[t] = local_sq;
+        partial_mag1[t]    = local_m1;
+        partial_mag2[t]    = local_m2;
+    });
+
+    double square_difference = std::accumulate(partial_sq_diff.begin(), partial_sq_diff.end(), 0.0);
+    double mag1              = *std::max_element(partial_mag1.begin(), partial_mag1.end());
+    double mag2              = *std::max_element(partial_mag2.begin(), partial_mag2.end());
+
+    double mag = std::max({std::fabs(mag1), std::fabs(mag2), std::numeric_limits<double>::min()});
+    return std::sqrt(square_difference) / (std::sqrt(n) * mag);
+}
+
+template <typename T>
+struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
+{
+    static const constexpr uint64_t MaxValue{miopen_type<T>{} == miopenHalf ? 5 : 17};
+
+    tensor<T> input;
+    tensor<PREC_TYPE> scale;
+    tensor<PREC_TYPE> shift;
+    tensor<T> dy_input;
+
+    void SetUp() override
+    {
+        FunctionTimer ft("SetUp");
+        prng::reset_seed();
+        const auto dims = GetParam();
+
+        std::size_t n, c, d, h, w;
+        std::tie(n, c, d, h, w) = miopen::tien<5>(dims());
+
+        input    = tensor<T>{dims()};
+        dy_input = tensor<T>{dims()}.generate(tensor_elem_gen_integer{MaxValue});
+
+        auto derivedBnDesc = miopen::TensorDescriptor{};
+        miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
+
+        auto derived_lengths = derivedBnDesc.GetLengths();
+
+        if(input.desc.GetType() == miopenFloat)
+        {
+            input.generate(tensor_elem_gen_integer{MaxValue});
+            scale = tensor<PREC_TYPE>{derived_lengths}.generate(tensor_elem_gen_integer{17});
+            shift = tensor<PREC_TYPE>{derived_lengths}.generate(tensor_elem_gen_integer{17});
+        }
+        else
+        {
+            scale = tensor<PREC_TYPE>{derived_lengths};
+            shift = tensor<PREC_TYPE>{derived_lengths};
+
+            const constexpr double Data_scale = 0.001;
+            for(std::size_t i = 0; i < scale.desc.GetElementSize(); i++)
+            {
+                scale[i] = prng::gen_descreet_uniform_sign<PREC_TYPE>(Data_scale, 100);
+                shift[i] = prng::gen_descreet_uniform_sign<PREC_TYPE>(Data_scale, 100);
+            }
+            for(std::size_t i = 0; i < input.desc.GetElementSize(); i++)
+            {
+                input[i] = prng::gen_descreet_uniform_sign<T>(1e-4, 100);
+            }
+        }
+    }
+
+    void RunAll()
+    {
+        FunctionTimer ft("RunAll");
+        std::size_t n, c, d, h, w;
+        std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
+        double tolerance        = 200 * input.desc.GetElementSize();
+
+        // train
+        const auto outpair_train =
+            Verify(verify_forward_train_3d_bn_per_activation<T, PREC_TYPE>{input, scale, shift},
+                   tolerance);
+        // returns:  std::make_tuple(out,runMean,runVar,saveMean,saveInvVar);
+
+        // inference recalc
+        Verify(verify_forward_infer_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, scale, shift},
+               tolerance,
+               false);
+
+        // inference use estimated running values
+        if(input.desc.GetType() == miopenFloat)
+        {
+            const auto& estMean = std::get<1>(outpair_train.second);
+            const auto& estVar  = std::get<2>(outpair_train.second);
+            Verify(
+                verify_forward_infer_3d_bn_per_activation_use_est<T, PREC_TYPE>{
+                    input, scale, shift, estMean, estVar},
+                tolerance,
+                false);
+        }
+
+        // backprop recalc
+        Verify(verify_backward_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, dy_input, scale},
+               8000 * input.desc.GetElementSize(),
+               false);
+
+        // backprop use saved values
+        const auto& savedMean   = std::get<3>(outpair_train.second);
+        const auto& savedInvVar = std::get<4>(outpair_train.second);
+        Verify(
+            verify_backward_3d_bn_per_activation_use_saved<T, PREC_TYPE>{
+                input, dy_input, scale, savedMean, savedInvVar},
+            8000 * input.desc.GetElementSize(),
+            false);
+    }
+
+    auto Verify(auto&& v, double tolerance, bool return_results = true)
+    {
+        std::pair<decltype(v.cpu()), decltype(v.gpu())> res;
+        {
+            FunctionTimer ft("Verify::cpu");
+            res.first = v.cpu();
+        }
+        {
+            FunctionTimer ft("Verify::gpu");
+            res.second = v.gpu();
+        }
+        {
+            FunctionTimer ft("Verify::Compare");
+            Compare(v, res.first, res.second, tolerance);
+        }
+
+        if(return_results)
+            return res;
+        else
+            return std::make_pair(res.first, res.first);
+    }
+
+    template <typename... CpuRanges, typename... GpuRanges>
+    void Compare(auto&& v,
+                 const std::tuple<CpuRanges...>& cpu,
+                 const std::tuple<GpuRanges...>& gpu,
+                 double tolerance)
+    {
+        static_assert(sizeof...(CpuRanges) == sizeof...(GpuRanges), "CPU and GPU mismatch");
+        miopen::sequence([&](auto... is) {
+            miopen::each_args(
+                [&](auto i) {
+                    const auto& c = std::get<i>(cpu);
+                    const auto& g = std::get<i>(gpu);
+                    ASSERT_EQ(miopen::range_distance(c), miopen::range_distance(g));
+                    using value_type       = miopen::range_value<decltype(g)>;
+                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+                    const double error     = rms_range_parallel(c, g);
+                    EXPECT_LE(error, threshold);
+                    if(error > threshold)
+                        v.fail(i);
+                },
+                is...);
+        })(std::integral_constant<std::size_t, sizeof...(CpuRanges)>{});
+    }
+
+    template <typename CpuRanges, typename GpuRanges>
+    void Compare(auto&& v, const CpuRanges& cpu, const GpuRanges& gpu, double tolerance)
+    {
+        ASSERT_EQ(miopen::range_distance(cpu), miopen::range_distance(gpu));
+        using value_type       = miopen::range_value<decltype(gpu)>;
+        const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
+        const double error     = rms_range_parallel(cpu, gpu);
+        EXPECT_LE(error, threshold);
+        if(error > threshold)
+            v.fail(0);
+    }
+};
+
+using GPU_Bn3DPeract_FP16  = Bn3DPeractTest<half_float::half>;
+using GPU_Bn3DPeract_FP32  = Bn3DPeractTest<float>;
+using GPU_Bn3DPeract_BFP16 = Bn3DPeractTest<bfloat16>;
+
+TEST_P(GPU_Bn3DPeract_FP16, AllModes) { this->RunAll(); }
+TEST_P(GPU_Bn3DPeract_FP32, AllModes) { this->RunAll(); }
+TEST_P(GPU_Bn3DPeract_BFP16, AllModes) { this->RunAll(); }
+
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_FP16,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_FP32,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_BFP16,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
+
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_FP16,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_FP32,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_BFP16,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
+
+struct FinalReporter {
+    ~FinalReporter() { FunctionTimer::report(); }
+};
+static FinalReporter global_final_reporter;
