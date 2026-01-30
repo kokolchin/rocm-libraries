@@ -1008,6 +1008,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 
     auto Verify(auto&& v, double tolerance, bool return_results = true)
     {
+        FunctionTimer ft("Bn3DPeractTest::Verify");
         std::pair<decltype(v.cpu()), decltype(v.gpu())> res;
         {
             res.first = v.cpu();
@@ -1031,6 +1032,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
                  const std::tuple<GpuRanges...>& gpu,
                  double tolerance)
     {
+        FunctionTimer ft("Bn3DPeractTest::CompareTuple");
         static_assert(sizeof...(CpuRanges) == sizeof...(GpuRanges), "CPU and GPU mismatch");
         miopen::sequence([&](auto... is) {
             miopen::each_args(
@@ -1052,6 +1054,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
     template <typename CpuRanges, typename GpuRanges>
     void Compare(auto&& v, const CpuRanges& cpu, const GpuRanges& gpu, double tolerance)
     {
+        FunctionTimer ft("Bn3DPeractTest::CompareSingle");
         ASSERT_EQ(miopen::range_distance(cpu), miopen::range_distance(gpu));
         using value_type       = miopen::range_value<decltype(gpu)>;
         const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
