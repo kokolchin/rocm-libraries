@@ -50,6 +50,9 @@ struct FunctionTimer
   FunctionTimer(char const * name) : mName(name), mStartTime(clock()) { }
   ~FunctionTimer() { mFunctionTimes[mName] += clock() - mStartTime; }
 
+  std::string mName;
+  clock_t mStartTime;
+
   static std::map<std::string, clock_t> mFunctionTimes;
 };
 
