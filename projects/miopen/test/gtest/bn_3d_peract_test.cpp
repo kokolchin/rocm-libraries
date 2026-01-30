@@ -1,63 +1,35 @@
-/*******************************************************************************
- *
- * MIT License
- *
- * Copyright (c) 2018 Advanced Micro Devices, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- *******************************************************************************/
+// Copyright © Advanced Micro Devices, Inc., or its affiliates.
+// SPDX-License-Identifier:  MIT
 
-#include "test.hpp"
-#include <gtest/gtest.h>
-#include "gtest_common.hpp"
-#include "test_parameter_name_generator.hpp"
+#include <cfloat>
+#include <cmath>
+#include <ctime>
 
-#include "random.hpp"
 #include <array>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
+#include <thread>
+#include <numeric>
 
 #include <miopen/batch_norm.hpp>
 #include <miopen/miopen.h>
 #include <miopen/tensor.hpp>
 #include <miopen/activ.hpp>
 
-using miopen::BuildReshaped4DTensorDescriptor;
-using miopen::DeriveBNTensorDescriptor;
-
-#include <utility>
-
 #include "driver.hpp"
 #include "get_handle.hpp"
+#include "gtest_common.hpp"
+#include "random.hpp"
 #include "tensor_holder.hpp"
+#include "test.hpp"
+#include "test_parameter_name_generator.hpp"
 #include "verify.hpp"
 
-#include <cmath>
-#include <ctime>
-#include <cfloat>
-#include <iomanip>
-
-// Run CPU emulations in hierarchical reduction mode.
-//#define MIO_HEIRARCH_SEL 0
 #define MIO_BN_TEST_EXPAVGFACTOR 0.1
 #define MIO_BN_TEST_EPSILON 1e-5
 #define MIO_BN_USE_MIX_PREC 1
@@ -67,23 +39,24 @@ using miopen::DeriveBNTensorDescriptor;
 #define PREC_TYPE T
 #endif
 
+#include <string>
+
+namespace {
+
+using TestCase = NamedContainer<std::vector<int>>;
+
 //****************************************************
 // FORWARD TRAIN
 //****************************************************
 template <class T, class U>
 struct verify_forward_train_3d_bn_per_activation
 {
-
     const tensor<T> input;
     const tensor<U> scale;
     const tensor<U> shift;
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> cpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         double epsilon      = MIO_BN_TEST_EPSILON;
         double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
 
@@ -94,10 +67,10 @@ struct verify_forward_train_3d_bn_per_activation
         auto out = tensor<T>{n_batch, channels, depth, height, width};
         std::fill(out.begin(), out.end(), 0);
 
-        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
         auto derivedBnDesc = miopen::TensorDescriptor{};
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
 
+        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
         std::tie(rs_n_batch, rs_channels, rs_depth, rs_height, rs_width) =
             miopen::tien<5>(derivedBnDesc.GetLengths());
 
@@ -127,9 +100,17 @@ struct verify_forward_train_3d_bn_per_activation
 
         auto saveMean   = tensor<U>{1, channels, depth, height, width};
         auto saveInvVar = tensor<U>{1, channels, depth, height, width};
-        const auto n    = double(n_batch);
+        const auto n    = static_cast<double>(n_batch);
 
-        miopen::par_for(channels, 1, [&](int cidx) {
+        const auto& strides  = input.desc.GetStrides();
+        const auto& dstrides = derivedBnDesc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
             double mean_accum     = 0.;
             double variance_accum = 0.;
             double elemStd        = 0.;
@@ -138,88 +119,51 @@ struct verify_forward_train_3d_bn_per_activation
             double newRunMean     = 0.;
             double adjust         = 0.;
 
-            // process the batch per channel
-            for(std::size_t didx = 0; didx < depth; ++didx)
-            { // via depths
-                for(std::size_t row = 0; row < height; row++)
-                { // via rows
-                    for(std::size_t column = 0; column < width; column++)
-                    { // via columns
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
 
-                        mean_accum = 0.;
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            // #1 calculate the mean :: iterating through the stack of images in the
-                            // mini_batch
-                            mean_accum += input(bidx, cidx, didx, row, column);
-                        }
-                        mean_accum /= n;
-
-                        elemStd = variance_accum = 0.;
-                        // #2 calculate the variances :: sigma^2 = (1/batch_mean) * sum( (x_i -
-                        // batch_mean)^2 )
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            elemStd =
-                                (input(bidx, cidx, didx, row, column) -
-                                 mean_accum); // (x_i - mean) //this is reused but needs recalc
-                            variance_accum += elemStd * elemStd; // sum{ (x_i - mean)^2 }
-                        }                                        // end for(n)
-                        variance_accum /= n;                     // (1/N)*sum{ (x_i - mean)^2 }
-
-                        // #3 add epsilon for numeric stability, sqr_root, and invert
-                        elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
-
-                        // #4 apply the normalization :: x_hat = (x_i - mean) / sqrt(variance_accum
-                        // -
-                        // epsilon)
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            elemStd =
-                                (input(bidx, cidx, didx, row, column) - mean_accum); // (x_i - mean)
-                            inhat = elemStd * elemInvVar;
-                            // #5 Gamma and Beta adjust :: y_i = gamma*x_hat + beta
-                            out(bidx, cidx, didx, row, column) =
-                                scale(0, cidx, didx, row, column) * inhat +
-                                shift(0, cidx, didx, row, column);
-                        } // end for(n_batch)
-
-                        newRunMean = runMean(0, cidx, didx, row, column) * (1.0 - expAvgFactor);
-                        runMean(0, cidx, didx, row, column) =
-                            mean_accum * expAvgFactor + newRunMean; // newMean*factor + tmp
-
-                        // var(n+1) = p * var(n-1) + (1 - p)*(b/b-1)*var(n)
-                        adjust = (n_batch == 1) ? variance_accum : (n / (n - 1.0)) * variance_accum;
-                        runVar(0, cidx, didx, row, column) =
-                            (1 - expAvgFactor) * runVar(0, cidx, didx, row, column) +
-                            expAvgFactor * adjust;
-
-                        saveMean(0, cidx, didx, row, column)   = mean_accum;
-                        saveInvVar(0, cidx, didx, row, column) = elemInvVar;
-
-                    } // for (column)
-                }     // for (row)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean_accum += input.data[bidx * strides[0] + base_idx];
             }
+            mean_accum /= n;
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = (input.data[bidx * strides[0] + base_idx] - mean_accum);
+                variance_accum += elemStd * elemStd;
+            }
+            variance_accum /= n;
+
+            elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
+
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = (input.data[bidx * strides[0] + base_idx] - mean_accum);
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
+
+            newRunMean = runMean.data[d_base_idx] * (1.0 - expAvgFactor);
+            runMean.data[d_base_idx] =
+                mean_accum * expAvgFactor + newRunMean; // newMean*factor + tmp
+
+            adjust = (n_batch == 1) ? variance_accum : (n / (n - 1.0)) * variance_accum;
+            runVar.data[d_base_idx] =
+                (1 - expAvgFactor) * runVar.data[d_base_idx] + expAvgFactor * adjust;
+
+            saveMean.data[d_base_idx]   = mean_accum;
+            saveInvVar.data[d_base_idx] = elemInvVar;
         });
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: CPU forward_train_3d_bn_per_activation pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
 
         return std::make_tuple(out, runMean, runVar, saveMean, saveInvVar);
     }
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> gpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
-
         auto&& handle = get_handle();
 
         std::size_t n_batch, channels, depth, height, width;
@@ -229,10 +173,10 @@ struct verify_forward_train_3d_bn_per_activation
         auto out = input;
         std::fill(out.begin(), out.end(), 0);
 
-        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
         auto derivedBnDesc = miopen::TensorDescriptor{};
         miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
 
+        std::size_t rs_n_batch, rs_channels, rs_depth, rs_height, rs_width;
         std::tie(rs_n_batch, rs_channels, rs_depth, rs_height, rs_width) =
             miopen::tien<5>(derivedBnDesc.GetLengths());
 
@@ -263,12 +207,10 @@ struct verify_forward_train_3d_bn_per_activation
         auto saveMean   = tensor<U>{1, channels, depth, height, width};
         auto saveInvVar = tensor<U>{1, channels, depth, height, width};
 
-        // in buffers
         auto in_dev    = handle.Write(input.data);
         auto scale_dev = handle.Write(scale.data);
         auto shift_dev = handle.Write(shift.data);
 
-        // out buffers
         auto runMean_dev    = handle.Write(runMean.data);
         auto runVar_dev     = handle.Write(runVar.data);
         auto saveMean_dev   = handle.Create<U>(channels * depth * height * width);
@@ -286,14 +228,14 @@ struct verify_forward_train_3d_bn_per_activation
                                          miopenBNPerActivation,
                                          &alpha,
                                          &beta,
-                                         BuildReshaped4DTensorDescriptor(input.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(input.desc),
                                          in_dev.get(),
-                                         BuildReshaped4DTensorDescriptor(out.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(out.desc),
                                          out_dev.get(),
-                                         BuildReshaped4DTensorDescriptor(scale.desc),
-                                         BuildReshaped4DTensorDescriptor(shift.desc),
-                                         BuildReshaped4DTensorDescriptor(shift.desc),
-                                         BuildReshaped4DTensorDescriptor(shift.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
                                          scale_dev.get(),
                                          shift_dev.get(),
                                          expAvgFactor,
@@ -309,14 +251,6 @@ struct verify_forward_train_3d_bn_per_activation
         runMean.data    = handle.Read<U>(runMean_dev, runMean.data.size());
         runVar.data     = handle.Read<U>(runVar_dev, runVar.data.size());
         out.data        = handle.Read<T>(out_dev, out.data.size());
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: GPU forward_train_3d_bn_per_activation pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
 
         return std::make_tuple(out, runMean, runVar, saveMean, saveInvVar);
     }
@@ -345,18 +279,12 @@ struct verify_forward_train_3d_bn_per_activation
 template <class T, class U>
 struct verify_forward_infer_3d_bn_per_activation_recalc
 {
-
     const tensor<T> input;
     const tensor<U> scale;
     const tensor<U> shift;
 
     tensor<T> cpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
-
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -366,81 +294,59 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
         auto out = tensor<T>{n_batch, channels, depth, height, width};
         std::fill(out.begin(), out.end(), 0);
 
-        const auto n = double(n_batch);
+        const auto n = static_cast<double>(n_batch);
 
-        miopen::par_for(channels, 1, [&](int cidx) {
+        const auto& strides  = input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
             double elemStd        = 0.;
             double elemInvVar     = 0.;
             double mean_accum     = 0.;
             double variance_accum = 0.;
             double inhat          = 0.;
 
-            // process the batch per channel
-            for(std::size_t didx = 0; didx < depth; ++didx)
-            { // via depths
-                for(std::size_t row = 0; row < height; row++)
-                { // via rows
-                    for(std::size_t column = 0; column < width; column++)
-                    { // via columns
-                        mean_accum = 0.;
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
 
-                        // #1 calculate the mean
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            // iterating through the stack of images in the mini_batch
-                            mean_accum += input(bidx, cidx, didx, row, column);
-                        }
-                        mean_accum /= n;
+            mean_accum = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean_accum += input.data[bidx * strides[0] + base_idx];
+            }
+            mean_accum /= n;
 
-                        elemStd        = 0.;
-                        variance_accum = 0.;
-                        // #2 calculate the variances
-                        // sigma^2 = (1/batch_mean) * sum( (x_i - batch_mean)^2 )
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            elemStd =
-                                input(bidx, cidx, didx, row, column) - mean_accum; // (x_i - mean)
-                            variance_accum += elemStd * elemStd; // sum{ (x_i - mean)^2 }
-                        }                                        // end for(n)
-                        variance_accum /= n;                     // (1/N)*sum{ (x_i - mean)^2 }
+            elemStd        = 0.;
+            variance_accum = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean_accum;
+                variance_accum += elemStd * elemStd;
+            }
+            variance_accum /= n;
 
-                        // #3 add epsilon for numeric stability, sqr_root, and invert
-                        elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
+            elemInvVar = 1.0 / double(sqrt(variance_accum + epsilon));
 
-                        // #4 apply the normalization
-                        // x_hat = (x_i - mean) / sqrt(variance_accum - epsilon)
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            // per (x-dims) channel load a block of data into LDS
-                            elemStd =
-                                input(bidx, cidx, didx, row, column) - mean_accum; // (x_i - mean)
-                            inhat = elemStd * elemInvVar;
-                            // #5 Gamma and Beta adjust // y_i = gamma*x_hat + beta
-                            out(bidx, cidx, didx, row, column) =
-                                scale(0, cidx, didx, row, column) * inhat +
-                                shift(0, cidx, didx, row, column);
-                        } // end for(n_batchs)
-                    }     // for (column)
-                }         // for (row)
-            }             // for (depth)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean_accum;
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
         });
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: CPU forward_infer_3d_bn_per_activation_recalc pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return out;
     }
 
     tensor<T> gpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         auto&& handle = get_handle();
         auto out      = input;
         std::fill(out.begin(), out.end(), 0);
@@ -451,23 +357,22 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
         auto out_dev   = handle.Write(out.data);
 
         double epsilon = MIO_BN_TEST_EPSILON;
-
-        float alpha = 1.;
-        float beta  = 0.;
+        float alpha    = 1.;
+        float beta     = 0.;
 
         miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
         miopen::BatchNormForwardInference(handle,
                                           miopenBNPerActivation,
                                           &alpha,
                                           &beta,
-                                          BuildReshaped4DTensorDescriptor(input.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
                                           in_dev.get(),
-                                          BuildReshaped4DTensorDescriptor(out.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
                                           out_dev.get(),
-                                          BuildReshaped4DTensorDescriptor(scale.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
                                           scale_dev.get(),
                                           shift_dev.get(),
                                           nullptr,
@@ -476,13 +381,6 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
                                           actDesc);
         out.data = handle.Read<T>(out_dev, out.data.size());
 
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: GPU forward_infer_3d_bn_per_activation_recalc pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return out;
     }
 
@@ -497,7 +395,6 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 template <class T, class U>
 struct verify_forward_infer_3d_bn_per_activation_use_est
 {
-
     const tensor<T> input;
     const tensor<U> scale;
     const tensor<U> shift;
@@ -506,11 +403,6 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 
     tensor<T> cpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
-
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -520,53 +412,42 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
         auto out = tensor<T>{n_batch, channels, depth, height, width};
         std::fill(out.begin(), out.end(), 0);
 
-        miopen::par_for(channels, 1, [&](int cidx) {
+        const auto& strides  = input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
             double elemStd    = 0.;
             double mean       = 0.;
             double variance   = 0.;
             double inhat      = 0.;
             double elemInvVar = 0.;
 
-            // process the batch per channel
-            for(std::size_t didx = 0; didx < depth; ++didx)
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
+
+            mean       = estMean.data[d_base_idx];
+            variance   = estVar.data[d_base_idx];
+            elemInvVar = 1.0 / double(sqrt(variance + epsilon));
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
             {
-                for(std::size_t row = 0; row < height; row++)
-                { // via rows
-                    for(std::size_t column = 0; column < width; column++)
-                    { // via columns
-                        mean       = estMean(0, cidx, didx, row, column);
-                        variance   = estVar(0, cidx, didx, row, column);
-                        elemInvVar = 1.0 / double(sqrt(variance + epsilon));
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        {                                                          // via mini_batch
-                            elemStd = input(bidx, cidx, didx, row, column) - mean; // (x_i - mean)
-                            inhat   = elemStd * elemInvVar;
-                            // #5 Gamma and Beta adjust :: y_i = gamma*x_hat + beta
-                            out(bidx, cidx, didx, row, column) =
-                                scale(0, cidx, didx, row, column) * inhat +
-                                shift(0, cidx, didx, row, column);
-                        } // end for(n_batchs)
-                    }     // for (column)
-                }         // for (row)
-            }             // for (depth)
+                elemStd = input.data[bidx * strides[0] + base_idx] - mean;
+                inhat   = elemStd * elemInvVar;
+                out.data[bidx * strides[0] + base_idx] =
+                    scale.data[d_base_idx] * inhat + shift.data[d_base_idx];
+            }
         });
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: CPU forward_infer_3d_bn_per_activation_use_est pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return out;
     }
 
     tensor<T> gpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         auto&& handle = get_handle();
         auto out      = input;
         std::fill(out.begin(), out.end(), 0);
@@ -579,38 +460,30 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
         auto out_dev     = handle.Write(out.data);
 
         double epsilon = MIO_BN_TEST_EPSILON;
-
-        float alpha = 1.;
-        float beta  = 0.;
+        float alpha    = 1.;
+        float beta     = 0.;
 
         miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
         miopen::BatchNormForwardInference(handle,
                                           miopenBNPerActivation,
                                           &alpha,
                                           &beta,
-                                          BuildReshaped4DTensorDescriptor(input.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
                                           in_dev.get(),
-                                          BuildReshaped4DTensorDescriptor(out.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
                                           out_dev.get(),
-                                          BuildReshaped4DTensorDescriptor(scale.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
-                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
                                           scale_dev.get(),
                                           shift_dev.get(),
                                           estMean_dev.get(),
                                           estVar_dev.get(),
                                           epsilon,
-                                          actDesc); // TODO: add multi-in
+                                          actDesc);
         out.data = handle.Read<T>(out_dev, out.data.size());
 
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: GPU forward_infer_3d_bn_per_activation_use_est pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return out;
     }
 
@@ -628,7 +501,6 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 template <class T, class U>
 struct verify_backward_3d_bn_per_activation_use_saved
 {
-
     const tensor<T> x_input;
     const tensor<T> dy_input;
     const tensor<U> scale;
@@ -637,10 +509,6 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         std::size_t n_batch, channels, depth, height, width;
         std::tie(n_batch, channels, depth, height, width) =
             miopen::tien<5>(x_input.desc.GetLengths());
@@ -654,83 +522,66 @@ struct verify_backward_3d_bn_per_activation_use_saved
         auto dshift = tensor<U>{1, channels, depth, height, width};
         std::fill(dshift.begin(), dshift.end(), 0);
 
-        const unsigned int in_cstride = depth * height * width;
-        const unsigned int in_dstride = height * width;
-        const auto n                  = double(n_batch);
+        const auto n = static_cast<double>(n_batch);
 
-        miopen::par_for(channels, 1, [&](int cidx) {
-            double elemStd = 0.;
-            unsigned int xhat_index;
+        const auto& strides  = x_input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd    = 0.;
             double mean       = 0.;
             double elemInvVar = 0.;
             double dyelem     = 0.;
             double dxhat      = 0.;
             double dxhathat   = 0.;
             double tmp1       = 0.;
-            std::vector<double> xhat(n_batch * in_cstride);
 
-            // process the batch per channel
-            for(std::size_t didx = 0; didx < depth; ++didx)
-            { // via depth
-                for(std::size_t row = 0; row < height; row++)
-                { // via rows
-                    for(std::size_t column = 0; column < width; column++)
-                    { // via columns
-                        dxhat    = 0.;
-                        dxhathat = 0.;
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
 
-                        mean       = savedMean(0, cidx, didx, row, column);   // HxW elements
-                        elemInvVar = savedInvVar(0, cidx, didx, row, column); // HxW elements
+            dxhat    = 0.;
+            dxhathat = 0.;
 
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            xhat_index =
-                                in_cstride * bidx + in_dstride * didx + width * row + column;
-                            // per (x-dims) channel load a block of data into LDS
-                            elemStd = x_input(bidx, cidx, didx, row, column) - mean; // (x_i - mean)
-                            xhat[xhat_index] = elemStd * elemInvVar;
-                            dyelem           = dy_input(bidx, cidx, didx, row, column);
-                            dshift(0, cidx, didx, row, column) += dyelem;
-                            dscale(0, cidx, didx, row, column) += xhat[xhat_index] * dyelem;
-                            tmp1 = scale(0, cidx, didx, row, column) * dyelem;
-                            dxhat += tmp1;
-                            dxhathat += tmp1 * xhat[xhat_index];
+            mean       = savedMean.data[d_base_idx];
+            elemInvVar = savedInvVar.data[d_base_idx];
 
-                        } // end for(n_batchs)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                dyelem          = dy_input.data[bidx * strides[0] + base_idx];
+                dshift.data[d_base_idx] += dyelem;
+                dscale.data[d_base_idx] += xhat_val * dyelem;
+                tmp1 = scale.data[d_base_idx] * dyelem;
+                dxhat += tmp1;
+                dxhathat += tmp1 * xhat_val;
+            }
 
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            xhat_index =
-                                in_cstride * bidx + in_dstride * didx + width * row + column;
-                            tmp1        = xhat[xhat_index] * dxhathat + dxhat;
-                            double tmp2 = n_batch * (scale(0, cidx, didx, row, column) *
-                                                     dy_input(bidx, cidx, didx, row, column)) -
-                                          tmp1;
-                            double tmp3                           = elemInvVar / (double(n));
-                            dx_out(bidx, cidx, didx, row, column) = tmp3 * tmp2;
-                        } // end for(n_batchs)
-                    }     // for (column)
-                }         // for (row)
-            }             // for (depth)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                tmp1            = xhat_val * dxhathat + dxhat;
+                double tmp2     = n_batch * (scale.data[d_base_idx] *
+                                         dy_input.data[bidx * strides[0] + base_idx]) -
+                              tmp1;
+                double tmp3                               = elemInvVar / (double(n));
+                dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
+            }
         });
-
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: CPU backward_3d_bn_per_activation_use_saved pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return std::make_tuple(dx_out, dscale, dshift);
     }
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
-        auto&& handle = get_handle();
-
+        auto&& handle  = get_handle();
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -765,16 +616,16 @@ struct verify_backward_3d_bn_per_activation_use_saved
                                   &beta,
                                   &alpha,
                                   &beta,
-                                  BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
                                   xin_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
                                   dyin_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
                                   dx_out_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(scale.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
                                   scale_dev.get(),
                                   nullptr,
                                   dscale_dev.get(),
@@ -783,17 +634,11 @@ struct verify_backward_3d_bn_per_activation_use_saved
                                   savedMean_dev.get(),
                                   savedInvVar_dev.get(),
                                   actDesc);
+
         dx_out.data = handle.Read<T>(dx_out_dev, dx_out.data.size());
         dscale.data = handle.Read<U>(dscale_dev, dscale.data.size());
         dshift.data = handle.Read<U>(dshift_dev, dshift.data.size());
 
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: GPU backward_3d_bn_per_activation_use_saved pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return std::make_tuple(dx_out, dscale, dshift);
     }
 
@@ -818,16 +663,12 @@ struct verify_backward_3d_bn_per_activation_use_saved
 template <class T, class U>
 struct verify_backward_3d_bn_per_activation_recalc
 {
-
     const tensor<T> x_input;
     const tensor<T> dy_input;
     const tensor<U> scale;
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -843,13 +684,18 @@ struct verify_backward_3d_bn_per_activation_recalc
         auto dshift = tensor<U>{1, channels, depth, height, width};
         std::fill(dshift.begin(), dshift.end(), 0);
 
-        const unsigned int in_cstride = depth * height * width;
-        const unsigned int in_dstride = height * width;
-        const auto n                  = double(n_batch);
+        const auto n = static_cast<double>(n_batch);
 
-        miopen::par_for(channels, 1, [&](int cidx) {
-            double elemStd = 0.;
-            unsigned int xhat_index;
+        const auto& strides  = x_input.desc.GetStrides();
+        const auto& dstrides = scale.desc.GetStrides();
+
+        miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
+            std::size_t cidx = (idx / (depth * height * width));
+            std::size_t didx = (idx / (height * width)) % depth;
+            std::size_t row  = (idx / width) % height;
+            std::size_t col  = idx % width;
+
+            double elemStd    = 0.;
             double mean       = 0.;
             double elemInvVar = 0.;
             double dyelem     = 0.;
@@ -857,87 +703,62 @@ struct verify_backward_3d_bn_per_activation_recalc
             double dxhat      = 0.;
             double dxhathat   = 0.;
             double tmp1       = 0.;
-            std::vector<double> xhat(n_batch * in_cstride);
 
-            // process the batch per channel
-            for(std::size_t didx = 0; didx < depth; ++didx)
-            { // via depth
-                for(std::size_t row = 0; row < height; row++)
-                { // via rows
-                    for(std::size_t column = 0; column < width; column++)
-                    { // via columns
-                        mean = 0.;
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            // #1 calculate the mean
-                            mean += x_input(bidx, cidx, didx, row, column);
-                        }
-                        mean /= n;
+            std::size_t base_idx =
+                cidx * strides[1] + didx * strides[2] + row * strides[3] + col * strides[4];
+            std::size_t d_base_idx =
+                cidx * dstrides[1] + didx * dstrides[2] + row * dstrides[3] + col * dstrides[4];
 
-                        elemStd  = 0.;
-                        variance = 0.;
-                        // #2 calculate the variances
-                        // sigma^2 = (1/batch_mean) * sum( (x_i - batch_mean)^2 )
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            // per (x-dims) channel load a block of data into LDS
-                            elemStd = x_input(bidx, cidx, didx, row, column) - mean; // (x_i - mean)
-                            variance += elemStd * elemStd; // sum{ (x_i - mean)^2 }
-                        }                                  // end for(n)
-                        variance /= n;                     // (1/N)*sum{ (x_i - mean)^2 }
+            mean = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                mean += x_input.data[bidx * strides[0] + base_idx];
+            }
+            mean /= n;
 
-                        // #3 add epsilon for numeric stability, sqr_root, and invert
-                        elemInvVar = 1.0 / double(sqrt(variance + epsilon));
+            elemStd  = 0.;
+            variance = 0.;
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                variance += elemStd * elemStd;
+            }
+            variance /= n;
 
-                        dxhat    = 0.;
-                        dxhathat = 0.;
+            elemInvVar = 1.0 / double(sqrt(variance + epsilon));
 
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            xhat_index =
-                                in_cstride * bidx + in_dstride * didx + width * row + column;
-                            // per (x-dims) channel load a block of data into LDS
-                            elemStd = x_input(bidx, cidx, didx, row, column) - mean; // (x_i - mean)
-                            xhat[xhat_index] = elemStd * elemInvVar;
-                            dyelem           = dy_input(bidx, cidx, didx, row, column);
-                            dshift(0, cidx, didx, row, column) += dyelem;
-                            dscale(0, cidx, didx, row, column) += xhat[xhat_index] * dyelem;
-                            tmp1 = scale(0, cidx, didx, row, column) * dyelem;
-                            dxhat += tmp1;
-                            dxhathat += tmp1 * xhat[xhat_index];
+            dxhat    = 0.;
+            dxhathat = 0.;
 
-                        } // end for(n_batchs)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                dyelem          = dy_input.data[bidx * strides[0] + base_idx];
+                dshift.data[d_base_idx] += dyelem;
+                dscale.data[d_base_idx] += xhat_val * dyelem;
+                tmp1 = scale.data[d_base_idx] * dyelem;
+                dxhat += tmp1;
+                dxhathat += tmp1 * xhat_val;
+            }
 
-                        for(std::size_t bidx = 0; bidx < n_batch; bidx++)
-                        { // via mini_batch
-                            xhat_index =
-                                in_cstride * bidx + in_dstride * didx + width * row + column;
-                            tmp1        = xhat[xhat_index] * dxhathat + dxhat;
-                            double tmp2 = n_batch * (scale(0, cidx, didx, row, column) *
-                                                     dy_input(bidx, cidx, didx, row, column)) -
-                                          tmp1;
-                            double tmp3                           = elemInvVar / double(n);
-                            dx_out(bidx, cidx, didx, row, column) = tmp3 * tmp2;
-                        } // end for(n_batchs)
-                    }     // for (column)
-                }         // for (row)
-            }             // for (depth)
+            for(std::size_t bidx = 0; bidx < n_batch; bidx++)
+            {
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
+                double xhat_val = elemStd * elemInvVar;
+                tmp1            = xhat_val * dxhathat + dxhat;
+                double tmp2     = n_batch * (scale.data[d_base_idx] *
+                                         dy_input.data[bidx * strides[0] + base_idx]) -
+                              tmp1;
+                double tmp3                               = elemInvVar / double(n);
+                dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
+            }
         });
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: CPU backward_3d_bn_per_activation_recalc pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return std::make_tuple(dx_out, dscale, dshift);
     }
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_start = std::chrono::high_resolution_clock::now();
-#endif
         auto&& handle = get_handle();
 
         std::size_t n_batch, channels, depth, height, width;
@@ -945,7 +766,7 @@ struct verify_backward_3d_bn_per_activation_recalc
             miopen::tien<5>(x_input.desc.GetLengths());
 
         auto dx_out = tensor<T>{n_batch, channels, depth, height, width};
-        // std::fill(dx_out.begin(), dx_out.end(), 0);
+        std::fill(dx_out.begin(), dx_out.end(), 0);
 
         auto dscale = tensor<U>{1, channels, depth, height, width};
         std::fill(dscale.begin(), dscale.end(), 0);
@@ -961,9 +782,8 @@ struct verify_backward_3d_bn_per_activation_recalc
         auto dx_out_dev = handle.Write(dx_out.data);
 
         double epsilon = MIO_BN_TEST_EPSILON;
-
-        float alpha = 1.;
-        float beta  = 0.;
+        float alpha    = 1.;
+        float beta     = 0.;
 
         miopen::ActivationDescriptor actDesc(miopenActivationPASTHRU, 0.0f, 0.0f, 0.0f);
         miopen::BatchNormBackward(handle,
@@ -972,16 +792,16 @@ struct verify_backward_3d_bn_per_activation_recalc
                                   &beta,
                                   &alpha,
                                   &beta,
-                                  BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
                                   xin_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
                                   dyin_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
                                   dx_out_dev.get(),
-                                  BuildReshaped4DTensorDescriptor(scale.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
                                   scale_dev.get(),
                                   nullptr,
                                   dscale_dev.get(),
@@ -990,17 +810,11 @@ struct verify_backward_3d_bn_per_activation_recalc
                                   nullptr,
                                   nullptr,
                                   actDesc);
+
         dx_out.data = handle.Read<T>(dx_out_dev, dx_out.data.size());
         dscale.data = handle.Read<U>(dscale_dev, dscale.data.size());
         dshift.data = handle.Read<U>(dshift_dev, dshift.data.size());
 
-#if(MIO_BN_TIME_EVERYTHING == 1)
-        auto t_end = std::chrono::high_resolution_clock::now();
-
-        std::cout << "Wall clock: GPU backward_3d_bn_per_activation_recalc pass time: "
-                  << std::chrono::duration<double>(t_end - t_start).count() << " seconds."
-                  << std::endl;
-#endif
         return std::make_tuple(dx_out, dscale, dshift);
     }
 
@@ -1022,57 +836,101 @@ struct verify_backward_3d_bn_per_activation_recalc
     }
 };
 
-namespace {
+//====== DRIVERS ===========================================
 
-using TestCase = std::vector<int>;
-
-enum class BN3DPerActTestType
+inline auto GenSmokeTestCases()
 {
-    ForwardTraining,
-    ForwardInferenceRecalc,
-    ForwardInferenceUseEstimated,
-    BackwardRecalc,
-    BackwardUseSaved
+    return testing::Values(
+        NamedContainer<std::vector<int>>("dims", std::vector<int>{2, 2, 3, 4, 4}, "x"));
+}
+
+inline auto GetSmokeTestCases()
+{
+    static const auto cases = GenSmokeTestCases();
+    return cases;
+}
+
+inline auto GenFullTestCases()
+{
+    auto inputs = get_3d_bn_peract_inputs(4);
+    // Omit shapes with n=1 as CTest does
+    for(auto it = inputs.begin(); it != inputs.end();)
+    {
+        if((*it)[0] == 1)
+            it = inputs.erase(it);
+        else
+            ++it;
+    }
+    return MakeNamedParameterCollectionValues<std::vector<int>>("dims", inputs, "x");
+}
+
+inline auto GetFullTestCases()
+{
+    static const auto cases = GenFullTestCases();
+    return cases;
+}
+
+struct TestParameterNameGenerator
+{
+    std::string operator()(const testing::TestParamInfo<TestCase>& info) const
+    {
+        const auto& dims = info.param;
+        std::stringstream ss;
+        std::string str;
+
+        ss << "dims_" << GetRangeAsString(dims(), "x") << "_test_id_" << info.index;
+
+        str = ss.str();
+
+        // Name format only supports letters, numbers and underscores.
+        std::transform(str.begin(), str.end(), str.begin(), [](char c) {
+            return (c == '.') ? 'p' : (std::isalnum(c) ? c : '_');
+        });
+
+        return str;
+    }
 };
+
+} // namespace
 
 template <typename T>
 struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 {
-    using AccDataType = std::conditional_t<std::is_same_v<T, double>, double, float>;
     static const constexpr uint64_t MaxValue{miopen_type<T>{} == miopenHalf ? 5 : 17};
 
-    void Run(BN3DPerActTestType type)
+    tensor<T> input;
+    tensor<PREC_TYPE> scale;
+    tensor<PREC_TYPE> shift;
+    tensor<T> dy_input;
+
+    void SetUp() override
     {
         prng::reset_seed();
         const auto dims = GetParam();
-        auto input      = tensor<T>{dims}.generate(tensor_elem_gen_integer{MaxValue});
 
         std::size_t n, c, d, h, w;
-        std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
-        double tolerance        = 1000 * input.desc.GetElementSize();
+        std::tie(n, c, d, h, w) = miopen::tien<5>(dims());
 
-        if(n == 1)
-        {
-            GTEST_SKIP() << "Batch size 1 not supported";
-        }
+        input    = tensor<T>{dims()};
+        dy_input = tensor<T>{dims()}.generate(tensor_elem_gen_integer{MaxValue});
 
         auto derivedBnDesc = miopen::TensorDescriptor{};
-        DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
-        auto derived_lengths = derivedBnDesc.GetLengths();
+        miopen::DeriveBNTensorDescriptor(derivedBnDesc, input.desc, miopenBNPerActivation);
 
-        tensor<PREC_TYPE> scale;
-        tensor<PREC_TYPE> shift;
+        auto derived_lengths = derivedBnDesc.GetLengths();
 
         if(input.desc.GetType() == miopenFloat)
         {
+            input.generate(tensor_elem_gen_integer{MaxValue});
             scale = tensor<PREC_TYPE>{derived_lengths}.generate(tensor_elem_gen_integer{17});
             shift = tensor<PREC_TYPE>{derived_lengths}.generate(tensor_elem_gen_integer{17});
         }
         else
         {
-            scale                   = tensor<PREC_TYPE>{derived_lengths};
-            shift                   = tensor<PREC_TYPE>{derived_lengths};
-            const double Data_scale = 0.001;
+            scale = tensor<PREC_TYPE>{derived_lengths};
+            shift = tensor<PREC_TYPE>{derived_lengths};
+
+            const constexpr double Data_scale = 0.001;
             for(std::size_t i = 0; i < scale.desc.GetElementSize(); i++)
             {
                 scale[i] = prng::gen_descreet_uniform_sign<PREC_TYPE>(Data_scale, 100);
@@ -1083,62 +941,78 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
                 input[i] = prng::gen_descreet_uniform_sign<T>(1e-4, 100);
             }
         }
+    }
 
-        auto Verify = [&](auto&& v, double tol) {
-            auto cpu = v.cpu();
-            auto gpu = v.gpu();
-            this->Compare(v, cpu, gpu, tol);
-            return std::make_pair(cpu, gpu);
-        };
+    void RunAll()
+    {
+        std::size_t n, c, d, h, w;
+        std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
+        double tolerance        = 200 * input.desc.GetElementSize();
 
-        switch(type)
-        {
-        case BN3DPerActTestType::ForwardTraining:
+        // train
+        const auto outpair_train =
             Verify(verify_forward_train_3d_bn_per_activation<T, PREC_TYPE>{input, scale, shift},
                    tolerance);
-            break;
-        case BN3DPerActTestType::ForwardInferenceRecalc:
-            Verify(
-                verify_forward_infer_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, scale, shift},
-                tolerance);
-            break;
-        case BN3DPerActTestType::ForwardInferenceUseEstimated: {
-            auto outpair =
-                Verify(verify_forward_train_3d_bn_per_activation<T, PREC_TYPE>{input, scale, shift},
-                       tolerance);
+        // returns:  std::make_tuple(out,runMean,runVar,saveMean,saveInvVar);
+
+        // inference recalc
+        Verify(verify_forward_infer_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, scale, shift},
+               tolerance,
+               false);
+
+        // inference use estimated running values
+        if(input.desc.GetType() == miopenFloat)
+        {
+            const auto& estMean = std::get<1>(outpair_train.second);
+            const auto& estVar  = std::get<2>(outpair_train.second);
             Verify(
                 verify_forward_infer_3d_bn_per_activation_use_est<T, PREC_TYPE>{
-                    input, scale, shift, std::get<1>(outpair.first), std::get<2>(outpair.first)},
-                tolerance);
-            break;
+                    input, scale, shift, estMean, estVar},
+                tolerance,
+                false);
         }
-        case BN3DPerActTestType::BackwardRecalc: {
-            auto dy_input = tensor<T>{n, c, d, h, w}.generate(tensor_elem_gen_integer{MaxValue});
-            Verify(
-                verify_backward_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, dy_input, scale},
-                8000 * input.desc.GetElementSize());
-            break;
+
+        // backprop recalc
+        Verify(verify_backward_3d_bn_per_activation_recalc<T, PREC_TYPE>{input, dy_input, scale},
+               8000 * input.desc.GetElementSize(),
+               false);
+
+        // backprop use saved values
+        const auto& savedMean   = std::get<3>(outpair_train.second);
+        const auto& savedInvVar = std::get<4>(outpair_train.second);
+        Verify(
+            verify_backward_3d_bn_per_activation_use_saved<T, PREC_TYPE>{
+                input, dy_input, scale, savedMean, savedInvVar},
+            8000 * input.desc.GetElementSize(),
+            false);
+    }
+
+    auto Verify(auto&& v, double tolerance, bool return_results = true)
+    {
+        std::pair<decltype(v.cpu()), decltype(v.gpu())> res;
+        {
+            res.first = v.cpu();
         }
-        case BN3DPerActTestType::BackwardUseSaved: {
-            auto outpair =
-                Verify(verify_forward_train_3d_bn_per_activation<T, PREC_TYPE>{input, scale, shift},
-                       tolerance);
-            auto dy_input = tensor<T>{n, c, d, h, w}.generate(tensor_elem_gen_integer{MaxValue});
-            Verify(
-                verify_backward_3d_bn_per_activation_use_saved<T, PREC_TYPE>{
-                    input, dy_input, scale, std::get<3>(outpair.first), std::get<4>(outpair.first)},
-                8000 * input.desc.GetElementSize());
-            break;
+        {
+            res.second = v.gpu();
         }
+        {
+            Compare(v, res.first, res.second, tolerance);
         }
+
+        if(return_results)
+            return res;
+        else
+            return std::make_pair(res.first, res.first);
     }
 
     template <typename... CpuRanges, typename... GpuRanges>
     void Compare(auto&& v,
                  const std::tuple<CpuRanges...>& cpu,
                  const std::tuple<GpuRanges...>& gpu,
-                 double tol)
+                 double tolerance)
     {
+        static_assert(sizeof...(CpuRanges) == sizeof...(GpuRanges), "CPU and GPU mismatch");
         miopen::sequence([&](auto... is) {
             miopen::each_args(
                 [&](auto i) {
@@ -1146,7 +1020,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
                     const auto& g = std::get<i>(gpu);
                     ASSERT_EQ(miopen::range_distance(c), miopen::range_distance(g));
                     using value_type       = miopen::range_value<decltype(g)>;
-                    const double threshold = std::numeric_limits<value_type>::epsilon() * tol;
+                    const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
                     const double error     = miopen::rms_range(c, g);
                     EXPECT_LE(error, threshold);
                     if(error > threshold)
@@ -1157,11 +1031,11 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
     }
 
     template <typename CpuRanges, typename GpuRanges>
-    void Compare(auto&& v, const CpuRanges& cpu, const GpuRanges& gpu, double tol)
+    void Compare(auto&& v, const CpuRanges& cpu, const GpuRanges& gpu, double tolerance)
     {
         ASSERT_EQ(miopen::range_distance(cpu), miopen::range_distance(gpu));
         using value_type       = miopen::range_value<decltype(gpu)>;
-        const double threshold = std::numeric_limits<value_type>::epsilon() * tol;
+        const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
         const double error     = miopen::rms_range(cpu, gpu);
         EXPECT_LE(error, threshold);
         if(error > threshold)
@@ -1169,50 +1043,36 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
     }
 };
 
-struct TestNameGenerator
-{
-    std::string operator()(const testing::TestParamInfo<TestCase>& info) const
-    {
-        return "dims_" + GetRangeAsString(info.param, "x") + "_id_" + std::to_string(info.index);
-    }
-};
-
-using GPU_Bn3DPeract_FP32  = Bn3DPeractTest<float>;
 using GPU_Bn3DPeract_FP16  = Bn3DPeractTest<half_float::half>;
+using GPU_Bn3DPeract_FP32  = Bn3DPeractTest<float>;
 using GPU_Bn3DPeract_BFP16 = Bn3DPeractTest<bfloat16>;
 
-TEST_P(GPU_Bn3DPeract_FP32, ForwardTraining) { this->Run(BN3DPerActTestType::ForwardTraining); }
-TEST_P(GPU_Bn3DPeract_FP32, ForwardInferenceRecalc)
-{
-    this->Run(BN3DPerActTestType::ForwardInferenceRecalc);
-}
-TEST_P(GPU_Bn3DPeract_FP32, ForwardInferenceUseEstimated)
-{
-    this->Run(BN3DPerActTestType::ForwardInferenceUseEstimated);
-}
-TEST_P(GPU_Bn3DPeract_FP32, BackwardRecalc) { this->Run(BN3DPerActTestType::BackwardRecalc); }
-TEST_P(GPU_Bn3DPeract_FP32, BackwardUseSaved) { this->Run(BN3DPerActTestType::BackwardUseSaved); }
+TEST_P(GPU_Bn3DPeract_FP16, AllModes) { this->RunAll(); }
+TEST_P(GPU_Bn3DPeract_FP32, AllModes) { this->RunAll(); }
+TEST_P(GPU_Bn3DPeract_BFP16, AllModes) { this->RunAll(); }
 
-TEST_P(GPU_Bn3DPeract_FP16, ForwardTraining) { this->Run(BN3DPerActTestType::ForwardTraining); }
-TEST_P(GPU_Bn3DPeract_FP16, ForwardInferenceRecalc)
-{
-    this->Run(BN3DPerActTestType::ForwardInferenceRecalc);
-}
-TEST_P(GPU_Bn3DPeract_FP16, BackwardRecalc) { this->Run(BN3DPerActTestType::BackwardRecalc); }
-TEST_P(GPU_Bn3DPeract_FP16, BackwardUseSaved) { this->Run(BN3DPerActTestType::BackwardUseSaved); }
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_FP16,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_FP32,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_Bn3DPeract_BFP16,
+                         GetSmokeTestCases(),
+                         TestParameterNameGenerator{});
 
-TEST_P(GPU_Bn3DPeract_BFP16, ForwardTraining) { this->Run(BN3DPerActTestType::ForwardTraining); }
-TEST_P(GPU_Bn3DPeract_BFP16, ForwardInferenceRecalc)
-{
-    this->Run(BN3DPerActTestType::ForwardInferenceRecalc);
-}
-TEST_P(GPU_Bn3DPeract_BFP16, BackwardRecalc) { this->Run(BN3DPerActTestType::BackwardRecalc); }
-TEST_P(GPU_Bn3DPeract_BFP16, BackwardUseSaved) { this->Run(BN3DPerActTestType::BackwardUseSaved); }
-
-auto AllShapes = testing::ValuesIn(get_3d_bn_peract_inputs(4));
-
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3DPeract_FP32, AllShapes, TestNameGenerator{});
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3DPeract_FP16, AllShapes, TestNameGenerator{});
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Bn3DPeract_BFP16, AllShapes, TestNameGenerator{});
-
-} // namespace
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_FP16,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_FP32,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
+INSTANTIATE_TEST_SUITE_P(Full,
+                         GPU_Bn3DPeract_BFP16,
+                         GetFullTestCases(),
+                         TestParameterNameGenerator{});
