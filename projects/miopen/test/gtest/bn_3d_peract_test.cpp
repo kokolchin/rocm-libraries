@@ -15,6 +15,7 @@
 #include <vector>
 #include <thread>
 #include <numeric>
+#include <future>
 
 #include <miopen/batch_norm.hpp>
 #include <miopen/miopen.h>
@@ -1009,21 +1010,18 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
     auto Verify(auto&& v, double tolerance, bool return_results = true)
     {
         FunctionTimer ft("Bn3DPeractTest::Verify");
-        std::pair<decltype(v.cpu()), decltype(v.gpu())> res;
-        {
-            res.first = v.cpu();
-        }
-        {
-            res.second = v.gpu();
-        }
-        {
-            Compare(v, res.first, res.second, tolerance);
-        }
+        
+        // Run CPU and GPU in parallel to match CTest performance
+        auto cpuf = std::async(std::launch::async, [&] { return v.cpu(); });
+        auto gpu_res = v.gpu();
+        auto cpu_res = cpuf.get();
+
+        Compare(v, cpu_res, gpu_res, tolerance);
 
         if(return_results)
-            return res;
+            return std::make_pair(cpu_res, gpu_res);
         else
-            return std::make_pair(res.first, res.first);
+            return std::make_pair(cpu_res, cpu_res);
     }
 
     template <typename... CpuRanges, typename... GpuRanges>
