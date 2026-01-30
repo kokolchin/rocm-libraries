@@ -29,6 +29,7 @@
 #include "test.hpp"
 #include "test_parameter_name_generator.hpp"
 #include "verify.hpp"
+#include "function_timer.hpp"
 
 #define MIO_BN_TEST_EXPAVGFACTOR 0.1
 #define MIO_BN_TEST_EPSILON 1e-5
@@ -45,18 +46,9 @@
 
 namespace {
 
-struct FunctionTimer 
-{
-  FunctionTimer(char const * name) : mName(name), mStartTime(clock()) { }
-  ~FunctionTimer() { mFunctionTimes[mName] += clock() - mStartTime; }
 
-  std::string mName;
-  clock_t mStartTime;
 
-  static std::map<std::string, clock_t> mFunctionTimes;
-};
 
-std::map<std::string, clock_t> FunctionTimer::mFunctionTimes;
 
 using TestCase = NamedContainer<std::vector<int>>;
 
@@ -940,6 +932,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 
     void SetUp() override
     {
+        FunctionTimer ft("Bn3DPeractTest::SetUp");
         prng::reset_seed();
         const auto dims = GetParam();
 

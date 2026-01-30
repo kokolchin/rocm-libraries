@@ -5,34 +5,10 @@
 #include <hip/hip_runtime_api.h>
 #include <chrono>
 #include <iostream>
-#include <map>
-#include <string>
-#include <fstream>
-#include <ctime>
+#include "function_timer.hpp"
 
 // This test event listener ensures that HIP errors are cleaned up after every test, and will flag
 // tests that don't clean up their own errors
-struct FunctionTimer 
-{
-  FunctionTimer(char const * name) : mName(name), mStartTime(clock()) { }
-  ~FunctionTimer() { mFunctionTimes[mName] += clock() - mStartTime; }
-
-  static void report()
-  {
-    for (auto const& [name, ticks] : mFunctionTimes)
-    {
-        std::cout << "[PROFILING] " << name << " --> " << ( (float)(ticks) / CLOCKS_PER_SEC ) << " sec" << std::endl;
-    }
-  }
-
-  std::string mName;
-  clock_t mStartTime;
-
-  static std::map<std::string, clock_t> mFunctionTimes;
-};
-
-std::map<std::string, clock_t> FunctionTimer::mFunctionTimes;
-
 class HIPErrorHandler : public testing::EmptyTestEventListener
 {
 public:
