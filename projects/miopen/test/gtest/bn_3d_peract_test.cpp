@@ -13,6 +13,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <thread>
+#include <numeric>
 
 #include <miopen/batch_norm.hpp>
 #include <miopen/miopen.h>
@@ -37,52 +39,9 @@
 #define PREC_TYPE T
 #endif
 
-#include <chrono>
-#include <map>
-#include <fstream>
 #include <string>
 
 namespace {
-
-struct FunctionTimer
-{
-    FunctionTimer(const std::string& name) : mName(name), mStart(std::chrono::high_resolution_clock::now()) {}
-    ~FunctionTimer()
-    {
-        auto end = std::chrono::high_resolution_clock::now();
-        mFunctionTimes[mName] += std::chrono::duration_cast<std::chrono::microseconds>(end - mStart).count();
-    }
-
-    static void report()
-    {
-        if(mFunctionTimes.empty())
-        {
-            std::cout << "\n[FUNCTION TIMER] Error: No timing data collected!\n" << std::endl;
-            return;
-        }
-        std::cout << "\n=== Function Timing Report ===\n";
-        for(const auto& pair : mFunctionTimes)
-        {
-            std::cout << std::left << std::setw(30) << pair.first << " : "
-                      << std::fixed << std::setprecision(3) << (pair.second / 1000000.0) << " sec" << std::endl;
-        }
-        std::cout << "==============================\n" << std::endl;
-    }
-
-    std::string mName;
-    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
-    static std::map<std::string, long long> mFunctionTimes;
-};
-
-std::map<std::string, long long> FunctionTimer::mFunctionTimes;
-
-struct GlobalTimerEnvironment : public ::testing::Environment
-{
-    void TearDown() override { FunctionTimer::report(); }
-};
-
-static ::testing::Environment* const timer_env =
-    ::testing::AddGlobalTestEnvironment(new GlobalTimerEnvironment);
 
 using TestCase = NamedContainer<std::vector<int>>;
 
@@ -143,7 +102,7 @@ struct verify_forward_train_3d_bn_per_activation
         auto saveInvVar = tensor<U>{1, channels, depth, height, width};
         const auto n    = static_cast<double>(n_batch);
 
-        const auto& strides = input.desc.GetStrides();
+        const auto& strides  = input.desc.GetStrides();
         const auto& dstrides = derivedBnDesc.GetStrides();
 
         miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
@@ -269,14 +228,14 @@ struct verify_forward_train_3d_bn_per_activation
                                          miopenBNPerActivation,
                                          &alpha,
                                          &beta,
-                                         miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                         BuildReshaped4DTensorDescriptor(input.desc),
                                          in_dev.get(),
-                                         miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                         BuildReshaped4DTensorDescriptor(out.desc),
                                          out_dev.get(),
-                                         miopen::BuildReshaped4DTensorDescriptor(scale.desc),
-                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                         miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                         BuildReshaped4DTensorDescriptor(scale.desc),
+                                         BuildReshaped4DTensorDescriptor(shift.desc),
+                                         BuildReshaped4DTensorDescriptor(shift.desc),
+                                         BuildReshaped4DTensorDescriptor(shift.desc),
                                          scale_dev.get(),
                                          shift_dev.get(),
                                          expAvgFactor,
@@ -337,7 +296,7 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 
         const auto n = static_cast<double>(n_batch);
 
-        const auto& strides = input.desc.GetStrides();
+        const auto& strides  = input.desc.GetStrides();
         const auto& dstrides = scale.desc.GetStrides();
 
         miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
@@ -406,14 +365,14 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
                                           miopenBNPerActivation,
                                           &alpha,
                                           &beta,
-                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                          BuildReshaped4DTensorDescriptor(input.desc),
                                           in_dev.get(),
-                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                          BuildReshaped4DTensorDescriptor(out.desc),
                                           out_dev.get(),
-                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(scale.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
                                           scale_dev.get(),
                                           shift_dev.get(),
                                           nullptr,
@@ -453,7 +412,7 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
         auto out = tensor<T>{n_batch, channels, depth, height, width};
         std::fill(out.begin(), out.end(), 0);
 
-        const auto& strides = input.desc.GetStrides();
+        const auto& strides  = input.desc.GetStrides();
         const auto& dstrides = scale.desc.GetStrides();
 
         miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
@@ -509,14 +468,14 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
                                           miopenBNPerActivation,
                                           &alpha,
                                           &beta,
-                                          miopen::BuildReshaped4DTensorDescriptor(input.desc),
+                                          BuildReshaped4DTensorDescriptor(input.desc),
                                           in_dev.get(),
-                                          miopen::BuildReshaped4DTensorDescriptor(out.desc),
+                                          BuildReshaped4DTensorDescriptor(out.desc),
                                           out_dev.get(),
-                                          miopen::BuildReshaped4DTensorDescriptor(scale.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
-                                          miopen::BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(scale.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
+                                          BuildReshaped4DTensorDescriptor(shift.desc),
                                           scale_dev.get(),
                                           shift_dev.get(),
                                           estMean_dev.get(),
@@ -563,9 +522,9 @@ struct verify_backward_3d_bn_per_activation_use_saved
         auto dshift = tensor<U>{1, channels, depth, height, width};
         std::fill(dshift.begin(), dshift.end(), 0);
 
-        const auto n                  = static_cast<double>(n_batch);
+        const auto n = static_cast<double>(n_batch);
 
-        const auto& strides = x_input.desc.GetStrides();
+        const auto& strides  = x_input.desc.GetStrides();
         const auto& dstrides = scale.desc.GetStrides();
 
         miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
@@ -595,9 +554,9 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
             for(std::size_t bidx = 0; bidx < n_batch; bidx++)
             {
-                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
                 double xhat_val = elemStd * elemInvVar;
-                dyelem           = dy_input.data[bidx * strides[0] + base_idx];
+                dyelem          = dy_input.data[bidx * strides[0] + base_idx];
                 dshift.data[d_base_idx] += dyelem;
                 dscale.data[d_base_idx] += xhat_val * dyelem;
                 tmp1 = scale.data[d_base_idx] * dyelem;
@@ -607,13 +566,13 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
             for(std::size_t bidx = 0; bidx < n_batch; bidx++)
             {
-                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
                 double xhat_val = elemStd * elemInvVar;
-                tmp1        = xhat_val * dxhathat + dxhat;
-                double tmp2 = n_batch * (scale.data[d_base_idx] *
+                tmp1            = xhat_val * dxhathat + dxhat;
+                double tmp2     = n_batch * (scale.data[d_base_idx] *
                                          dy_input.data[bidx * strides[0] + base_idx]) -
                               tmp1;
-                double tmp3                           = elemInvVar / (double(n));
+                double tmp3                               = elemInvVar / (double(n));
                 dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
             }
         });
@@ -657,16 +616,16 @@ struct verify_backward_3d_bn_per_activation_use_saved
                                   &beta,
                                   &alpha,
                                   &beta,
-                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  BuildReshaped4DTensorDescriptor(x_input.desc),
                                   xin_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  BuildReshaped4DTensorDescriptor(dy_input.desc),
                                   dyin_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  BuildReshaped4DTensorDescriptor(dx_out.desc),
                                   dx_out_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(scale.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
                                   scale_dev.get(),
                                   nullptr,
                                   dscale_dev.get(),
@@ -725,9 +684,9 @@ struct verify_backward_3d_bn_per_activation_recalc
         auto dshift = tensor<U>{1, channels, depth, height, width};
         std::fill(dshift.begin(), dshift.end(), 0);
 
-        const auto n                  = static_cast<double>(n_batch);
+        const auto n = static_cast<double>(n_batch);
 
-        const auto& strides = x_input.desc.GetStrides();
+        const auto& strides  = x_input.desc.GetStrides();
         const auto& dstrides = scale.desc.GetStrides();
 
         miopen::par_for(channels * depth * height * width, 1, [&](int idx) {
@@ -773,9 +732,9 @@ struct verify_backward_3d_bn_per_activation_recalc
 
             for(std::size_t bidx = 0; bidx < n_batch; bidx++)
             {
-                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
                 double xhat_val = elemStd * elemInvVar;
-                dyelem           = dy_input.data[bidx * strides[0] + base_idx];
+                dyelem          = dy_input.data[bidx * strides[0] + base_idx];
                 dshift.data[d_base_idx] += dyelem;
                 dscale.data[d_base_idx] += xhat_val * dyelem;
                 tmp1 = scale.data[d_base_idx] * dyelem;
@@ -785,13 +744,13 @@ struct verify_backward_3d_bn_per_activation_recalc
 
             for(std::size_t bidx = 0; bidx < n_batch; bidx++)
             {
-                elemStd = x_input.data[bidx * strides[0] + base_idx] - mean;
+                elemStd         = x_input.data[bidx * strides[0] + base_idx] - mean;
                 double xhat_val = elemStd * elemInvVar;
-                tmp1        = xhat_val * dxhathat + dxhat;
-                double tmp2 = n_batch * (scale.data[d_base_idx] *
+                tmp1            = xhat_val * dxhathat + dxhat;
+                double tmp2     = n_batch * (scale.data[d_base_idx] *
                                          dy_input.data[bidx * strides[0] + base_idx]) -
                               tmp1;
-                double tmp3                           = elemInvVar / double(n);
+                double tmp3                               = elemInvVar / double(n);
                 dx_out.data[bidx * strides[0] + base_idx] = tmp3 * tmp2;
             }
         });
@@ -833,16 +792,16 @@ struct verify_backward_3d_bn_per_activation_recalc
                                   &beta,
                                   &alpha,
                                   &beta,
-                                  miopen::BuildReshaped4DTensorDescriptor(x_input.desc),
+                                  BuildReshaped4DTensorDescriptor(x_input.desc),
                                   xin_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(dy_input.desc),
+                                  BuildReshaped4DTensorDescriptor(dy_input.desc),
                                   dyin_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(dx_out.desc),
+                                  BuildReshaped4DTensorDescriptor(dx_out.desc),
                                   dx_out_dev.get(),
-                                  miopen::BuildReshaped4DTensorDescriptor(scale.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
-                                  miopen::BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(scale.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
+                                  BuildReshaped4DTensorDescriptor(dshift.desc),
                                   scale_dev.get(),
                                   nullptr,
                                   dscale_dev.get(),
@@ -934,61 +893,6 @@ struct TestParameterNameGenerator
 
 } // namespace
 
-template <class R1, class R2>
-double rms_range_parallel(R1&& r1, R2&& r2)
-{
-    FunctionTimer ft("rms_range_parallel");
-    std::size_t n = miopen::range_distance(r1);
-    if(n != miopen::range_distance(r2))
-        return std::numeric_limits<double>::max();
-    if(n == 0)
-        return 0;
-
-    std::size_t num_threads = std::thread::hardware_concurrency();
-    if(num_threads == 0)
-        num_threads = 1;
-    // For small tensors, don't bother with threads
-    if(n < 10000)
-    {
-        return miopen::rms_range(r1, r2);
-    }
-
-    std::vector<double> partial_sq_diff(num_threads, 0.0);
-    std::vector<double> partial_mag1(num_threads, 0.0);
-    std::vector<double> partial_mag2(num_threads, 0.0);
-
-    std::size_t grainsize = (n + num_threads - 1) / num_threads;
-
-    miopen::par_for(num_threads, 1, [&](std::size_t t) {
-        std::size_t start = t * grainsize;
-        std::size_t end   = std::min(start + grainsize, n);
-        double local_sq   = 0.0;
-        double local_m1   = 0.0;
-        double local_m2   = 0.0;
-        auto it1          = r1.begin() + start;
-        auto it2          = r2.begin() + start;
-        for(std::size_t i = start; i < end; ++i, ++it1, ++it2)
-        {
-            double v1 = static_cast<double>(*it1);
-            double v2 = static_cast<double>(*it2);
-            double d  = v1 - v2;
-            local_sq += d * d;
-            local_m1 = std::max(local_m1, std::fabs(v1));
-            local_m2 = std::max(local_m2, std::fabs(v2));
-        }
-        partial_sq_diff[t] = local_sq;
-        partial_mag1[t]    = local_m1;
-        partial_mag2[t]    = local_m2;
-    });
-
-    double square_difference = std::accumulate(partial_sq_diff.begin(), partial_sq_diff.end(), 0.0);
-    double mag1              = *std::max_element(partial_mag1.begin(), partial_mag1.end());
-    double mag2              = *std::max_element(partial_mag2.begin(), partial_mag2.end());
-
-    double mag = std::max({std::fabs(mag1), std::fabs(mag2), std::numeric_limits<double>::min()});
-    return std::sqrt(square_difference) / (std::sqrt(n) * mag);
-}
-
 template <typename T>
 struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 {
@@ -1001,7 +905,6 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 
     void SetUp() override
     {
-        FunctionTimer ft("SetUp");
         prng::reset_seed();
         const auto dims = GetParam();
 
@@ -1042,7 +945,6 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 
     void RunAll()
     {
-        FunctionTimer ft("RunAll");
         std::size_t n, c, d, h, w;
         std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
         double tolerance        = 200 * input.desc.GetElementSize();
@@ -1089,15 +991,12 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
     {
         std::pair<decltype(v.cpu()), decltype(v.gpu())> res;
         {
-            FunctionTimer ft("Verify::cpu");
             res.first = v.cpu();
         }
         {
-            FunctionTimer ft("Verify::gpu");
             res.second = v.gpu();
         }
         {
-            FunctionTimer ft("Verify::Compare");
             Compare(v, res.first, res.second, tolerance);
         }
 
@@ -1122,7 +1021,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
                     ASSERT_EQ(miopen::range_distance(c), miopen::range_distance(g));
                     using value_type       = miopen::range_value<decltype(g)>;
                     const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
-                    const double error     = rms_range_parallel(c, g);
+                    const double error     = miopen::rms_range(c, g);
                     EXPECT_LE(error, threshold);
                     if(error > threshold)
                         v.fail(i);
@@ -1137,7 +1036,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
         ASSERT_EQ(miopen::range_distance(cpu), miopen::range_distance(gpu));
         using value_type       = miopen::range_value<decltype(gpu)>;
         const double threshold = std::numeric_limits<value_type>::epsilon() * tolerance;
-        const double error     = rms_range_parallel(cpu, gpu);
+        const double error     = miopen::rms_range(cpu, gpu);
         EXPECT_LE(error, threshold);
         if(error > threshold)
             v.fail(0);
@@ -1177,8 +1076,3 @@ INSTANTIATE_TEST_SUITE_P(Full,
                          GPU_Bn3DPeract_BFP16,
                          GetFullTestCases(),
                          TestParameterNameGenerator{});
-
-struct FinalReporter {
-    ~FinalReporter() { FunctionTimer::report(); }
-};
-static FinalReporter global_final_reporter;
