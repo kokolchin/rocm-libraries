@@ -40,8 +40,20 @@
 #endif
 
 #include <string>
+#include <map>
+#include <ctime>
 
 namespace {
+
+struct FunctionTimer 
+{
+  FunctionTimer(char const * name) : mName(name), mStartTime(clock()) { }
+  ~FunctionTimer() { mFunctionTimes[mName] += clock() - mStartTime; }
+
+  static std::map<std::string, clock_t> mFunctionTimes;
+};
+
+std::map<std::string, clock_t> FunctionTimer::mFunctionTimes;
 
 using TestCase = NamedContainer<std::vector<int>>;
 
@@ -57,6 +69,7 @@ struct verify_forward_train_3d_bn_per_activation
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_forward_train_3d_bn_per_activation::cpu");
         double epsilon      = MIO_BN_TEST_EPSILON;
         double expAvgFactor = MIO_BN_TEST_EXPAVGFACTOR;
 
@@ -164,6 +177,7 @@ struct verify_forward_train_3d_bn_per_activation
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_forward_train_3d_bn_per_activation::gpu");
         auto&& handle = get_handle();
 
         std::size_t n_batch, channels, depth, height, width;
@@ -285,6 +299,7 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 
     tensor<T> cpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_recalc::cpu");
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -347,6 +362,7 @@ struct verify_forward_infer_3d_bn_per_activation_recalc
 
     tensor<T> gpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_recalc::gpu");
         auto&& handle = get_handle();
         auto out      = input;
         std::fill(out.begin(), out.end(), 0);
@@ -403,6 +419,7 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 
     tensor<T> cpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_use_est::cpu");
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -448,6 +465,7 @@ struct verify_forward_infer_3d_bn_per_activation_use_est
 
     tensor<T> gpu() const
     {
+        FunctionTimer ft("verify_forward_infer_3d_bn_per_activation_use_est::gpu");
         auto&& handle = get_handle();
         auto out      = input;
         std::fill(out.begin(), out.end(), 0);
@@ -509,6 +527,7 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_use_saved::cpu");
         std::size_t n_batch, channels, depth, height, width;
         std::tie(n_batch, channels, depth, height, width) =
             miopen::tien<5>(x_input.desc.GetLengths());
@@ -581,6 +600,7 @@ struct verify_backward_3d_bn_per_activation_use_saved
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_use_saved::gpu");
         auto&& handle  = get_handle();
         double epsilon = MIO_BN_TEST_EPSILON;
 
@@ -669,6 +689,7 @@ struct verify_backward_3d_bn_per_activation_recalc
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> cpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_recalc::cpu");
         double epsilon = MIO_BN_TEST_EPSILON;
 
         std::size_t n_batch, channels, depth, height, width;
@@ -759,6 +780,7 @@ struct verify_backward_3d_bn_per_activation_recalc
 
     std::tuple<tensor<T>, tensor<U>, tensor<U>> gpu() const
     {
+        FunctionTimer ft("verify_backward_3d_bn_per_activation_recalc::gpu");
         auto&& handle = get_handle();
 
         std::size_t n_batch, channels, depth, height, width;
@@ -945,6 +967,7 @@ struct Bn3DPeractTest : public testing::TestWithParam<TestCase>
 
     void RunAll()
     {
+        FunctionTimer ft("Bn3DPeractTest::RunAll");
         std::size_t n, c, d, h, w;
         std::tie(n, c, d, h, w) = miopen::tien<5>(input.desc.GetLengths());
         double tolerance        = 200 * input.desc.GetElementSize();
