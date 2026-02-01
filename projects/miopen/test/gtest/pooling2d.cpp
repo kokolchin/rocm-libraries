@@ -20,13 +20,12 @@
 
 namespace {
 
-std::vector<Pooling2dTestCase> GetPooling2dTestCases()
+std::vector<pooling2d_gtest::PoolingTestCase> GetPooling2dTestCases()
 {
-    std::vector<Pooling2dTestCase> test_cases;
-    IndexTypeCounters counters;
+    std::vector<pooling2d_gtest::PoolingTestCase> test_cases;
 
     // Dataset 0: Default dataset (various tensor sizes)
-    std::vector<std::vector<int>> dataset0_inputs;
+    std::vector<std::vector<int>> dataset0_inputs; 
 #if TEST_GET_INPUT_TENSOR
     // When TEST_GET_INPUT_TENSOR = 1, use get_inputs() function (matching original ctest behavior)
     int batch_factor                      = 0; // Default batch factor matching original ctest
@@ -76,7 +75,6 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
                              dataset0_index_types,
                              modes,
                              wsidx_values,
-                             counters,
                              test_cases,
                              false,  // skip_wide_check=false for Dataset 0
                              true);  // apply_index_type_limits=true for Dataset 0
@@ -117,11 +115,11 @@ std::vector<Pooling2dTestCase> GetPooling2dTestCases()
 } // anonymous namespace
 
 // Derived classes for Dataset 0 (standard pooling)
-class GPU_Pooling2d_FP32 : public Pooling2dCommon<float>
+class GPU_Pooling2d_FP32 : public pooling2d_gtest::Pooling2dCommon<float>
 {
 };
 
-class GPU_Pooling2d_FP16 : public Pooling2dCommon<half_float::half>
+class GPU_Pooling2d_FP16 : public pooling2d_gtest::Pooling2dCommon<half_float::half>
 {
 };
 
@@ -132,12 +130,12 @@ TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d) { RunTest(); }
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling2d_FP32,
                          testing::ValuesIn(GetPooling2dTestCases()),
-                         GetPooling2dTestCaseName);
+                         pooling2d_gtest::GetPoolingTestCaseName);
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling2d_FP16,
                          testing::ValuesIn(GetPooling2dTestCases()),
-                         GetPooling2dTestCaseName);
+                         pooling2d_gtest::GetPoolingTestCaseName);
 // -----------------------------------------------------------------------------
 // Driver-based Full tests (kept from conversion commit).
 // These are namespaced and renamed to avoid symbol collisions with the Smoke tests.
@@ -145,6 +143,7 @@ INSTANTIATE_TEST_SUITE_P(Smoke,
 
 #include <miopen/env.hpp>
 #include "get_handle.hpp"
+#include "../pooling2d.hpp"
 
 MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
 
@@ -190,7 +189,7 @@ void Run2dDriver(miopenDataType_t prec)
     });
 
     testing::internal::CaptureStderr();
-    test_drive<pooling2d_driver>(ptrs.size(), ptrs.data());
+    test_drive<pooling2d_driver<float>>(ptrs.size(), ptrs.data());
     auto capture = testing::internal::GetCapturedStderr();
     std::cout << capture;
 }
