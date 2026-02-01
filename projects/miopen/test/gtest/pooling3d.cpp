@@ -24,6 +24,14 @@ using PoolingTestCase = pooling2d_gtest::PoolingTestCase;
 
 std::vector<PoolingTestCase> GetPooling3dTestCases()
 {
+    static std::vector<PoolingTestCase> cached_test_cases;
+    static bool cached = false;
+
+    if(cached)
+    {
+        return cached_test_cases;
+    }
+
     std::vector<PoolingTestCase> test_cases;
 
     // Dataset 0: Default dataset (various tensor sizes)
@@ -100,6 +108,10 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
             }
         }
     }
+
+    // Cache the results
+    cached_test_cases = test_cases;
+    cached            = true;
 
     return test_cases;
 }

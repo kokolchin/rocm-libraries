@@ -22,6 +22,14 @@ namespace {
 
 std::vector<pooling2d_gtest::PoolingTestCase> GetPooling2dTestCases()
 {
+    static std::vector<pooling2d_gtest::PoolingTestCase> cached_test_cases;
+    static bool cached = false;
+
+    if(cached)
+    {
+        return cached_test_cases;
+    }
+
     std::vector<pooling2d_gtest::PoolingTestCase> test_cases;
 
     // Dataset 0: Default dataset (various tensor sizes)
@@ -108,6 +116,10 @@ std::vector<pooling2d_gtest::PoolingTestCase> GetPooling2dTestCases()
         }
         log_file.close();
     }
+
+    // Cache the results
+    cached_test_cases = test_cases;
+    cached            = true;
 
     return test_cases;
 }
