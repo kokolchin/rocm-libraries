@@ -103,37 +103,24 @@ std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
 }
 
 } // anonymous namespace
-;
-    }
-
-    return test_cases;
-}
 
 // Derived classes for Dataset 2 (wide window pooling)
-class GPU_WidePooling2d_FP32 : public pooling2d_gtest::Pooling2dCommon<float>
+class GPU_WidePooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
 {
 };
 
-class GPU_WidePooling2d_FP16 : public pooling2d_gtest::Pooling2dCommon<half_float::half>
+class GPU_WidePooling2d_FP16 : public pooling2d_gtest::Pooling2dBatchCommon<half_float::half>
 {
 };
 
-TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
-{
-    this->RunTest();
-}
+TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide) { RunBatch(); }
 
-TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
-{
-    this->RunTest();
-}
+TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { RunBatch(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dWideTestCases()),
-                         pooling2d_gtest::GetPoolingTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dWideTestCases(), 50)));
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_WidePooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dWideTestCases()),
-                         GetPooling2dTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dWideTestCases(), 50)));

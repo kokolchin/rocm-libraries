@@ -414,56 +414,44 @@ void CheckPooling3dTestCase(const PoolingTestCase& test_case)
     }
 }
 
-class GPU_Pooling3d_FP32 : public testing::TestWithParam<PoolingTestCase>
+class GPU_Pooling3d_FP32 : public testing::TestWithParam<pooling2d_gtest::PoolingBatch>
 {
     void SetUp() override
     {
         prng::reset_seed();
-        CheckPooling3dTestCase(GetParam());
     }
 };
 
-class GPU_Pooling3d_FP16 : public testing::TestWithParam<PoolingTestCase>
+class GPU_Pooling3d_FP16 : public testing::TestWithParam<pooling2d_gtest::PoolingBatch>
 {
     void SetUp() override
     {
         prng::reset_seed();
-        CheckPooling3dTestCase(GetParam());
     }
 };
 
-TEST_P(GPU_Pooling3d_FP32, Test) { RunPooling3dTest<float>(GetParam()); }
+TEST_P(GPU_Pooling3d_FP32, Test) 
+{ 
+    for(const auto& tc : GetParam().test_cases)
+    {
+        CheckPooling3dTestCase(tc);
+        RunPooling3dTest<float>(tc); 
+    }
+}
 
-TEST_P(GPU_Pooling3d_FP16, Test) { RunPooling3dTest<half_float::half>(GetParam()); }
+TEST_P(GPU_Pooling3d_FP16, Test) 
+{ 
+    for(const auto& tc : GetParam().test_cases)
+    {
+        CheckPooling3dTestCase(tc);
+        RunPooling3dTest<half_float::half>(tc); 
+    }
+}
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling3d_FP32,
-                         testing::ValuesIn(GetPooling3dTestCases()),
-                         [](const testing::TestParamInfo<PoolingTestCase>& info) {
-                             const auto& tc = info.param;
-                             std::ostringstream os;
-                             os << "input_dims_";
-                             miopen::LogRange(os, tc.input_dims, "_") << "_lens_";
-                             miopen::LogRange(os, tc.lens, "_") << "_pads_";
-                             miopen::LogRange(os, tc.pads, "_") << "_strides_";
-                             miopen::LogRange(os, tc.strides, "_")
-                                 << "_idx" << static_cast<int>(tc.index_type) << "_mode"
-                                 << static_cast<int>(tc.mode) << "_ws" << tc.wsidx;
-                             return os.str();
-                         });
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(), 50)));
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling3d_FP16,
-                         testing::ValuesIn(GetPooling3dTestCases()),
-                         [](const testing::TestParamInfo<PoolingTestCase>& info) {
-                             const auto& tc = info.param;
-                             std::ostringstream os;
-                             os << "input_dims_";
-                             miopen::LogRange(os, tc.input_dims, "_") << "_lens_";
-                             miopen::LogRange(os, tc.lens, "_") << "_pads_";
-                             miopen::LogRange(os, tc.pads, "_") << "_strides_";
-                             miopen::LogRange(os, tc.strides, "_")
-                                 << "_idx" << static_cast<int>(tc.index_type) << "_mode"
-                                 << static_cast<int>(tc.mode) << "_ws" << tc.wsidx;
-                             return os.str();
-                         });
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(), 50)));

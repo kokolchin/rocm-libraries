@@ -59,6 +59,17 @@ struct PoolingTestCase
     }
 };
 
+struct PoolingBatch
+{
+    std::vector<PoolingTestCase> test_cases;
+    int batch_id;
+
+    friend std::ostream& operator<<(std::ostream& os, const PoolingBatch& batch)
+    {
+        return os << "Batch_" << batch.batch_id << "_Size_" << batch.test_cases.size();
+    }
+};
+
 // Helper function to calculate output spatial dimensions for pooling
 // Works for both 2D and 3D pooling based on input_dims size
 inline std::vector<int> CalculateOutputDims(const std::vector<int>& input_dims,
@@ -454,6 +465,20 @@ inline std::string GetPoolingTestCaseName(const testing::TestParamInfo<PoolingTe
     return name;
 }
 
+inline std::vector<PoolingBatch> BatchTestCases(const std::vector<PoolingTestCase>& cases, int batch_size)
+{
+    std::vector<PoolingBatch> batches;
+    for(size_t i = 0; i < cases.size(); i += batch_size)
+    {
+        PoolingBatch batch;
+        batch.batch_id = static_cast<int>(batches.size());
+        size_t end = std::min(i + batch_size, cases.size());
+        batch.test_cases.assign(cases.begin() + i, cases.begin() + end);
+        batches.push_back(batch);
+    }
+    return batches;
+}
+
 template <typename T>
 struct Pooling2dCommon : public testing::TestWithParam<PoolingTestCase>
 {
@@ -469,6 +494,24 @@ struct Pooling2dCommon : public testing::TestWithParam<PoolingTestCase>
 protected:
     // Common test execution method for all pooling2d tests
     void RunTest() { RunPooling2dTest<T>(this->GetParam()); }
+};
+
+template <typename T>
+struct Pooling2dBatchCommon : public testing::TestWithParam<PoolingBatch>
+{
+    void SetUp() override
+    {
+        prng::reset_seed();
+    }
+
+protected:
+    void RunBatch()
+    {
+        for(const auto& tc : this->GetParam().test_cases)
+        {
+            RunPooling2dTest<T>(tc);
+        }
+    }
 };
 
 } // namespace pooling2d_gtest

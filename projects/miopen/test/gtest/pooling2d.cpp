@@ -127,27 +127,25 @@ std::vector<pooling2d_gtest::PoolingTestCase> GetPooling2dTestCases()
 } // anonymous namespace
 
 // Derived classes for Dataset 0 (standard pooling)
-class GPU_Pooling2d_FP32 : public pooling2d_gtest::Pooling2dCommon<float>
+class GPU_Pooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
 {
 };
 
-class GPU_Pooling2d_FP16 : public pooling2d_gtest::Pooling2dCommon<half_float::half>
+class GPU_Pooling2d_FP16 : public pooling2d_gtest::Pooling2dBatchCommon<half_float::half>
 {
 };
 
-TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d) { RunTest(); }
+TEST_P(GPU_Pooling2d_FP32, FloatTest_pooling2d) { RunBatch(); }
 
-TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d) { RunTest(); }
+TEST_P(GPU_Pooling2d_FP16, HalfTest_pooling2d) { RunBatch(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dTestCases()),
-                         pooling2d_gtest::GetPoolingTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dTestCases(), 50)));
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dTestCases()),
-                         pooling2d_gtest::GetPoolingTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dTestCases(), 50)));
 // -----------------------------------------------------------------------------
 // Driver-based Full tests (kept from conversion commit).
 // These are namespaced and renamed to avoid symbol collisions with the Smoke tests.

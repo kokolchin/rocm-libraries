@@ -106,37 +106,24 @@ std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
 }
 
 } // anonymous namespace
-;
-    }
-
-    return test_cases;
-}
 
 // Derived classes for Dataset 1 (asymmetric pooling)
-class GPU_AsymPooling2d_FP32 : public pooling2d_gtest::Pooling2dCommon<float>
+class GPU_AsymPooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
 {
 };
 
-class GPU_AsymPooling2d_FP16 : public pooling2d_gtest::Pooling2dCommon<half_float::half>
+class GPU_AsymPooling2d_FP16 : public pooling2d_gtest::Pooling2dBatchCommon<half_float::half>
 {
 };
 
-TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
-{
-    this->RunTest();
-}
+TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric) { RunBatch(); }
 
-TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
-{
-    this->RunTest();
-}
+TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { RunBatch(); }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP32,
-                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
-                         pooling2d_gtest::GetPoolingTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dAsymmetricTestCases(), 50)));
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_AsymPooling2d_FP16,
-                         testing::ValuesIn(GetPooling2dAsymmetricTestCases()),
-                         pooling2d_gtest::GetPoolingTestCaseName);
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dAsymmetricTestCases(), 50)));
