@@ -126,6 +126,10 @@ std::vector<pooling2d_gtest::PoolingTestCase> GetPooling2dTestCases()
 
 } // anonymous namespace
 
+// -----------------------------------------------------------------------------
+// Smoke tests (batched native GTest implementation)
+// -----------------------------------------------------------------------------
+
 // Derived classes for Dataset 0 (standard pooling)
 class GPU_Pooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
 {
@@ -146,109 +150,4 @@ INSTANTIATE_TEST_SUITE_P(Smoke,
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling2d_FP16,
                          testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dTestCases(), 50)));
-// -----------------------------------------------------------------------------
-// Driver-based Full tests (kept from conversion commit).
-// These are namespaced and renamed to avoid symbol collisions with the Smoke tests.
-// -----------------------------------------------------------------------------
 
-#include <miopen/env.hpp>
-#include "get_handle.hpp"
-#include "../pooling2d.hpp"
-
-MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
-
-namespace pooling2d_driver_ns {
-
-namespace env = miopen::env;
-
-class GPU_Pooling2dDriver_FP32 : public testing::TestWithParam<std::string>
-{
-    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
-};
-
-class GPU_Pooling2dDriver_FP16 : public testing::TestWithParam<std::string>
-{
-    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
-};
-
-void GetArgs(const std::string& param, std::vector<std::string>& tokens)
-{
-    std::stringstream ss(param);
-    std::istream_iterator<std::string> begin(ss);
-    std::istream_iterator<std::string> end;
-    while(begin != end)
-        tokens.push_back(*begin++);
-}
-
-void Run2dDriver(miopenDataType_t prec)
-{
-    std::string param;
-    switch(prec)
-    {
-    case miopenFloat: param = GPU_Pooling2dDriver_FP32::GetParam(); break;
-    case miopenHalf: param = GPU_Pooling2dDriver_FP16::GetParam(); break;
-    default: param = GPU_Pooling2dDriver_FP32::GetParam();
-    }
-
-    std::vector<std::string> tokens;
-    GetArgs(param, tokens);
-    std::vector<const char*> ptrs;
-
-    std::transform(tokens.begin(), tokens.end(), std::back_inserter(ptrs), [](const auto& str) {
-        return str.data();
-    });
-
-    testing::internal::CaptureStderr();
-    test_drive<pooling2d_driver<float>>(ptrs.size(), ptrs.data());
-    auto capture = testing::internal::GetCapturedStderr();
-    std::cout << capture;
-}
-
-bool IsTestSupportedForDevice(const miopen::Handle& handle) { return true; }
-
-std::vector<std::string> GetTestCases(const std::string& precision)
-{
-    const auto& flag_arg = env::value(MIOPEN_TEST_FLAGS_ARGS);
-
-    const std::vector<std::string> test_cases = {
-        // clang-format off
-        {"test_pooling2d " + precision + " --all --limit 0 " + flag_arg}
-        // clang-format on
-    };
-
-    return test_cases;
-}
-
-} // namespace pooling2d_driver_ns
-
-using namespace pooling2d_driver_ns;
-
-TEST_P(GPU_Pooling2dDriver_FP32, FloatTest_pooling2d)
-{
-    const auto& handle = get_handle();
-    if(IsTestSupportedForDevice(handle))
-    {
-        Run2dDriver(miopenFloat);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
-}
-
-TEST_P(GPU_Pooling2dDriver_FP16, HalfTest_pooling2d)
-{
-    const auto& handle = get_handle();
-    if(IsTestSupportedForDevice(handle))
-    {
-        Run2dDriver(miopenHalf);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
-}
-
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2dDriver_FP32, testing::ValuesIn(GetTestCases("--float")));
-
-INSTANTIATE_TEST_SUITE_P(Full, GPU_Pooling2dDriver_FP16, testing::ValuesIn(GetTestCases("--half")));

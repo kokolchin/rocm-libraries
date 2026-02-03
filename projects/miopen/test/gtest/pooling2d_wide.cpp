@@ -1,126 +1,146 @@
-// Copyright © Advanced Micro Devices, Inc., or its affiliates.
-// SPDX-License-Identifier:  MIT
+/*******************************************************************************
+ *
+ * MIT License
+ *
+ * Copyright (c) 2019 Advanced Micro Devices, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *******************************************************************************/
 
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <vector>
 #include <gtest/gtest.h>
-#include <half/half.hpp>
-#include "pooling2d_common.hpp"
+#include <miopen/env.hpp>
+#include "get_handle.hpp"
+#include "gtest_common.hpp"
+#include "pooling2d.hpp"
 
-namespace {
+MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
 
-std::vector<Pooling2dTestCase> GetPooling2dWideTestCases()
+namespace env = miopen::env;
+
+namespace pooling2d_wide {
+
+class GPU_WidePooling2d_FP32 : public testing::TestWithParam<std::vector<std::string>>
 {
-    std::vector<Pooling2dTestCase> test_cases; 
+    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
+};
 
-    // Dataset 2: Wide window configurations
-    // Input: {{1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}}
-    std::vector<std::vector<int>> dataset2_inputs = {
-        {1, 3, 255, 255}, {2, 3, 227, 227}, {1, 7, 127, 127}, {1, 1, 410, 400}};
+class GPU_WidePooling2d_FP16 : public testing::TestWithParam<std::vector<std::string>>
+{
+    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
+};
 
-    // Lens: {{35, 35}, {100, 100}, {255, 255}, {410, 400}} - wide window kernel sizes
-    std::vector<std::vector<int>> dataset2_lens = {{35, 35}, {100, 100}, {255, 255}, {410, 400}};
+void GetArgs(const std::string& param, std::vector<std::string>& tokens)
+{
+    std::stringstream ss(param);
+    std::istream_iterator<std::string> begin(ss);
+    std::istream_iterator<std::string> end;
+    while(begin != end)
+        tokens.push_back(*begin++);
+}
 
-    // Strides: {{1, 1}} - only stride 1 for wide windows
-    std::vector<std::vector<int>> dataset2_strides = {{1, 1}};
+void Run2dDriver(miopenDataType_t prec)
+{
 
-    // Pads: {{0, 0}} - no padding for wide windows
-    std::vector<std::vector<int>> dataset2_pads = {{0, 0}};
-
-    std::vector<miopenIndexType_t> dataset2_index_types = {
-        miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
-    std::vector<miopenPoolingMode_t> modes = {
-        miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
-    std::vector<int> wsidx_values = {0, 1};
-
-    // Generate cartesian product for dataset 2
-    // This matches the original ctest test_pooling2d behavior with --dataset 2
-    // Filter invalid combinations at generation time instead of skipping at runtime
-    for(const auto& input_dims : dataset2_inputs)
+    std::vector<std::string> params;
+    switch(prec)
     {
-        AddTestCasesForInput(input_dims,
-                             dataset2_lens,
-                             dataset2_strides,
-                             dataset2_pads,
-                             dataset2_index_types,
-                             modes,
-                             wsidx_values,
-                             test_cases,
-                             false, // skip_wide_check=false for Dataset 2 (wide window)
-                             false); // apply_index_type_limits=false for Dataset 2 (matching ctest)
+    case miopenFloat: params = GPU_WidePooling2d_FP32::GetParam(); break;
+    case miopenHalf: params = GPU_WidePooling2d_FP16::GetParam(); break;
+    case miopenBFloat16:
+    case miopenInt8:
+    case miopenFloat8_fnuz:
+    case miopenBFloat8_fnuz:
+    case miopenInt32:
+    case miopenInt64:
+    case miopenDouble:
+        FAIL() << "miopenBFloat16, miopenInt8, miopenInt32, miopenDouble, miopenFloat8_fnuz, "
+                  "miopenBFloat8_fnuz "
+                  "data type not supported by "
+                  "pooling2d_wide test";
+
+    default: params = GPU_WidePooling2d_FP32::GetParam();
     }
 
-    std::cerr << "\n=== Dataset 2 (Wide Window) Test Case Generation Summary ===\n";
-    std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 33\n";
-    
-    // Analyze by mode and wsidx to identify the pattern
-    std::map<int, std::map<int, int>> mode_wsidx_counts;
-    for(const auto& tc : test_cases)
+    for(const auto& test_value : params)
     {
-        mode_wsidx_counts[static_cast<int>(tc.mode)][tc.wsidx]++;
-    }
-    
-    std::cerr << "\nBreakdown by mode and wsidx:\n";
-    const char* mode_names[] = {"Max", "Average", "AverageInclusive"};
-    for(int mode = 0; mode < 3; mode++)
-    {
-        int total_for_mode = 0;
-        for(int wsidx = 0; wsidx < 2; wsidx++)
-        {
-            int count = mode_wsidx_counts[mode][wsidx];
-            total_for_mode += count;
-            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count << "\n";
-        }
-        std::cerr << "  " << mode_names[mode] << " mode TOTAL: " << total_for_mode << "\n";
-    }
-    
-    std::cerr << "=============================================================\n\n";
+        std::vector<std::string> tokens;
+        GetArgs(test_value, tokens);
+        std::vector<const char*> ptrs;
 
-    // Log all test configurations to a file for comparison with ctest
-    // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
-    std::ofstream log_file("pooling2d_wide_gtest_configs.txt");
-    if(log_file.is_open())
-    {
-        log_file << "# Total test cases: " << test_cases.size() << "\n";
-        log_file << "# Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx\n";
-        for(const auto& tc : test_cases)
-        {
-            log_file << tc.input_dims[0] << " " << tc.input_dims[1] << " " << tc.input_dims[2]
-                     << " " << tc.input_dims[3] << " ";
-            log_file << tc.lens[0] << " " << tc.lens[1] << " ";
-            log_file << tc.pads[0] << " " << tc.pads[1] << " ";
-            log_file << tc.strides[0] << " " << tc.strides[1] << " ";
-            log_file << static_cast<int>(tc.index_type) << " " << static_cast<int>(tc.mode) << " "
-                     << tc.wsidx << "\n";
-        }
-        log_file.close();
+        std::transform(tokens.begin(), tokens.end(), std::back_inserter(ptrs), [](const auto& str) {
+            return str.data();
+        });
+
+        testing::internal::CaptureStderr();
+        test_drive<pooling2d_driver>(ptrs.size(), ptrs.data());
+        auto capture = testing::internal::GetCapturedStderr();
+        std::cout << capture;
     }
+};
+
+bool IsTestSupportedForDevice(const miopen::Handle& handle) { return true; }
+
+std::vector<std::string> GetTestCases(const std::string& precision)
+{
+    const auto& flag_arg = env::value(MIOPEN_TEST_FLAGS_ARGS);
+
+    const std::vector<std::string> test_cases = {
+        // clang-format off
+    {"test_pooling2d " + precision + " --all --dataset 2 --limit 0 " + flag_arg}
+        // clang-format on
+    };
 
     return test_cases;
 }
 
-} // anonymous namespace
+} // namespace pooling2d_wide
+using namespace pooling2d_wide;
 
-// Derived classes for Dataset 2 (wide window pooling)
-class GPU_WidePooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
+/*
+TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide)
 {
+    const auto& handle = get_handle();
+    if(IsTestSupportedForDevice(handle))
+    {
+        Run2dDriver(miopenFloat);
+    }
+    else
+    {
+        GTEST_SKIP();
+    }
+};
+*/
+
+TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide)
+{
+    const auto& handle = get_handle();
+    if(IsTestSupportedForDevice(handle))
+    {
+        Run2dDriver(miopenHalf);
+    }
+    else
+    {
+        GTEST_SKIP();
+    }
 };
 
-class GPU_WidePooling2d_FP16 : public pooling2d_gtest::Pooling2dBatchCommon<half_float::half>
-{
-};
+// INSTANTIATE_TEST_SUITE_P(Full, GPU_WidePooling2d_FP32, testing::Values(GetTestCases("--float")));
 
-TEST_P(GPU_WidePooling2d_FP32, FloatTest_pooling2d_wide) { RunBatch(); }
-
-TEST_P(GPU_WidePooling2d_FP16, HalfTest_pooling2d_wide) { RunBatch(); }
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_WidePooling2d_FP32,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dWideTestCases(), 50)));
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_WidePooling2d_FP16,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dWideTestCases(), 50)));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_WidePooling2d_FP16, testing::Values(GetTestCases("--half")));

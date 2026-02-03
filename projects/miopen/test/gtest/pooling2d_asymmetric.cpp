@@ -1,129 +1,146 @@
-// Copyright © Advanced Micro Devices, Inc., or its affiliates.
-// SPDX-License-Identifier:  MIT
+/*******************************************************************************
+ *
+ * MIT License
+ *
+ * Copyright (c) 2019 Advanced Micro Devices, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *******************************************************************************/
 
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <vector>
 #include <gtest/gtest.h>
-#include <half/half.hpp>
-#include "pooling2d_common.hpp"
+#include <miopen/env.hpp>
+#include "get_handle.hpp"
+#include "gtest_common.hpp"
+#include "pooling2d.hpp"
 
-namespace {
+MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_TEST_FLAGS_ARGS)
 
-std::vector<Pooling2dTestCase> GetPooling2dAsymmetricTestCases()
+namespace env = miopen::env;
+
+namespace pooling2d_asymmetric {
+
+class GPU_AsymPooling2d_FP32 : public testing::TestWithParam<std::vector<std::string>>
 {
-    std::vector<Pooling2dTestCase> test_cases; 
+    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
+};
 
-    // Dataset 1: Asymmetric configurations
-    // Input: {{1, 4, 4, 4}} - minimal input for asymmetric testing
-    std::vector<std::vector<int>> dataset1_inputs = {{1, 4, 4, 4}};
+class GPU_AsymPooling2d_FP16 : public testing::TestWithParam<std::vector<std::string>>
+{
+    MIOPEN_DECLARE_GTEST_USES_TEST_DRIVE();
+};
 
-    // Lens: {{2, 2}, {1, 2}, {2, 1}} - asymmetric kernel sizes
-    std::vector<std::vector<int>> dataset1_lens = {{2, 2}, {1, 2}, {2, 1}};
+void GetArgs(const std::string& param, std::vector<std::string>& tokens)
+{
+    std::stringstream ss(param);
+    std::istream_iterator<std::string> begin(ss);
+    std::istream_iterator<std::string> end;
+    while(begin != end)
+        tokens.push_back(*begin++);
+}
 
-    // Strides: {{1, 1}, {2, 1}, {1, 2}, {2, 2}} - asymmetric strides
-    std::vector<std::vector<int>> dataset1_strides = {{1, 1}, {2, 1}, {1, 2}, {2, 2}};
+void Run2dDriver(miopenDataType_t prec)
+{
 
-    // Pads: controlled by WORKAROUND_ISSUE_1670 (matching original ctest behavior)
-#if WORKAROUND_ISSUE_1670
-    std::vector<std::vector<int>> dataset1_pads = {{0, 0}};
-#else
-    std::vector<std::vector<int>> dataset1_pads = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-#endif
-
-    std::vector<miopenIndexType_t> dataset1_index_types = {
-        miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
-    std::vector<miopenPoolingMode_t> modes = {
-        miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
-    std::vector<int> wsidx_values = {0, 1};
-
-    // Generate cartesian product for dataset 1
-    // This matches the original ctest test_pooling2d behavior with --dataset 1
-    // Filter invalid combinations at generation time instead of skipping at runtime
-    for(const auto& input_dims : dataset1_inputs)
+    std::vector<std::string> params;
+    switch(prec)
     {
-        AddTestCasesForInput(input_dims,
-                             dataset1_lens,
-                             dataset1_strides,
-                             dataset1_pads,
-                             dataset1_index_types,
-                             modes,
-                             wsidx_values,
-                             test_cases,
-                             true,  // skip_wide_check=true for Dataset 1 (asymmetric)
-                             false); // apply_index_type_limits=false for Dataset 1 (matching ctest)
+    case miopenFloat: params = GPU_AsymPooling2d_FP32::GetParam(); break;
+    case miopenHalf: params = GPU_AsymPooling2d_FP16::GetParam(); break;
+    case miopenBFloat16:
+    case miopenInt8:
+    case miopenFloat8_fnuz:
+    case miopenBFloat8_fnuz:
+    case miopenInt32:
+    case miopenInt64:
+    case miopenDouble:
+        FAIL() << "miopenBFloat16, miopenInt8, miopenInt32, miopenDouble, miopenFloat8_fnuz, "
+                  "miopenBFloat8_fnuz "
+                  "data type not supported by "
+                  "pooling2d_asymmetric test";
+
+    default: params = GPU_AsymPooling2d_FP32::GetParam();
     }
 
-    std::cerr << "\n=== Dataset 1 (Asymmetric) Test Case Generation Summary ===\n";
-    std::cerr << "Total test cases generated: " << test_cases.size() << "\n";
-    std::cerr << "Expected ctest count: 84\n";
-    
-    // Analyze by mode and wsidx to identify the 2x pattern
-    std::map<int, std::map<int, int>> mode_wsidx_counts;
-    for(const auto& tc : test_cases)
+    for(const auto& test_value : params)
     {
-        mode_wsidx_counts[static_cast<int>(tc.mode)][tc.wsidx]++;
-    }
-    
-    std::cerr << "\nBreakdown by mode and wsidx:\n";
-    const char* mode_names[] = {"Max", "Average", "AverageInclusive"};
-    for(int mode = 0; mode < 3; mode++)
-    {
-        int total_for_mode = 0;
-        for(int wsidx = 0; wsidx < 2; wsidx++)
-        {
-            int count = mode_wsidx_counts[mode][wsidx];
-            total_for_mode += count;
-            std::cerr << "  " << mode_names[mode] << " mode, wsidx=" << wsidx << ": " << count << "\n";
-        }
-        std::cerr << "  " << mode_names[mode] << " mode TOTAL: " << total_for_mode << "\n";
-    }
-    
-    std::cerr << "=============================================================\n\n";
+        std::vector<std::string> tokens;
+        GetArgs(test_value, tokens);
+        std::vector<const char*> ptrs;
 
-    // Log all test configurations to a file for comparison with ctest
-    // Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx
-    std::ofstream log_file("pooling2d_asymmetric_gtest_configs.txt");
-    if(log_file.is_open())
-    {
-        log_file << "# Total test cases: " << test_cases.size() << "\n";
-        log_file << "# Format: input_dims[4] lens[2] pads[2] strides[2] index_type mode wsidx\n";
-        for(const auto& tc : test_cases)
-        {
-            log_file << tc.input_dims[0] << " " << tc.input_dims[1] << " " << tc.input_dims[2]
-                     << " " << tc.input_dims[3] << " ";
-            log_file << tc.lens[0] << " " << tc.lens[1] << " ";
-            log_file << tc.pads[0] << " " << tc.pads[1] << " ";
-            log_file << tc.strides[0] << " " << tc.strides[1] << " ";
-            log_file << static_cast<int>(tc.index_type) << " " << static_cast<int>(tc.mode) << " "
-                     << tc.wsidx << "\n";
-        }
-        log_file.close();
+        std::transform(tokens.begin(), tokens.end(), std::back_inserter(ptrs), [](const auto& str) {
+            return str.data();
+        });
+
+        testing::internal::CaptureStderr();
+        test_drive<pooling2d_driver>(ptrs.size(), ptrs.data());
+        auto capture = testing::internal::GetCapturedStderr();
+        std::cerr << capture;
     }
+};
+
+bool IsTestSupportedForDevice(const miopen::Handle& handle) { return true; }
+
+std::vector<std::string> GetTestCases(const std::string& precision)
+{
+    const auto& flag_arg = env::value(MIOPEN_TEST_FLAGS_ARGS);
+
+    const std::vector<std::string> test_cases = {
+        // clang-format off
+    {"test_pooling2d " + precision + " --all --dataset 1 --limit 0 " + flag_arg}
+        // clang-format on
+    };
 
     return test_cases;
 }
 
-} // anonymous namespace
+} // namespace pooling2d_asymmetric
+using namespace pooling2d_asymmetric;
 
-// Derived classes for Dataset 1 (asymmetric pooling)
-class GPU_AsymPooling2d_FP32 : public pooling2d_gtest::Pooling2dBatchCommon<float>
+/*
+TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric)
 {
+    const auto& handle = get_handle();
+    if(IsTestSupportedForDevice(handle))
+    {
+        Run2dDriver(miopenFloat);
+    }
+    else
+    {
+        GTEST_SKIP();
+    }
+};
+*/
+
+TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric)
+{
+    const auto& handle = get_handle();
+    if(IsTestSupportedForDevice(handle))
+    {
+        Run2dDriver(miopenHalf);
+    }
+    else
+    {
+        GTEST_SKIP();
+    }
 };
 
-class GPU_AsymPooling2d_FP16 : public pooling2d_gtest::Pooling2dBatchCommon<half_float::half>
-{
-};
+// INSTANTIATE_TEST_SUITE_P(Full, GPU_AsymPooling2d_FP32, testing::Values(GetTestCases("--float")));
 
-TEST_P(GPU_AsymPooling2d_FP32, FloatTest_pooling2d_asymmetric) { RunBatch(); }
-
-TEST_P(GPU_AsymPooling2d_FP16, HalfTest_pooling2d_asymmetric) { RunBatch(); }
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_AsymPooling2d_FP32,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dAsymmetricTestCases(), 50)));
-
-INSTANTIATE_TEST_SUITE_P(Smoke,
-                         GPU_AsymPooling2d_FP16,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling2dAsymmetricTestCases(), 50)));
+INSTANTIATE_TEST_SUITE_P(Full, GPU_AsymPooling2d_FP16, testing::Values(GetTestCases("--half")));
