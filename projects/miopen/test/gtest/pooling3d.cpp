@@ -39,16 +39,23 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
     std::vector<std::vector<int>> dataset0_inputs = {
         {16, 64, 3, 4, 4}, {16, 32, 4, 9, 9}, {8, 512, 3, 14, 14}, {8, 512, 4, 28, 28}};
 
-    std::vector<std::vector<int>> dataset0_lens    = {{2, 2, 2}, {3, 3, 3}};
-    std::vector<std::vector<int>> dataset0_strides = {{2, 2, 2}, {1, 1, 1}};
+    // Match ctest spatial parameters exactly
+    std::vector<std::vector<int>> dataset0_lens    = {{2, 2, 2}, {3, 3, 3}, {1, 2, 2}};
+    std::vector<std::vector<int>> dataset0_strides = {{2, 2, 2}, {1, 1, 1}, {1, 2, 2}};
     std::vector<std::vector<int>> dataset0_pads    = {{0, 0, 0}, {1, 1, 1}};
+    
+    // Match ctest index types and modes
     std::vector<miopenIndexType_t> dataset0_index_types = {
         miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
     std::vector<miopenPoolingMode_t> modes = {
         miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
-    std::vector<int> wsidx_values = {0, 1};
+    
+    // Match ctest wsidx exactly (only 1 for 3D)
+    std::vector<int> wsidx_values = {1};
 
     // Generate cartesian product for dataset 0
+    // Note: num_uint counters are not used in 3D ctest, but we pass them 
+    // to reuse the unified filtering logic which handles 3D-specific skips.
     int num_uint16_case        = 0;
     int num_uint32_case        = 0;
     int num_uint32_case_imgidx = 0;
@@ -72,34 +79,6 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
                                               num_uint64_case_imgidx,
                                               false,
                                               true);
-    }
-
-    // Dataset 1: Minimal dataset (asymmetric configs, small tensors)
-    std::vector<std::vector<int>> dataset1_inputs  = {{1, 4, 4, 4, 4}};
-    std::vector<std::vector<int>> dataset1_lens    = {{2, 2, 2}, {1, 2, 2}, {2, 1, 2}, {2, 2, 1}};
-    std::vector<std::vector<int>> dataset1_strides = {
-        {1, 1, 1}, {2, 1, 1}, {1, 2, 1}, {1, 1, 2}, {2, 2, 2}};
-    std::vector<std::vector<int>> dataset1_pads         = {{0, 0, 0}};
-    std::vector<miopenIndexType_t> dataset1_index_types = {miopenIndexUint8, miopenIndexUint32};
-
-    // Generate cartesian product for dataset 1
-    for(const auto& input_dims : dataset1_inputs)
-    {
-        pooling2d_gtest::AddTestCasesForInput(input_dims,
-                                              dataset1_lens,
-                                              dataset1_strides,
-                                              dataset1_pads,
-                                              dataset1_index_types,
-                                              modes,
-                                              wsidx_values,
-                                              test_cases,
-                                              num_uint16_case,
-                                              num_uint32_case,
-                                              num_uint32_case_imgidx,
-                                              num_uint64_case,
-                                              num_uint64_case_imgidx,
-                                              true,
-                                              false);
     }
 
     // Cache the results
