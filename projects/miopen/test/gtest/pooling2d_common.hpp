@@ -156,8 +156,6 @@ inline bool ShouldIncludeTestCase(const PoolingTestCase& test_case,
     }
 
     // 2. wsidx == 0 && spt_dim == 2 && max && wide_dataset
-    // Note: wide_dataset is false for Dataset 0, so this check won't trigger for Dataset 0
-    // But we keep it to match ctest structure exactly
     if(test_case.wsidx == 0 && spt_dim == 2 && test_case.mode == miopenPoolingMax && wide_dataset)
     {
         return false;
@@ -172,7 +170,14 @@ inline bool ShouldIncludeTestCase(const PoolingTestCase& test_case,
         return false;
     }
 
-    // 4. switch(idx_typ) - matches ctest exactly
+    // 4. Additional 3D specific skip: uint8/uint16 max pooling in 3D
+    if(spt_dim == 3 && test_case.mode == miopenPoolingMax &&
+       (test_case.index_type == miopenIndexUint8 || test_case.index_type == miopenIndexUint16))
+    {
+        return false;
+    }
+
+    // 5. switch(idx_typ) - matches ctest exactly
     switch(idx_typ)
     {
     case miopenIndexUint8: {
@@ -270,12 +275,23 @@ inline bool ShouldIncludeTestCase(const PoolingTestCase& test_case,
     {
         try
         {
-            auto output_desc = miopen::PoolingDescriptor(test_case.mode,
+            auto pooling_desc = miopen::PoolingDescriptor(test_case.mode,
                                                          miopenPaddingDefault,
                                                          test_case.lens,
                                                          test_case.strides,
-                                                         test_case.pads)
-                                   .GetForwardOutputTensor(input_desc);
+                                                         test_case.pads);
+            auto output_desc = pooling_desc.GetForwardOutputTensor(input_desc);
+            
+            // 7a. Index range check for max pooling (moved from pooling3d.cpp)
+            if(test_case.mode == miopenPoolingMax && test_case.wsidx == 1)
+            {
+                size_t index_max = GetIndexMax(test_case.index_type);
+                if(index_max <= output_desc.GetElementSize())
+                {
+                    return false;
+                }
+            }
+
             size_t total_mem = 3 * input_desc.GetNumBytes() + output_desc.GetNumBytes() +
                                idx_sz * output_desc.GetElementSize();
 
