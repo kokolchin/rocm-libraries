@@ -349,10 +349,10 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                         for(int wsidx : wsidx_values)
                         {
                             PoolingTestCase test_case = {
-                                {input_dims[0], input_dims[1], input_dims[2], input_dims[3]},
-                                {lens[0], lens[1]},
-                                {pads[0], pads[1]},
-                                {strides[0], strides[1]},
+                                input_dims,
+                                lens,
+                                pads,
+                                strides,
                                 index_type,
                                 mode,
                                 wsidx};
