@@ -89,23 +89,31 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
 template <typename T, typename Index>
 void RunPooling3dTestWithIndexType(const PoolingTestCase& test_case)
 {
+    std::cerr << "Starting RunPooling3dTestWithIndexType..." << std::endl;
+    std::cerr << "Test case: " << test_case << std::endl;
     // Create input tensor
     tensor<T> input{test_case.input_dims};
+    std::cerr << "Input tensor created. Generating data..." << std::endl;
     input.generate(tensor_elem_gen_integer{miopen_type<T>{} == miopenHalf ? 5 : 17});
 
     // Setup pooling descriptor
+    std::cerr << "Setting up pooling descriptor..." << std::endl;
     miopen::PoolingDescriptor filter{
         test_case.mode, miopenPaddingDefault, test_case.lens, test_case.strides, test_case.pads};
     filter.SetIndexType(test_case.index_type);
     filter.SetWorkspaceIndexMode(miopenPoolingWorkspaceIndexMode_t(test_case.wsidx));
 
     // Run forward pooling
+    std::cerr << "Running forward pooling..." << std::endl;
     std::vector<Index> indices;
     verify_forward_pooling<3> forward_verifier;
+    std::cerr << "Calling forward_verifier.cpu..." << std::endl;
     auto forward_result     = forward_verifier.cpu(input, filter, indices);
+    std::cerr << "Calling forward_verifier.gpu..." << std::endl;
     auto forward_gpu_result = forward_verifier.gpu(input, filter, indices);
 
     // Compare forward results
+    std::cerr << "Comparing forward results..." << std::endl;
     EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
 
     using value_type               = T;
