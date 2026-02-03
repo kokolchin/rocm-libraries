@@ -35,16 +35,13 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
     std::vector<PoolingTestCase> test_cases;
 
     // Dataset 0: Default dataset (various tensor sizes)
-    std::vector<std::vector<int>> dataset0_inputs       = {{16, 64, 3, 4, 4},
-                                                     {16, 32, 4, 9, 9},
-                                                     {8, 512, 3, 14, 14},
-                                                     {8, 512, 4, 28, 28},
-                                                     {16, 64, 56, 56, 56},
-                                                     {4, 3, 4, 227, 227},
-                                                     {4, 4, 4, 161, 700}};
-    std::vector<std::vector<int>> dataset0_lens         = {{2, 2, 2}, {3, 3, 3}};
-    std::vector<std::vector<int>> dataset0_strides      = {{2, 2, 2}, {1, 1, 1}};
-    std::vector<std::vector<int>> dataset0_pads         = {{0, 0, 0}, {1, 1, 1}};
+    // Match ctest generate_data_limited(..., 4)
+    std::vector<std::vector<int>> dataset0_inputs = {
+        {16, 64, 3, 4, 4}, {16, 32, 4, 9, 9}, {8, 512, 3, 14, 14}, {8, 512, 4, 28, 28}};
+
+    std::vector<std::vector<int>> dataset0_lens    = {{2, 2, 2}, {3, 3, 3}};
+    std::vector<std::vector<int>> dataset0_strides = {{2, 2, 2}, {1, 1, 1}};
+    std::vector<std::vector<int>> dataset0_pads    = {{0, 0, 0}, {1, 1, 1}};
     std::vector<miopenIndexType_t> dataset0_index_types = {
         miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
     std::vector<miopenPoolingMode_t> modes = {
@@ -52,28 +49,29 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
     std::vector<int> wsidx_values = {0, 1};
 
     // Generate cartesian product for dataset 0
+    int num_uint16_case        = 0;
+    int num_uint32_case        = 0;
+    int num_uint32_case_imgidx = 0;
+    int num_uint64_case        = 0;
+    int num_uint64_case_imgidx = 0;
+
     for(const auto& input_dims : dataset0_inputs)
     {
-        for(const auto& lens : dataset0_lens)
-        {
-            for(const auto& strides : dataset0_strides)
-            {
-                for(const auto& pads : dataset0_pads)
-                {
-                    for(const auto& index_type : dataset0_index_types)
-                    {
-                        for(const auto& mode : modes)
-                        {
-                            for(int wsidx : wsidx_values)
-                            {
-                                test_cases.push_back(
-                                    {input_dims, lens, pads, strides, index_type, mode, wsidx});
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        pooling2d_gtest::AddTestCasesForInput(input_dims,
+                                              dataset0_lens,
+                                              dataset0_strides,
+                                              dataset0_pads,
+                                              dataset0_index_types,
+                                              modes,
+                                              wsidx_values,
+                                              test_cases,
+                                              num_uint16_case,
+                                              num_uint32_case,
+                                              num_uint32_case_imgidx,
+                                              num_uint64_case,
+                                              num_uint64_case_imgidx,
+                                              false,
+                                              true);
     }
 
     // Dataset 1: Minimal dataset (asymmetric configs, small tensors)
@@ -87,26 +85,21 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
     // Generate cartesian product for dataset 1
     for(const auto& input_dims : dataset1_inputs)
     {
-        for(const auto& lens : dataset1_lens)
-        {
-            for(const auto& strides : dataset1_strides)
-            {
-                for(const auto& pads : dataset1_pads)
-                {
-                    for(const auto& index_type : dataset1_index_types)
-                    {
-                        for(const auto& mode : modes)
-                        {
-                            for(int wsidx : wsidx_values)
-                            {
-                                test_cases.push_back(
-                                    {input_dims, lens, pads, strides, index_type, mode, wsidx});
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        pooling2d_gtest::AddTestCasesForInput(input_dims,
+                                              dataset1_lens,
+                                              dataset1_strides,
+                                              dataset1_pads,
+                                              dataset1_index_types,
+                                              modes,
+                                              wsidx_values,
+                                              test_cases,
+                                              num_uint16_case,
+                                              num_uint32_case,
+                                              num_uint32_case_imgidx,
+                                              num_uint64_case,
+                                              num_uint64_case_imgidx,
+                                              true,
+                                              false);
     }
 
     // Cache the results
