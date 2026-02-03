@@ -130,6 +130,11 @@ inline size_t GetIndexMax(miopenIndexType_t index_type)
 // This copies the exact logic from pooling_common.hpp pooling_driver::run()
 // Matching variable names: idx_typ, idx_sz, spt_dim, wide_dataset, full_set
 inline bool ShouldIncludeTestCase(const PoolingTestCase& test_case,
+                                  int& num_uint16_case,
+                                  int& num_uint32_case,
+                                  int& num_uint32_case_imgidx,
+                                  int& num_uint64_case,
+                                  int& num_uint64_case_imgidx,
                                   bool skip_wide_check         = false,
                                   bool apply_index_type_limits = true,
                                   bool is_wide_dataset         = false)
@@ -303,6 +308,11 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                  const std::vector<miopenPoolingMode_t>& modes,
                                  const std::vector<int>& wsidx_values,
                                  std::vector<PoolingTestCase>& test_cases,
+                                 int& num_uint16_case,
+                                 int& num_uint32_case,
+                                 int& num_uint32_case_imgidx,
+                                 int& num_uint64_case,
+                                 int& num_uint64_case_imgidx,
                                  bool skip_wide_check         = false,
                                  bool apply_index_type_limits = true,
                                  bool is_wide_dataset         = false)
@@ -332,6 +342,11 @@ inline void AddTestCasesForInput(const std::vector<int>& input_dims,
                                 wsidx};
 
                             if(ShouldIncludeTestCase(test_case,
+                                                     num_uint16_case,
+                                                     num_uint32_case,
+                                                     num_uint32_case_imgidx,
+                                                     num_uint64_case,
+                                                     num_uint64_case_imgidx,
                                                      skip_wide_check,
                                                      apply_index_type_limits,
                                                      is_wide_dataset))
