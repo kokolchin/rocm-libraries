@@ -10,6 +10,7 @@
 #include <limits>
 #include <sstream>
 #include <vector>
+#include <chrono>
 #include <gtest/gtest.h>
 #include <half/half.hpp>
 #include <miopen/logger.hpp>
@@ -25,6 +26,26 @@
 #define TEST_GET_INPUT_TENSOR 0
 
 namespace pooling2d_gtest {
+
+// Global profiling map
+inline std::map<std::string, double>& GetProfilingData()
+{
+    static std::map<std::string, double> data;
+    return data;
+}
+
+struct Timer
+{
+    std::string name;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    Timer(const std::string& n) : name(n), start(std::chrono::high_resolution_clock::now()) {}
+    ~Timer()
+    {
+        auto end      = std::chrono::high_resolution_clock::now();
+        double muscle = std::chrono::duration<double>(end - start).count();
+        GetProfilingData()[name] += muscle;
+    }
+};
 
 // Dataset definitions (matching original pooling2d.hpp ctest driver, now removed):
 // - Dataset 0: Default dataset with various tensor sizes (tested in pooling2d.cpp)
@@ -331,7 +352,10 @@ void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
     // Create input tensor for 2D pooling
     // input_dims should be [N, C, H, W] for 2D
     tensor<T> input{test_case.input_dims};
-    input.generate(tensor_elem_gen_integer{miopen_type<T>{} == miopenHalf ? 5 : 17});
+    {
+        Timer t("Input_Generation");
+        input.generate(tensor_elem_gen_integer{miopen_type<T>{} == miopenHalf ? 5 : 17});
+    }
 
     // Setup pooling descriptor
     miopen::PoolingDescriptor filter{
@@ -342,23 +366,37 @@ void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
     // Run forward pooling
     std::vector<Index> indices;
     verify_forward_pooling<2> forward_verifier;
-    auto forward_result     = forward_verifier.cpu(input, filter, indices);
-    auto forward_gpu_result = forward_verifier.gpu(input, filter, indices);
+    
+    auto forward_result = [&]() {
+        Timer t("Forward_CPU");
+        return forward_verifier.cpu(input, filter, indices);
+    }();
+
+    auto forward_gpu_result = [&]() {
+        Timer t("Forward_GPU");
+        return forward_verifier.gpu(input, filter, indices);
+    }();
 
     // Compare forward results
-    EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
+    {
+        Timer t("Forward_Validation");
+        EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
 
-    using value_type               = T;
-    const double tolerance         = 80.0;
-    const double threshold         = std::numeric_limits<value_type>::epsilon() * tolerance;
-    const double forward_rms_error = miopen::rms_range(forward_result, forward_gpu_result);
+        using value_type               = T;
+        const double tolerance         = 80.0;
+        const double threshold         = std::numeric_limits<value_type>::epsilon() * tolerance;
+        const double forward_rms_error = miopen::rms_range(forward_result, forward_gpu_result);
 
-    EXPECT_LE(forward_rms_error, threshold)
-        << "Forward RMS error: " << forward_rms_error << " exceeds threshold: " << threshold;
+        EXPECT_LE(forward_rms_error, threshold)
+            << "Forward RMS error: " << forward_rms_error << " exceeds threshold: " << threshold;
+    }
 
     // Run backward pooling
     auto dout = forward_result;
-    dout.generate(tensor_elem_gen_integer{2503});
+    {
+        Timer t("Backward_Dout_Generation");
+        dout.generate(tensor_elem_gen_integer{2503});
+    }
 
     // Validate indices are populated (required for max pooling backward)
     if(test_case.mode == miopenPoolingMax && indices.empty())
@@ -367,18 +405,28 @@ void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
     }
 
     verify_backward_pooling<2> backward_verifier;
-    auto backward_result = backward_verifier.cpu(
-        input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
-    auto backward_gpu_result = backward_verifier.gpu(
-        input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
+    
+    auto backward_result = [&]() {
+        Timer t("Backward_CPU");
+        return backward_verifier.cpu(input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
+    }();
+
+    auto backward_gpu_result = [&]() {
+        Timer t("Backward_GPU");
+        return backward_verifier.gpu(input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
+    }();
 
     // Compare backward results
-    EXPECT_EQ(miopen::range_distance(backward_result), miopen::range_distance(backward_gpu_result));
+    {
+        Timer t("Backward_Validation");
+        EXPECT_EQ(miopen::range_distance(backward_result), miopen::range_distance(backward_gpu_result));
 
-    const double backward_rms_error = miopen::rms_range(backward_result, backward_gpu_result);
+        const double threshold         = std::numeric_limits<T>::epsilon() * 80.0;
+        const double backward_rms_error = miopen::rms_range(backward_result, backward_gpu_result);
 
-    EXPECT_LE(backward_rms_error, threshold)
-        << "Backward RMS error: " << backward_rms_error << " exceeds threshold: " << threshold;
+        EXPECT_LE(backward_rms_error, threshold)
+            << "Backward RMS error: " << backward_rms_error << " exceeds threshold: " << threshold;
+    }
 }
 
 template <typename T>
@@ -502,6 +550,22 @@ struct Pooling2dBatchCommon : public testing::TestWithParam<PoolingBatch>
     void SetUp() override
     {
         prng::reset_seed();
+    }
+
+    void TearDown() override
+    {
+        // Print profiling data after each batch
+        std::cerr << "\n[ PROFILING ] Batch " << this->GetParam().batch_id << " results:\n";
+        double total = 0;
+        for(const auto& [name, time] : GetProfilingData())
+        {
+            std::cerr << "  " << name << ": " << time << "s\n";
+            total += time;
+        }
+        std::cerr << "  Total Profiling Time: " << total << "s\n";
+        // Reset for next batch to avoid accumulation across batches if desired, 
+        // or keep to see cumulative. Let's reset to see per-batch.
+        GetProfilingData().clear();
     }
 
 protected:
