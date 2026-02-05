@@ -43,13 +43,13 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
     std::vector<std::vector<int>> dataset0_lens    = {{2, 2, 2}, {3, 3, 3}, {1, 2, 2}};
     std::vector<std::vector<int>> dataset0_strides = {{2, 2, 2}, {1, 1, 1}, {1, 2, 2}};
     std::vector<std::vector<int>> dataset0_pads    = {{0, 0, 0}, {1, 1, 1}};
-    
+
     // Match ctest index types and modes
     std::vector<miopenIndexType_t> dataset0_index_types = {
         miopenIndexUint8, miopenIndexUint16, miopenIndexUint32, miopenIndexUint64};
     std::vector<miopenPoolingMode_t> modes = {
         miopenPoolingMax, miopenPoolingAverage, miopenPoolingAverageInclusive};
-    
+
     // Match ctest wsidx exactly (only 1 for 3D)
     std::vector<int> wsidx_values = {1};
 
@@ -192,40 +192,36 @@ void RunPooling3dTest(const PoolingTestCase& test_case)
 
 class GPU_Pooling3d_FP32 : public testing::TestWithParam<pooling2d_gtest::PoolingBatch>
 {
-    void SetUp() override
-    {
-        prng::reset_seed();
-    }
+    void SetUp() override { prng::reset_seed(); }
 };
 
 class GPU_Pooling3d_FP16 : public testing::TestWithParam<pooling2d_gtest::PoolingBatch>
 {
-    void SetUp() override
-    {
-        prng::reset_seed();
-    }
+    void SetUp() override { prng::reset_seed(); }
 };
 
-TEST_P(GPU_Pooling3d_FP32, Test) 
-{ 
+TEST_P(GPU_Pooling3d_FP32, Test)
+{
     for(const auto& tc : GetParam().test_cases)
     {
-        RunPooling3dTest<float>(tc); 
+        RunPooling3dTest<float>(tc);
     }
 }
 
-TEST_P(GPU_Pooling3d_FP16, Test) 
-{ 
+TEST_P(GPU_Pooling3d_FP16, Test)
+{
     for(const auto& tc : GetParam().test_cases)
     {
-        RunPooling3dTest<half_float::half>(tc); 
+        RunPooling3dTest<half_float::half>(tc);
     }
 }
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling3d_FP32,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(), 50)));
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(),
+                                                                           50)));
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_Pooling3d_FP16,
-                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(), 50)));
+                         testing::ValuesIn(pooling2d_gtest::BatchTestCases(GetPooling3dTestCases(),
+                                                                           50)));
