@@ -960,6 +960,16 @@ struct test_driver
         if(this->iteration >= this->config_iter_start &&
            (this->config_iter_end < 0 || this->iteration < this->config_iter_end))
         {
+            const bool dump_configs = [] {
+                const char* env = std::getenv("MIOPEN_DUMP_CONFIGS");
+                return env != nullptr && std::string(env) == "1";
+            }();
+
+            if(dump_configs)
+            {
+                std::cout << "CTEST_CFG|" << this->get_command_args() << std::endl;
+            }
+
             if(this->time && !this->verbose)
             {
                 std::cout << "Iteration: " << this->iteration << std::endl;
@@ -1355,6 +1365,11 @@ void test_drive_impl_1(std::string program_name, std::vector<std::string> as)
     {
         d.iteration = 0;
         run_data(data_args.begin(), data_args.end(), [&] { d.template base_run<Driver>(); });
+        const char* dump = std::getenv("MIOPEN_DUMP_CONFIGS");
+        if(dump != nullptr && std::string(dump) == "1")
+        {
+            std::cout << "MIOPEN_CONFIG_COUNT=" << d.iteration << std::endl;
+        }
     }
 }
 
