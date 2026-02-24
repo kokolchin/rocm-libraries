@@ -5,10 +5,12 @@
 #include <gtest/gtest.h>
 #include "../workspace.hpp"
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <sstream>
 
 #include <miopen/convolution.hpp>
 #include <miopen/miopen.h>
@@ -1913,6 +1915,86 @@ inline std::vector<std::vector<int>> get_3d_pads_strides_dilations()
 }
 
 inline std::vector<std::vector<int>> get_3d_trans_output_pads() { return {{0, 0, 0}}; }
+
+inline bool IsDumpConfigsEnabled()
+{
+    const char* env = std::getenv("MIOPEN_DUMP_CONFIGS");
+    return env != nullptr && std::string(env) == "1";
+}
+
+inline std::size_t GetGtestConfigLimit()
+{
+    const char* env = std::getenv("MIOPEN_GTEST_CONFIG_LIMIT");
+    if(env == nullptr)
+    {
+        return 0;
+    }
+    try
+    {
+        return static_cast<std::size_t>(std::stoul(env));
+    }
+    catch(...)
+    {
+        return 0;
+    }
+}
+
+template <class T>
+inline void ApplyGtestConfigLimit(std::vector<T>& cases)
+{
+    const auto limit = GetGtestConfigLimit();
+    if(limit > 0 && cases.size() > limit)
+    {
+        cases.resize(limit);
+    }
+}
+
+template <class T>
+inline std::string JoinVector(const std::vector<T>& values)
+{
+    std::ostringstream ss;
+    for(std::size_t i = 0; i < values.size(); ++i)
+    {
+        if(i > 0)
+        {
+            ss << ",";
+        }
+        ss << values[i];
+    }
+    return ss.str();
+}
+
+inline void DumpGtestConfigsIfEnabled(const std::vector<conv_test_input>& cases)
+{
+    if(!IsDumpConfigsEnabled())
+    {
+        return;
+    }
+
+    for(const auto& input : cases)
+    {
+        std::cout << "GTEST_CFG|"
+                  << "batch_size=" << input.batch_size << " "
+                  << "input_channels=" << input.input_channels << " "
+                  << "output_channels=" << input.output_channels << " "
+                  << "spatial_dim_elements=" << JoinVector(input.spatial_dim_elements) << " "
+                  << "filter_dims=" << JoinVector(input.filter_dims) << " "
+                  << "pads_strides_dilations=" << JoinVector(input.pads_strides_dilations) << " "
+                  << "pmode=" << input.pad_mode << " "
+                  << "trans_output_pads=" << JoinVector(input.trans_output_pads) << " "
+                  << "in_layout=" << input.in_layout << " "
+                  << "fil_layout=" << input.fil_layout << " "
+                  << "out_layout=" << input.out_layout << " "
+                  << "deterministic=" << input.deterministic << " "
+                  << "tensor_vect=" << input.tensor_vect << " "
+                  << "vector_length=" << input.vector_length << " "
+                  << "output_type=" << input.output_type << " "
+                  << "int8_vectorize=" << input.int8_vectorize << " "
+                  << "group_count=" << input.groupCount << std::endl;
+    }
+
+    std::cout << "GTEST_CONFIG_COUNT=" << cases.size() << std::endl;
+}
 
 inline bool IsValidCtestStyleConfig(const conv_test_input& input)
 {

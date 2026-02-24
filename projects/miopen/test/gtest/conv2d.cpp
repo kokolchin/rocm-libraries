@@ -110,6 +110,8 @@ auto GetDataset()
                                                                                input))
                                                                         cases.push_back(input);
                                                                 }
+    miopen::test::conv::ApplyGtestConfigLimit(cases);
+    miopen::test::conv::DumpGtestConfigsIfEnabled(cases);
     return cases;
 }
 
