@@ -10,8 +10,8 @@ set -euo pipefail
 #   build_dir: /home/kvkol/build
 #
 # Output:
-#   <build_dir>/gtest_conv_dumps/gtest_<name>--all.txt
-#   <build_dir>/gtest_conv_dumps/gtest_<name>--all--limit1.txt
+#   <build_dir>/gtest_conv_dumps/gtest_<name>--full.txt
+#   <build_dir>/gtest_conv_dumps/gtest_<name>--smoke.txt
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -64,20 +64,20 @@ run_one() {
         return 0
     fi
 
-    local out_all="${OUT_DIR}/gtest_${short_name}--all.txt"
-    local out_all_limit1="${OUT_DIR}/gtest_${short_name}--all--limit1.txt"
+    local out_full="${OUT_DIR}/gtest_${short_name}--full.txt"
+    local out_smoke="${OUT_DIR}/gtest_${short_name}--smoke.txt"
 
-    echo "[INFO] Running ${target} (all configs)"
+    echo "[INFO] Running ${target} (Full suite)"
     {
-        echo "# MIOPEN_DUMP_CONFIGS=1 ${bin_path}"
-        MIOPEN_DUMP_CONFIGS=1 "${bin_path}" --gtest_color=no
-    } > "${out_all}" 2>&1
+        echo "# MIOPEN_DUMP_CONFIGS=1 ${bin_path} --gtest_filter=Full.*"
+        MIOPEN_DUMP_CONFIGS=1 "${bin_path}" --gtest_color=no --gtest_filter=Full.*
+    } > "${out_full}" 2>&1
 
-    echo "[INFO] Running ${target} (config limit 1)"
+    echo "[INFO] Running ${target} (Smoke suite)"
     {
-        echo "# MIOPEN_DUMP_CONFIGS=1 MIOPEN_GTEST_CONFIG_LIMIT=1 ${bin_path}"
-        MIOPEN_DUMP_CONFIGS=1 MIOPEN_GTEST_CONFIG_LIMIT=1 "${bin_path}" --gtest_color=no
-    } > "${out_all_limit1}" 2>&1
+        echo "# MIOPEN_DUMP_CONFIGS=1 ${bin_path} --gtest_filter=Smoke.*"
+        MIOPEN_DUMP_CONFIGS=1 "${bin_path}" --gtest_color=no --gtest_filter=Smoke.*
+    } > "${out_smoke}" 2>&1
 }
 
 for t in "${GTEST_TARGETS[@]}"; do
