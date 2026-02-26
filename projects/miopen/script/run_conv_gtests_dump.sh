@@ -25,13 +25,14 @@ cmake -S "${SRC_DIR}" -B "${BUILD_DIR}"
 
 GTEST_TARGETS=(
     test_conv2d
+    test_conv2d_bias
     test_conv2d_find2
     test_find_2_conv
     test_conv3d
+    test_conv3d_bias
     test_conv3d_find2
     test_immed_conv2d
     test_immed_conv3d
-    test_conv_group
 )
 
 echo "[INFO] Building ${#GTEST_TARGETS[@]} conv gtest targets..."
