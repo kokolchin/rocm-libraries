@@ -280,7 +280,7 @@ protected:
                     handle, problem, options.get(), solutions.data(), &found, solutions.size()));
         }
 
-        EXPECT_TRUE(found >= 0);
+        EXPECT_GT(found, 0);
 
         solutions.resize(found);
 

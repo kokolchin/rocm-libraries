@@ -2,8 +2,18 @@
 // SPDX-License-Identifier:  MIT
 
 #include "conv_common_gtest.hpp"
+#include <cstdlib>
 
 namespace {
+
+inline void SetFindEnforceEnv()
+{
+#ifdef _WIN32
+    _putenv_s("MIOPEN_FIND_ENFORCE", "4");
+#else
+    setenv("MIOPEN_FIND_ENFORCE", "4", 1);
+#endif
+}
 
 template <typename T>
 std::vector<T> generate_data_limited(const std::vector<T>& dims, int limit_multiplier, T single)
@@ -123,7 +133,7 @@ struct conv2d_find2_test : miopen::test::conv::conv_test_base<T>
     {
         miopen::test::conv::conv_test_base<T>::SetUp();
         // Force Find 2.0
-        setenv("MIOPEN_FIND_ENFORCE", "4", 1);
+        SetFindEnforceEnv();
     }
 };
 
