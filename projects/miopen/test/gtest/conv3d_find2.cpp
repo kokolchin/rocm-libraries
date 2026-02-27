@@ -117,7 +117,9 @@ auto GetDataset()
                                                                         true;
                                                                     if(miopen::test::conv::
                                                                            IsValidCtestStyleConfig(
-                                                                               input))
+                                                                               input) ||
+                                                                       miopen::test::conv::
+                                                                           IsDumpConfigsEnabled())
                                                                         cases.push_back(input);
                                                                 }
     miopen::test::conv::ApplyGtestConfigLimit(cases);
