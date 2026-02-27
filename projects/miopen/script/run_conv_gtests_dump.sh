@@ -20,8 +20,45 @@ OUT_DIR="${BUILD_DIR}/gtest_conv_dumps"
 
 mkdir -p "${OUT_DIR}"
 
+# Force HIP toolchain defaults unless caller already provided overrides.
+
+export PATH="/opt/rocm/llvm/bin:/opt/rocm/bin:${PATH}"
+
+export CC="${CC:-/opt/rocm/llvm/bin/clang}"
+
+export CXX="${CXX:-/opt/rocm/llvm/bin/clang++}"
+
+export CFLAGS="${CFLAGS:-} -D__HIP_PLATFORM_AMD__"
+
+export CXXFLAGS="${CXXFLAGS:-} -D__HIP_PLATFORM_AMD__"
+ 
+echo "[INFO] Toolchain:"
+
+echo "       CC=${CC}"
+
+echo "       CXX=${CXX}"
+
+echo "       CFLAGS=${CFLAGS}"
+
+echo "       CXXFLAGS=${CXXFLAGS}"
+ 
+echo "[INFO] Cleaning previous CMake cache in: ${BUILD_DIR}"
+
+rm -f "${BUILD_DIR}/CMakeCache.txt"
+
+rm -rf "${BUILD_DIR}/CMakeFiles"
+ 
 echo "[INFO] Configuring CMake in: ${BUILD_DIR}"
-cmake -S "${SRC_DIR}" -B "${BUILD_DIR}"
+
+cmake -S "${SRC_DIR}" -B "${BUILD_DIR}" \
+
+    -DCMAKE_BUILD_TYPE=Release \
+
+    -DMIOPEN_BACKEND=HIP \
+
+    -DCMAKE_C_COMPILER="${CC}" \
+
+    -DCMAKE_CXX_COMPILER="${CXX}"
 
 GTEST_TARGETS=(
     test_conv2d
