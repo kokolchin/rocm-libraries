@@ -52,6 +52,7 @@ struct ConvBiasActivInferTest : public ::testing::TestWithParam<std::tuple<miope
 protected:
     void SetUp() override
     {
+        prng::reset_seed();
         test_skipped = false;
         std::tie(activ_mode, conv_config, tensor_layout, activ_alpha, activ_beta, activ_gamma) =
             this->GetParam();
