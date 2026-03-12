@@ -222,6 +222,14 @@ foreach(SOURCE ${SKIP_TESTS})
     list(REMOVE_ITEM TESTS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE})
 endforeach()
 
+# Avoid duplicate CBA/CBNA gtest definitions in monolithic miopen_gtest build.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cba_inference.cpp")
+    list(REMOVE_ITEM TESTS "${CMAKE_CURRENT_SOURCE_DIR}/cba_infer.cpp")
+endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cbna_inference.cpp")
+    list(REMOVE_ITEM TESTS "${CMAKE_CURRENT_SOURCE_DIR}/cbna_infer.cpp")
+endif()
+
 # Common static library speeds up test assembly.
 # Otherwise, all files in ${SOURCES} are rebuilt for each test.
 add_library(miopen_gtest_common STATIC ${SOURCES})
