@@ -256,6 +256,11 @@ void RunCbnaInferenceTest(const CbnaTestCase& test_case)
     int input_c, input_h, input_w, wei_c, wei_k, wei_h, wei_w;
     std::tie(wei_k, wei_c, wei_h, wei_w)             = miopen::tien<4>(weights.desc.GetLengths());
     std::tie(std::ignore, input_c, input_h, input_w) = miopen::tien<4>(input.desc.GetLengths());
+    EXPECT_EQ(input_c, wei_c) << "Aborting due to incorrect test config";
+    if(input_c != wei_c)
+    {
+        return;
+    }
 
     miopen::ConvolutionDescriptor filter;
     filter.mode         = miopenConvolution;
