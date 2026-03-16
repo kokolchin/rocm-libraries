@@ -272,78 +272,72 @@ void RunCbnaInferenceTest(const CbnaTestCase& test_case)
     filter.dilations[0] = test_case.pads_strides_dilations[4];
     filter.dilations[1] = test_case.pads_strides_dilations[5];
 
-    if(input_c == wei_c)
+    auto&& handle                      = get_handle();
+    auto ptr_fusionplan                = GetManagedFusionPlanDesc(&input.desc);
+    miopenFusionOpDescriptor_t convoOp = nullptr;
+    miopenFusionOpDescriptor_t biasOp  = nullptr;
+    miopenFusionOpDescriptor_t bnOp    = nullptr;
+    miopenFusionOpDescriptor_t activOp = nullptr;
+
+    miopenCreateOpConvForward(ptr_fusionplan.get(), &convoOp, &filter, &weights.desc);
+
+    auto output = get_output_tensor(filter, input, weights);
+    tensor<T> bias{1, output.desc.GetLengths()[1], 1, 1};
+    bias.generate(tensor_elem_gen_integer{max_value});
+    miopenCreateOpBiasForward(ptr_fusionplan.get(), &biasOp, &bias.desc);
+
+    miopenBatchNormMode_t bnmode = miopenBNSpatial;
+    auto derivedBnDesc           = miopen::TensorDescriptor{};
+    miopen::DeriveBNTensorDescriptor(derivedBnDesc, output.desc, bnmode);
+    tensor<T> bnscale{derivedBnDesc.GetLengths()};
+    bnscale.generate(tensor_elem_gen_integer{max_value});
+    tensor<T> bnbias{derivedBnDesc.GetLengths()};
+    bnbias.generate(tensor_elem_gen_integer{max_value});
+    tensor<T> estMean{derivedBnDesc.GetLengths()};
+    estMean.generate(tensor_elem_gen_integer{max_value});
+    tensor<T> estVariance{derivedBnDesc.GetLengths()};
+    estVariance.generate(tensor_elem_gen_integer{max_value});
+
+    miopenCreateOpBatchNormInference(ptr_fusionplan.get(), &bnOp, bnmode, &bnscale.desc);
+    miopenCreateOpActivationForward(ptr_fusionplan.get(), &activOp, miopenActivationRELU);
+
+    // A few basic dimension checks that we expect to be caught.
+    const bool valid_test_case = wei_h > 2 * filter.pads[0] && wei_w > 2 * filter.pads[1] &&
+                                 input_h >= (2 * filter.pads[0] + wei_h) &&
+                                 input_w >= (2 * filter.pads[1] + wei_w);
+
+    miopenStatus_t miopenError = miopenCompileFusionPlan(&handle, ptr_fusionplan.get());
+
+    size_t workspace_size = 0;
+    if(miopenError == miopenStatusSuccess)
     {
-        auto&& handle                      = get_handle();
-        auto ptr_fusionplan                = GetManagedFusionPlanDesc(&input.desc);
-        miopenFusionOpDescriptor_t convoOp = nullptr;
-        miopenFusionOpDescriptor_t biasOp  = nullptr;
-        miopenFusionOpDescriptor_t bnOp    = nullptr;
-        miopenFusionOpDescriptor_t activOp = nullptr;
+        miopenFusionPlanGetWorkSpaceSize(
+            &handle, ptr_fusionplan.get(), &workspace_size, miopenConvolutionFwdAlgoImplicitGEMM);
+    }
 
-        miopenCreateOpConvForward(ptr_fusionplan.get(), &convoOp, &filter, &weights.desc);
-
-        auto output = get_output_tensor(filter, input, weights);
-        tensor<T> bias{1, output.desc.GetLengths()[1], 1, 1};
-        bias.generate(tensor_elem_gen_integer{max_value});
-        miopenCreateOpBiasForward(ptr_fusionplan.get(), &biasOp, &bias.desc);
-
-        miopenBatchNormMode_t bnmode = miopenBNSpatial;
-        auto derivedBnDesc           = miopen::TensorDescriptor{};
-        miopen::DeriveBNTensorDescriptor(derivedBnDesc, output.desc, bnmode);
-        tensor<T> bnscale{derivedBnDesc.GetLengths()};
-        bnscale.generate(tensor_elem_gen_integer{max_value});
-        tensor<T> bnbias{derivedBnDesc.GetLengths()};
-        bnbias.generate(tensor_elem_gen_integer{max_value});
-        tensor<T> estMean{derivedBnDesc.GetLengths()};
-        estMean.generate(tensor_elem_gen_integer{max_value});
-        tensor<T> estVariance{derivedBnDesc.GetLengths()};
-        estVariance.generate(tensor_elem_gen_integer{max_value});
-
-        miopenCreateOpBatchNormInference(ptr_fusionplan.get(), &bnOp, bnmode, &bnscale.desc);
-        miopenCreateOpActivationForward(ptr_fusionplan.get(), &activOp, miopenActivationRELU);
-
-        miopenStatus_t miopenError = miopenCompileFusionPlan(&handle, ptr_fusionplan.get());
-
-        size_t workspace_size = 0;
-        if(miopenError == miopenStatusSuccess)
-        {
-            miopenFusionPlanGetWorkSpaceSize(&handle,
-                                             ptr_fusionplan.get(),
-                                             &workspace_size,
-                                             miopenConvolutionFwdAlgoImplicitGEMM);
-        }
-
-        if(miopenError != miopenStatusSuccess)
-        {
-            std::stringstream ss;
-            ss << "CBNA Inference plan not supported for: " << test_case;
-            GTEST_SKIP() << ss.str();
-        }
-        else if(input.desc.GetLengths().at(1) == weights.desc.GetLengths().at(1) &&
-                static_cast<int>(weights.desc.GetLengths()[2]) > 2 * filter.pads[0] &&
-                static_cast<int>(weights.desc.GetLengths()[3]) > 2 * filter.pads[1] &&
-                static_cast<int>(input.desc.GetLengths()[2]) >=
-                    (2 * filter.pads[0] + static_cast<int>(weights.desc.GetLengths()[2])) &&
-                static_cast<int>(input.desc.GetLengths()[3]) >=
-                    (2 * filter.pads[1] + static_cast<int>(weights.desc.GetLengths()[3])))
-        {
-            VerifyAndValidate<T>(verify_forward_cbna<T>{ptr_fusionplan.get(),
-                                                        input,
-                                                        weights,
-                                                        filter,
-                                                        bias,
-                                                        bnscale,
-                                                        bnbias,
-                                                        estMean,
-                                                        estVariance,
-                                                        bnmode,
-                                                        workspace_size});
-        }
-        else
-        {
-            GTEST_SKIP() << "Test case dimensions do not meet requirements";
-        }
+    if(miopenError != miopenStatusSuccess)
+    {
+        std::stringstream ss;
+        ss << "CBNA Inference plan not supported for: " << test_case;
+        GTEST_SKIP() << ss.str();
+    }
+    else if(valid_test_case)
+    {
+        VerifyAndValidate<T>(verify_forward_cbna<T>{ptr_fusionplan.get(),
+                                                    input,
+                                                    weights,
+                                                    filter,
+                                                    bias,
+                                                    bnscale,
+                                                    bnbias,
+                                                    estMean,
+                                                    estVariance,
+                                                    bnmode,
+                                                    workspace_size});
+    }
+    else
+    {
+        GTEST_SKIP() << "Test case dimensions do not meet requirements";
     }
 }
 
