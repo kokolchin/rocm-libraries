@@ -244,7 +244,8 @@ INSTANTIATE_TEST_SUITE_P(
                      testing::Values(miopenTensorNCHW),
                      testing::Values(0.25f),
                      testing::Values(0.75f),
-                     testing::Values(0.5f)));
+                     testing::Values(0.5f)),
+    testing::PrintToStringParamName());
 
 #endif
 
@@ -255,7 +256,8 @@ INSTANTIATE_TEST_SUITE_P(Smoke,
                                           testing::Values(miopenTensorNCHW),
                                           testing::Values(0.25f),
                                           testing::Values(0.75f),
-                                          testing::Values(0.5f)));
+                                          testing::Values(0.5f)),
+                         testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Smoke,
                          GPU_ConvBiasActivInfer_FP16,
@@ -264,73 +266,86 @@ INSTANTIATE_TEST_SUITE_P(Smoke,
                                           testing::Values(miopenTensorNCHW, miopenTensorNHWC),
                                           testing::Values(0.25f),
                                           testing::Values(0.75f),
-                                          testing::Values(0.5f)));
+                                          testing::Values(0.5f)),
+                         testing::PrintToStringParamName());
 
 // BFP16 tests
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer_BFP16,
     gcbaInferParamGenSmoke(GroupConvTestConfig<2u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer3D_BFP16,
     gcbaInferParamGenSmoke(GroupConvTestConfig<3u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer_BFP16,
     gcbaInferParamGenFull(GroupConvTestConfig<2u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer3D_BFP16,
     gcbaInferParamGenFull(GroupConvTestConfig<3u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());
 
 // FP16 tests
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer_FP16,
     gcbaInferParamGenSmoke(GroupConvTestConfig<2u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer3D_FP16,
     gcbaInferParamGenSmoke(GroupConvTestConfig<3u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer_FP16,
     gcbaInferParamGenFull(GroupConvTestConfig<2u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer3D_FP16,
     gcbaInferParamGenFull(GroupConvTestConfig<3u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());
 
 // FP32 tests
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer_FP32,
     gcbaInferParamGenSmoke(GroupConvTestConfig<2u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                           testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Smoke,
     GPU_ConvGrpBiasActivInfer3D_FP32,
     gcbaInferParamGenSmoke(GroupConvTestConfig<3u>::GetSmokeConfigs<Direction::Forward>(),
-                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                           testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer_FP32,
     gcbaInferParamGenFull(GroupConvTestConfig<2u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)));
+                          testing::Values(miopenTensorNHWC, miopenTensorNCHW)),
+    testing::PrintToStringParamName());
 INSTANTIATE_TEST_SUITE_P(
     Full,
     GPU_ConvGrpBiasActivInfer3D_FP32,
     gcbaInferParamGenFull(GroupConvTestConfig<3u>::GetConfigs<Direction::Forward>(),
-                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)));
+                          testing::Values(miopenTensorNDHWC, miopenTensorNCDHW)),
+    testing::PrintToStringParamName());

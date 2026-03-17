@@ -353,4 +353,7 @@ TEST_P(GPU_CbnaInference_FP32, FloatTest_cbna_inference)
     RunCbnaInferenceTest<float>(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbnaInference_FP32, testing::ValuesIn(GetCbnaTestCases()));
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_CbnaInference_FP32,
+                         testing::ValuesIn(GetCbnaTestCases()),
+                         testing::PrintToStringParamName());
