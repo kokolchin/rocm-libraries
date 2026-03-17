@@ -9,6 +9,8 @@
 #include <half/half.hpp>
 #include <vector>
 #include <limits>
+#include <algorithm>
+#include <cctype>
 
 #include "get_handle.hpp"
 #include "gtest_common.hpp"
@@ -20,6 +22,21 @@
 namespace {
 
 using float16 = half_float::half;
+
+struct CbnaParamNameGenerator
+{
+    template <typename ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType>& info) const
+    {
+        std::string name = testing::PrintToString(info.param);
+        std::transform(name.begin(), name.end(), name.begin(), [](const char c) {
+            return std::isalnum(static_cast<unsigned char>(c)) ? c : '_';
+        });
+        if(name.empty())
+            name = "param";
+        return "case_" + std::to_string(info.index) + "_" + name;
+    }
+};
 
 using ptr_FusionPlanDesc = MIOPEN_MANAGE_PTR(miopenFusionPlanDescriptor_t, miopenDestroyFusionPlan);
 using ptr_FusionPlanArgs = MIOPEN_MANAGE_PTR(miopenOperatorArgs_t, miopenDestroyOperatorArgs);
@@ -353,4 +370,7 @@ TEST_P(GPU_CbnaInference_FP32, FloatTest_cbna_inference)
     RunCbnaInferenceTest<float>(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(Smoke, GPU_CbnaInference_FP32, testing::ValuesIn(GetCbnaTestCases()));
+INSTANTIATE_TEST_SUITE_P(Smoke,
+                         GPU_CbnaInference_FP32,
+                         testing::ValuesIn(GetCbnaTestCases()),
+                         CbnaParamNameGenerator{});
