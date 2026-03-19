@@ -186,10 +186,7 @@ TEST_P(GPU_ConvBiasActivInfer_FP16, ConvWinoFuryRxSf2x3Fused)
 {
     RunSolver(miopen::solver::fusion::ConvWinoFuryRxSFused<2, 3>{});
 }
-TEST_P(GPU_ConvBiasActivInfer_FP16, ConvWinoRageRxSf2x3Fused)
-{
-    RunSolver(miopen::solver::fusion::ConvWinoRageRxSFused<2, 3>{});
-}
+// ConvWinoRageRxSFused solver was removed (see solver.cpp)
 
 TEST_P(GPU_ConvBiasActivInfer_FP16, ConvCKIgemmFwdBiasActivFused)
 {
