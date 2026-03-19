@@ -118,12 +118,6 @@ def check_names_uniqueness() :
     dir_path = os.path.dirname(os.path.realpath(__file__))
     files = os.listdir(dir_path)
 
-    # Exclude legacy cba_infer when cba_inference exists (both define same tests).
-    # Mirrors CMakeLists.txt logic: cba_infer is excluded from the monolithic build.
-    skip_files = set()
-    if "cba_inference.cpp" in files:
-        skip_files.add("cba_infer.cpp")
-
     test_regexp = re.compile(r"^\s*(TEST)|(TEST_P)|(TEST_F)|(TYPED_TEST)\(.*,.*")
 
     occurences = {}
@@ -133,8 +127,6 @@ def check_names_uniqueness() :
     cases_count = 0
 
     for file_name_raw in files:
-        if file_name_raw in skip_files:
-            continue
         file_name = os.path.join(dir_path, file_name_raw)
         if not os.path.isfile(file_name):
             continue
