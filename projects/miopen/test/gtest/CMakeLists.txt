@@ -217,6 +217,10 @@ foreach(SOURCE ${SKIP_TESTS})
     list(REMOVE_ITEM TESTS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE})
 endforeach()
 
+# Exclude conv2d/conv2d_find2: test_conv2d and test_conv2d_find2 are created by parent test/CMakeLists.txt.
+list(REMOVE_ITEM TESTS "${CMAKE_CURRENT_SOURCE_DIR}/conv2d.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conv2d_find2.cpp")
+
 # Common static library speeds up test assembly.
 # Otherwise, all files in ${SOURCES} are rebuilt for each test.
 add_library(miopen_gtest_common STATIC ${SOURCES})
