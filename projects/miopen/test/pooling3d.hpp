@@ -28,11 +28,13 @@ struct pooling3d_driver : pooling_driver<T>
 
     pooling3d_driver() : pooling_driver<T>()
     {
-        this->add(
-            this->in_shape, "input", this->generate_data_limited(get_3d_pooling_input_shapes(), 4));
-        this->add(this->lens, "lens", this->generate_data({{2, 2, 2}, {3, 3, 3}, {1, 2, 2}}));
-        this->add(this->strides, "strides", this->generate_data({{2, 2, 2}, {1, 1, 1}, {1, 2, 2}}));
-        this->add(this->pads, "pads", this->generate_data({{0, 0, 0}, {1, 1, 1}}));
+        this->add(this->in_shape, "input", this->generate_data({{16, 64, 3, 4, 4}}));
+        this->add(this->lens, "lens", this->generate_data({{2, 2, 2}}));
+        this->add(this->strides, "strides", this->generate_data({{2, 2, 2}}));
+        this->add(this->pads, "pads", this->generate_data({{1, 1, 1}}));
         this->add(this->wsidx, "wsidx", this->generate_data({1}));
+        this->add(this->mode, "mode", this->generate_data({"miopenPoolingMax"}));
+        this->add(this->index_type, "index_type", this->generate_data({"miopenIndexUint32"}));
+        this->add(this->in_layout, "in_layout", this->generate_data({"NDHWC"}));
     }
 };

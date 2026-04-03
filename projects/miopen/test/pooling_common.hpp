@@ -232,22 +232,34 @@ struct verify_forward_pooling
 
         auto in_dev  = handle.Write(input.data);
         auto out_dev = handle.Create<T>(out.data.size());
-        Workspace wspace{};
-        wspace.Write(indices);
+        
+        const std::size_t ws_size = filter.GetWorkSpaceSize(out.desc);
+        
+        // DEBUG: Failing config info
+        if(input.desc.GetLengths() == std::vector<std::size_t>{16, 64, 3, 4, 4}) {
+            std::cout << "DEBUG: [DEVELOP] Input Desc: " << input.desc << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Output Desc: " << out.desc << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Workspace Size: " << ws_size << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Expected Index Count: " << out.data.size() << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Total Index Bytes: " << out.data.size() * sizeof(Index) << std::endl;
+        }
 
-        float alpha = 1, beta = 0;
-        filter.Forward(handle,
-                       &alpha,
-                       input.desc,
-                       in_dev.get(),
-                       &beta,
-                       out.desc,
-                       out_dev.get(),
-                       true,
-                       wspace.ptr(),
-                       wspace.size());
+        // DEBUG: Failing config info
+        if(input.desc.GetLengths() == std::vector<std::size_t>{16, 64, 3, 4, 4}) {
+            std::cout << "DEBUG: [DEVELOP] Input Desc: " << input.desc << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Output Desc: " << out.desc << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Workspace Size: " << ws_size << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Expected Index Count: " << out.data.size() << std::endl;
+            std::cout << "DEBUG: [DEVELOP] Total Index Bytes: " << out.data.size() * sizeof(Index) << std::endl;
+        }
 
-        indices  = wspace.Read<std::vector<Index>>();
+        Workspace wspace(ws_size);
+        if(ws_size > 0 && filter.GetMode() == miopenPoolingMax)
+        {
+            indices.resize(out.data.size());
+            HIP_CHECK(hipMemcpy(indices.data(), wspace.ptr(), out.data.size() * sizeof(Index), hipMemcpyDeviceToHost));
+        }
+
         out.data = handle.Read<T>(out_dev, out.data.size());
         return out;
     }
@@ -491,8 +503,12 @@ struct verify_backward_pooling
         auto out_dev  = handle.Write(out.data);
         auto din_dev  = handle.Create<T>(dinput.data.size());
 
-        Workspace wspace{};
-        wspace.Write(indices);
+        const std::size_t ws_size = filter.GetWorkSpaceSize(out.desc);
+        Workspace wspace(ws_size);
+        if(!indices.empty())
+        {
+            HIP_CHECK(hipMemcpy(wspace.ptr(), indices.data(), indices.size() * sizeof(Index), hipMemcpyHostToDevice));
+        }
 
         float alpha = 1, beta = 0;
         filter.Backward(handle,
@@ -510,7 +526,7 @@ struct verify_backward_pooling
                         // dx
                         dinput.desc,
                         din_dev.get(),
-                        wspace.ptr());
+                        ws_size > 0 ? wspace.ptr() : nullptr);
 
         dinput.data = handle.Read<T>(din_dev, dinput.data.size());
         return dinput;
