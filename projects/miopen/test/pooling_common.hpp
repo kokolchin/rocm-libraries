@@ -396,8 +396,25 @@ struct verify_backward_pooling
                                 in_verify_idx += idx[i + 2] * in_spatial_strides[i];
                                 out_verify_idx += out_spatial_id_verify[i] * out_spatial_strides[i];
                             }
-                            CHECK(miopen::float_equal(input_ptr[in_verify_idx],
-                                                      out_ptr[out_verify_idx]));
+
+                            const bool index_match =
+                                miopen::float_equal(input_ptr[in_verify_idx], out_ptr[out_verify_idx]);
+                            static bool dumped_first_mismatch = false;
+                            if(!index_match && !dumped_first_mismatch)
+                            {
+                                dumped_first_mismatch = true;
+                                std::cerr << "DEBUG: [DEVELOP] First index mismatch" << std::endl;
+                                std::cerr << "DEBUG: [DEVELOP] use_global_index=" << use_global_index
+                                          << " mx_idx=" << mx_idx << std::endl;
+                                std::cerr << "DEBUG: [DEVELOP] n=" << o << " c=" << w
+                                          << " in_verify_idx=" << in_verify_idx
+                                          << " out_verify_idx=" << out_verify_idx << std::endl;
+                                std::cerr << "DEBUG: [DEVELOP] input_val=" << input_ptr[in_verify_idx]
+                                          << " out_val=" << out_ptr[out_verify_idx] << std::endl;
+                                std::cerr << "DEBUG: [DEVELOP] input_desc=" << input.desc << std::endl;
+                                std::cerr << "DEBUG: [DEVELOP] out_desc=" << out.desc << std::endl;
+                                CHECK(false);
+                            }
                         }
                         std::size_t din_idx = 0;
                         for(int i = 0; i < SptDim + 2; i++)
