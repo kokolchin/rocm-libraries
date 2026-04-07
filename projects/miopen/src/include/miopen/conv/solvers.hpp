@@ -4167,158 +4167,6 @@ struct ConvAsmImplicitGemmGTCDynamicFwdDlopsNCHWC final
                 const PerformanceConfigAsmImplicitGemmGTCFwdDlopsNCHWC&) const override;
 };
 
-struct PerformanceConfigHipImplicitGemmFwdXdlops
-    : PerfConfigBaseCK<PerformanceConfigHipImplicitGemmFwdXdlops>
-{
-    int index             = 0;
-    std::string kernel_id = "";
-    std::vector<std::string> valid_kernels;
-
-    PerformanceConfigHipImplicitGemmFwdXdlops(int idx, std::string kernl_id)
-        : index(idx), kernel_id(kernl_id)
-    {
-    }
-
-    PerformanceConfigHipImplicitGemmFwdXdlops() = default;
-
-    explicit PerformanceConfigHipImplicitGemmFwdXdlops(bool)
-        : PerformanceConfigHipImplicitGemmFwdXdlops(0, "")
-    {
-    }
-    void DefaultKernelFromList(const ExecutionContext& ctx);
-    void HeuristicInit(const ExecutionContext&, const miopen::conv::ProblemDescription&);
-    bool SetNextValue(const miopen::conv::ProblemDescription&);
-    bool IsValidValue() const;
-    bool IsValid(const ExecutionContext&, const miopen::conv::ProblemDescription& problem) const
-    {
-        return IsValid(problem);
-    }
-    bool IsValid(const miopen::conv::ProblemDescription&) const;
-    bool operator==(const PerformanceConfigHipImplicitGemmFwdXdlops& other) const;
-
-private:
-    template <typename DataType>
-    void Init(const miopen::conv::ProblemDescription&);
-    template <typename DataType>
-    bool CheckIsSupportCKArgs(const miopen::conv::ProblemDescription&) const;
-};
-
-struct MIOPEN_INTERNALS_EXPORT ConvHipImplicitGemmFwdXdlops final
-    : ConvTunableSolver<PerformanceConfigHipImplicitGemmFwdXdlops>
-{
-    const std::string& SolverDbId() const override
-    {
-        return GetSolverDbId<ConvHipImplicitGemmFwdXdlops>();
-    }
-
-    PerformanceConfigHipImplicitGemmFwdXdlops
-    GetDefaultPerformanceConfig(const ExecutionContext&,
-                                const miopen::conv::ProblemDescription&) const override;
-    bool IsValidPerformanceConfig(const ExecutionContext&,
-                                  const miopen::conv::ProblemDescription&,
-                                  const PerformanceConfigHipImplicitGemmFwdXdlops&) const override;
-    PerformanceConfigHipImplicitGemmFwdXdlops
-    Search(const ExecutionContext&,
-           const miopen::conv::ProblemDescription&,
-           const AnyInvokeParams& invoke_ctx) const override;
-    bool IsApplicable(const ExecutionContext&,
-                      const miopen::conv::ProblemDescription&) const override;
-    bool IsDynamic() const override { return true; }
-    ConvSolution GetSolution(const ExecutionContext&,
-                             const miopen::conv::ProblemDescription&,
-                             const PerformanceConfigHipImplicitGemmFwdXdlops&) const override;
-    /// \anchor igemm_get_wti_magic_number
-    // Magic Number Alert:
-    // Naive convolutions have GetWti() that return very small value (0.01f).
-    // This allows MIOpen to use Naive Solvers if no other applicable Solvers
-    // have known WTIs. Right now this means that in case of find-db miss,
-    // the library will try to use Winograd or GEMM (whatever is faster according
-    // to their GetWti's), but if both are not applicable, the library will
-    // use Naive Solver
-    // Since we would like to us CK before naive, and use it instead (because
-    // we do expect that CK is faster than Naive), therefore we use a
-    // value bigger than 0.01f, e.g. 0.02f.
-    float GetWti(const ExecutionContext&, const miopen::conv::ProblemDescription&) const override
-    {
-        return 0.02f;
-    };
-
-private:
-    template <typename DataType>
-    bool CheckCKApplicability(const miopen::conv::ProblemDescription&) const;
-};
-
-struct PerformanceConfigHipImplicitGemmBwdXdlops
-    : PerfConfigBaseCK<PerformanceConfigHipImplicitGemmBwdXdlops>
-{
-    int index             = 0;
-    std::string kernel_id = "";
-    std::vector<std::string> valid_kernels;
-
-    PerformanceConfigHipImplicitGemmBwdXdlops(int idx, std::string kernl_id)
-        : index(idx), kernel_id(kernl_id)
-    {
-    }
-
-    PerformanceConfigHipImplicitGemmBwdXdlops() = default;
-
-    explicit PerformanceConfigHipImplicitGemmBwdXdlops(bool)
-        : PerformanceConfigHipImplicitGemmBwdXdlops(0, "")
-    {
-    }
-    void DefaultKernelFromList(const ExecutionContext& ctx);
-    void HeuristicInit(const ExecutionContext&, const miopen::conv::ProblemDescription&);
-    bool SetNextValue(const miopen::conv::ProblemDescription&);
-    bool IsValidValue() const;
-    bool IsValid(const ExecutionContext&, const miopen::conv::ProblemDescription& problem) const
-    {
-        return IsValid(problem);
-    }
-    bool IsValid(const miopen::conv::ProblemDescription&) const;
-    bool operator==(const PerformanceConfigHipImplicitGemmBwdXdlops& other) const;
-
-private:
-    template <typename DataType>
-    void Init(const miopen::conv::ProblemDescription&);
-    template <typename DataType>
-    bool CheckIsSupportCKArgs(const miopen::conv::ProblemDescription&) const;
-};
-
-struct MIOPEN_INTERNALS_EXPORT ConvHipImplicitGemmBwdXdlops final
-    : ConvTunableSolver<PerformanceConfigHipImplicitGemmBwdXdlops>
-{
-    const std::string& SolverDbId() const override
-    {
-        return GetSolverDbId<ConvHipImplicitGemmBwdXdlops>();
-    }
-
-    PerformanceConfigHipImplicitGemmBwdXdlops
-    GetDefaultPerformanceConfig(const ExecutionContext&,
-                                const miopen::conv::ProblemDescription&) const override;
-    bool IsValidPerformanceConfig(const ExecutionContext&,
-                                  const miopen::conv::ProblemDescription&,
-                                  const PerformanceConfigHipImplicitGemmBwdXdlops&) const override;
-    PerformanceConfigHipImplicitGemmBwdXdlops
-    Search(const ExecutionContext&,
-           const miopen::conv::ProblemDescription&,
-           const AnyInvokeParams& invoke_ctx) const override;
-    bool IsApplicable(const ExecutionContext&,
-                      const miopen::conv::ProblemDescription&) const override;
-    bool IsDynamic() const override { return true; }
-    ConvSolution GetSolution(const ExecutionContext&,
-                             const miopen::conv::ProblemDescription&,
-                             const PerformanceConfigHipImplicitGemmBwdXdlops&) const override;
-    /// \ref igemm_get_wti_magic_number
-    float GetWti(const ExecutionContext&, const miopen::conv::ProblemDescription&) const override
-    {
-        return 0.02f;
-    };
-
-private:
-    template <typename DataType>
-    bool CheckCKApplicability(const miopen::conv::ProblemDescription&) const;
-};
-
 struct PerformanceConfigHipImplicitGemmGroupFwdXdlops
     : PerfConfigBaseCK<PerformanceConfigHipImplicitGemmGroupFwdXdlops>
 {
@@ -4364,10 +4212,6 @@ private:
     void InitHeuristicKernelIDs(const std::string& type);
     bool ModelApplyToken(int idx, std::string value, const std::string& arch);
 #endif
-    template <typename DataType>
-    void Init(const miopen::conv::ProblemDescription&);
-    template <typename DataType>
-    bool CheckIsSupportCKArgs(const miopen::conv::ProblemDescription&) const;
     mutable bool use_tf32 = false;
 };
 
@@ -4405,10 +4249,6 @@ struct MIOPEN_INTERNALS_EXPORT ConvHipImplicitGemmGroupFwdXdlops final
     size_t GetWorkspaceSize(const ExecutionContext&,
                             const miopen::conv::ProblemDescription&) const override;
     bool MayNeedWorkspace() const override { return true; }
-
-private:
-    template <typename DataType>
-    bool CheckCKApplicability(const miopen::conv::ProblemDescription&) const;
 };
 
 struct PerformanceConfigHipImplicitGemm3DGroupFwdXdlops
@@ -4658,8 +4498,8 @@ private:
 struct PerformanceConfigHipImplicitGemmGroupBwdXdlops
     : PerfConfigBaseCK<PerformanceConfigHipImplicitGemmGroupBwdXdlops>
 {
-    int index;
-    int split_k;
+    int index   = 0;
+    int split_k = 1;
     std::string kernel_id;
     std::vector<std::string> valid_kernels;
     PerformanceConfigHipImplicitGemmGroupBwdXdlops(int idx, std::string kernl_id)
@@ -4695,7 +4535,6 @@ private:
 #if MIOPEN_ENABLE_AI_KERNEL_TUNING
     std::vector<int> heuristic_indexes;
     std::unordered_map<int, std::vector<std::string>> heuristic_kernels;
-    template <typename DataType>
     bool RunParameterPredictionModel(const ExecutionContext& ctx,
                                      const miopen::conv::ProblemDescription& problem);
     void InitHeuristicKernelIDs();
@@ -4704,10 +4543,6 @@ private:
                          const std::string& arch,
                          const miopen::conv::ProblemDescription& problem);
 #endif
-    template <typename DataType>
-    void Init(const miopen::conv::ProblemDescription&);
-    template <typename DataType>
-    bool CheckIsSupportCKArgs(const miopen::conv::ProblemDescription&) const;
     mutable bool use_tf32 = false;
 };
 
@@ -4747,17 +4582,14 @@ struct MIOPEN_INTERNALS_EXPORT ConvHipImplicitGemmGroupBwdXdlops final
     bool MayNeedWorkspace() const override { return true; }
 
 private:
-    template <typename DataType>
-    bool CheckCKApplicability(const miopen::conv::ProblemDescription&) const;
-
     size_t GetCKMaxWorkspaceSize(const miopen::conv::ProblemDescription& problem) const;
 };
 
 struct PerformanceConfigHipImplicitGemmGroupWrwXdlops
     : PerfConfigBaseCK<PerformanceConfigHipImplicitGemmGroupWrwXdlops>
 {
-    int index;
-    int split_k;
+    int index   = 0;
+    int split_k = 1;
     std::string kernel_id;
     std::vector<std::string> valid_kernels;
     PerformanceConfigHipImplicitGemmGroupWrwXdlops(int idx, std::string kernl_id)
@@ -4793,7 +4625,6 @@ private:
 #if MIOPEN_ENABLE_AI_KERNEL_TUNING
     std::vector<int> heuristic_indexes;
     std::unordered_map<int, std::vector<std::string>> heuristic_kernels;
-    template <typename DataType>
     bool RunParameterPredictionModel(const ExecutionContext& ctx,
                                      const miopen::conv::ProblemDescription& problem);
     void InitHeuristicKernelIDs(const std::string& type);
@@ -4802,10 +4633,6 @@ private:
                          const std::string& arch,
                          const miopen::conv::ProblemDescription& problem);
 #endif
-    template <typename DataType>
-    void Init(const miopen::conv::ProblemDescription&);
-    template <typename DataType>
-    bool CheckIsSupportCKArgs(const miopen::conv::ProblemDescription&) const;
     mutable bool use_tf32 = false;
 };
 
@@ -4845,9 +4672,6 @@ struct MIOPEN_INTERNALS_EXPORT ConvHipImplicitGemmGroupWrwXdlops final
     bool MayNeedWorkspace() const override { return true; }
 
 private:
-    template <typename DataType>
-    bool CheckCKApplicability(const miopen::conv::ProblemDescription&) const;
-
     size_t GetCKMaxWorkspaceSize(const miopen::conv::ProblemDescription& problem) const;
 };
 
