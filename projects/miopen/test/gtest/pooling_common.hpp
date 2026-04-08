@@ -13,6 +13,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -29,6 +30,7 @@
 #include "../verify.hpp"
 #include "../workspace.hpp"
 #include "get_handle.hpp"
+#include "timing_utility.hpp"
 
 namespace pooling_gtest {
 
@@ -98,6 +100,7 @@ struct verify_forward_pooling
     tensor<T>
     cpu(const tensor<T>& input, const miopen::PoolingDescriptor& filter, std::vector<Index>&) const
     {
+        POOLING_TIMED_SCOPE("verify_forward_pooling.cpu.total");
         tensor<T> out{filter.GetForwardOutputTensor(input.desc)};
 
         const auto in_strides         = input.desc.GetStrides();
@@ -190,26 +193,30 @@ struct verify_forward_pooling
                   const miopen::PoolingDescriptor& filter,
                   std::vector<Index>& indices) const
     {
+        POOLING_TIMED_SCOPE("verify_forward_pooling.gpu.total");
         auto&& handle = get_handle();
         tensor<T> out{filter.GetForwardOutputTensor(input.desc)};
         indices.resize(out.data.size(), 0);
 
-        auto in_dev  = handle.Write(input.data);
+        auto in_dev = handle.Write(input.data);
         auto out_dev = handle.Create<T>(out.data.size());
         Workspace wspace{};
         wspace.Write(indices);
 
         float alpha = 1, beta = 0;
-        filter.Forward(handle,
-                       &alpha,
-                       input.desc,
-                       in_dev.get(),
-                       &beta,
-                       out.desc,
-                       out_dev.get(),
-                       true,
-                       wspace.ptr(),
-                       wspace.size());
+        {
+            POOLING_GPU_TIMED_SCOPE("verify_forward_pooling.gpu.forward_kernel");
+            filter.Forward(handle,
+                           &alpha,
+                           input.desc,
+                           in_dev.get(),
+                           &beta,
+                           out.desc,
+                           out_dev.get(),
+                           true,
+                           wspace.ptr(),
+                           wspace.size());
+        }
 
         indices  = wspace.Read<std::vector<Index>>();
         out.data = handle.Read<T>(out_dev, out.data.size());
@@ -229,6 +236,7 @@ struct verify_backward_pooling
                   bool use_global_index,
                   bool verify_index) const
     {
+        POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.total");
         auto dinput = input;
         std::vector<double> din_vec(input.desc.GetElementSpace(), 0.0);
         CHECK(dout.desc == out.desc);
@@ -422,6 +430,7 @@ struct verify_backward_pooling
                   bool,
                   bool) const
     {
+        POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.total");
         auto&& handle = get_handle();
         auto dinput   = input;
         auto in_dev   = handle.Write(input.data);
@@ -432,22 +441,25 @@ struct verify_backward_pooling
         wspace.Write(indices);
 
         float alpha = 1, beta = 0;
-        filter.Backward(handle,
-                        &alpha,
-                        // y
-                        out.desc,
-                        out_dev.get(),
-                        // dy
-                        dout.desc,
-                        dout_dev.get(),
-                        // x
-                        input.desc,
-                        in_dev.get(),
-                        &beta,
-                        // dx
-                        dinput.desc,
-                        din_dev.get(),
-                        wspace.ptr());
+        {
+            POOLING_GPU_TIMED_SCOPE("verify_backward_pooling.gpu.backward_kernel");
+            filter.Backward(handle,
+                            &alpha,
+                            // y
+                            out.desc,
+                            out_dev.get(),
+                            // dy
+                            dout.desc,
+                            dout_dev.get(),
+                            // x
+                            input.desc,
+                            in_dev.get(),
+                            &beta,
+                            // dx
+                            dinput.desc,
+                            din_dev.get(),
+                            wspace.ptr());
+        }
 
         dinput.data = handle.Read<T>(din_dev, dinput.data.size());
         return dinput;
@@ -457,6 +469,7 @@ struct verify_backward_pooling
 template <typename T, typename Index, int SptDim>
 void RunPoolingTestWithIndexType(const PoolingTestCase& test_case)
 {
+    POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.total");
     tensor<T> input{test_case.in_shape};
     // Set up tensor descriptor with correct layout BEFORE generating data.
     if(test_case.in_layout != (SptDim == 2 ? "NCHW" : "NCDHW"))
@@ -480,8 +493,13 @@ void RunPoolingTestWithIndexType(const PoolingTestCase& test_case)
     std::vector<Index> indices;
     verify_forward_pooling<SptDim> forward_verifier;
 
-    auto forward_result     = forward_verifier.cpu(input, filter, indices);
-    auto forward_gpu_result = forward_verifier.gpu(input, filter, indices);
+    auto forward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.forward");
+        return std::make_pair(forward_verifier.cpu(input, filter, indices),
+                              forward_verifier.gpu(input, filter, indices));
+    }();
+    auto forward_result     = std::move(forward_results.first);
+    auto forward_gpu_result = std::move(forward_results.second);
 
     EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
     const double threshold = std::numeric_limits<T>::epsilon() * 80.0;
@@ -498,10 +516,15 @@ void RunPoolingTestWithIndexType(const PoolingTestCase& test_case)
     verify_backward_pooling<SptDim> backward_verifier;
     const bool use_global_index = test_case.wsidx != 0;
     const bool verify_index     = false;
-    auto backward_result        = backward_verifier.cpu(
-        input, dout, forward_result, filter, indices, use_global_index, verify_index);
-    auto backward_gpu_result = backward_verifier.gpu(
-        input, dout, forward_result, filter, indices, use_global_index, verify_index);
+    auto backward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.backward");
+        return std::make_pair(backward_verifier.cpu(
+                                  input, dout, forward_result, filter, indices, use_global_index, verify_index),
+                              backward_verifier.gpu(
+                                  input, dout, forward_result, filter, indices, use_global_index, verify_index));
+    }();
+    auto backward_result     = std::move(backward_results.first);
+    auto backward_gpu_result = std::move(backward_results.second);
 
     EXPECT_EQ(miopen::range_distance(backward_result), miopen::range_distance(backward_gpu_result));
     const double backward_rms_error =
