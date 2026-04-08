@@ -2,12 +2,15 @@
 #define GUARD_MIOPEN_TEST_GTEST_TIMING_UTILITY_HPP
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
-#include <map>
-#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,58 +29,147 @@ namespace timing_utility {
 inline void ConsumeHipStatus([[maybe_unused]] hipError_t status) {}
 #endif
 
-struct TimerStat
+struct TimerCounter
 {
-    double total_ms = 0.0;
-    std::size_t calls = 0;
+    std::atomic<std::int64_t> total_us{0};
+    std::atomic<std::uint64_t> calls{0};
 };
 
-inline std::map<std::string, TimerStat>& HostStats()
+struct TimerRow
 {
-    static std::map<std::string, TimerStat> stats;
-    return stats;
+    const char* name;
+    std::uint64_t calls;
+    double total_ms;
+};
+
+constexpr std::array<const char*, 14> kHostNames = {
+    "run_pooling_test_with_index_type.total",
+    "run_pooling_test_with_index_type.forward",
+    "run_pooling_test_with_index_type.backward",
+    "verify_forward_pooling.cpu.total",
+    "verify_forward_pooling.gpu.total",
+    "verify_backward_pooling.cpu.total",
+    "verify_backward_pooling.gpu.total",
+    "verify_backward_pooling.cpu.inner_loops.main",
+    "verify_backward_pooling.cpu.index_verify",
+    "verify_backward_pooling.gpu.io.write_input",
+    "verify_backward_pooling.gpu.io.write_dout",
+    "verify_backward_pooling.gpu.io.write_out",
+    "verify_backward_pooling.gpu.io.create_din",
+    "verify_backward_pooling.gpu.io.workspace_write",
+    "verify_backward_pooling.gpu.io.read_dinput",
+};
+
+constexpr std::array<const char*, 2> kGpuNames = {
+    "verify_forward_pooling.gpu.forward_kernel",
+    "verify_backward_pooling.gpu.backward_kernel",
+};
+
+inline std::array<TimerCounter, kHostNames.size()>& HostCounters()
+{
+    static std::array<TimerCounter, kHostNames.size()> counters{};
+    return counters;
 }
 
-inline std::map<std::string, TimerStat>& GpuStats()
+inline std::array<TimerCounter, kGpuNames.size()>& GpuCounters()
 {
-    static std::map<std::string, TimerStat> stats;
-    return stats;
+    static std::array<TimerCounter, kGpuNames.size()> counters{};
+    return counters;
 }
 
-inline std::mutex& StatsMutex()
+inline int FindHostIndex(const std::string& name)
 {
-    static std::mutex m;
-    return m;
+    for(std::size_t i = 0; i < kHostNames.size(); ++i)
+    {
+        if(name == kHostNames[i])
+            return static_cast<int>(i);
+    }
+    return -1;
 }
 
-inline void WriteReport(const std::string& path, const std::map<std::string, TimerStat>& stats)
+inline int FindGpuIndex(const std::string& name)
 {
-    std::vector<std::pair<std::string, TimerStat>> rows(stats.begin(), stats.end());
+    for(std::size_t i = 0; i < kGpuNames.size(); ++i)
+    {
+        if(name == kGpuNames[i])
+            return static_cast<int>(i);
+    }
+    return -1;
+}
+
+inline std::vector<TimerRow> CollectHostRows()
+{
+    std::vector<TimerRow> rows;
+    rows.reserve(kHostNames.size());
+    const auto& counters = HostCounters();
+    for(std::size_t i = 0; i < kHostNames.size(); ++i)
+    {
+        const auto calls = counters[i].calls.load(std::memory_order_relaxed);
+        const auto us    = counters[i].total_us.load(std::memory_order_relaxed);
+        if(calls == 0 || us == 0)
+            continue;
+        rows.push_back({kHostNames[i], calls, static_cast<double>(us) / 1000.0});
+    }
+    return rows;
+}
+
+inline std::vector<TimerRow> CollectGpuRows()
+{
+    std::vector<TimerRow> rows;
+    rows.reserve(kGpuNames.size());
+    const auto& counters = GpuCounters();
+    for(std::size_t i = 0; i < kGpuNames.size(); ++i)
+    {
+        const auto calls = counters[i].calls.load(std::memory_order_relaxed);
+        const auto us    = counters[i].total_us.load(std::memory_order_relaxed);
+        if(calls == 0 || us == 0)
+            continue;
+        rows.push_back({kGpuNames[i], calls, static_cast<double>(us) / 1000.0});
+    }
+    return rows;
+}
+
+inline void WriteTopReport(const std::string& path,
+                           const std::string& title,
+                           std::vector<TimerRow> rows,
+                           std::size_t top_n = 10)
+{
     std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) {
-        return a.second.total_ms > b.second.total_ms;
+        return a.total_ms > b.total_ms;
     });
 
     std::ofstream out(path);
     if(!out.is_open())
         return;
 
+    out << title << '\n';
     out << "Name\tCalls\tTotal(ms)\tAvg(ms)\n";
     out << "-----------------------------------------------\n";
+    std::size_t emitted = 0;
     for(const auto& row : rows)
     {
-        const auto& name = row.first;
-        const auto& s    = row.second;
-        const double avg = s.calls == 0 ? 0.0 : s.total_ms / static_cast<double>(s.calls);
-        out << name << '\t' << s.calls << '\t' << std::fixed << std::setprecision(3) << s.total_ms
-            << '\t' << avg << '\n';
+        if(emitted >= top_n)
+            break;
+        const double avg = row.calls == 0 ? 0.0 : row.total_ms / static_cast<double>(row.calls);
+        out << row.name << '\t' << row.calls << '\t' << std::fixed << std::setprecision(3)
+            << row.total_ms << '\t' << avg << '\n';
+        emitted++;
     }
 }
 
 inline void ReportAll()
 {
-    std::lock_guard<std::mutex> lock(StatsMutex());
-    WriteReport("timing_per_function.txt", HostStats());
-    WriteReport("timing_gpu_sections.txt", GpuStats());
+    const auto host_rows = CollectHostRows();
+    const auto gpu_rows  = CollectGpuRows();
+    WriteTopReport("timing_per_function.txt", "Top host sections", host_rows, 10);
+    WriteTopReport("timing_gpu_sections.txt", "Top gpu sections", gpu_rows, 10);
+    std::ofstream summary("timing_summary.txt");
+    if(summary.is_open())
+    {
+        summary << "Host sections tracked: " << host_rows.size() << '\n';
+        summary << "Gpu sections tracked: " << gpu_rows.size() << '\n';
+        summary << "See timing_per_function.txt and timing_gpu_sections.txt for top entries.\n";
+    }
 }
 
 inline void RegisterReporterOnce()
@@ -92,19 +184,27 @@ inline void RegisterReporterOnce()
 inline void AddHostSample(const std::string& name, double ms)
 {
     RegisterReporterOnce();
-    std::lock_guard<std::mutex> lock(StatsMutex());
-    auto& s = HostStats()[name];
-    s.total_ms += ms;
-    s.calls++;
+    const int idx = FindHostIndex(name);
+    if(idx < 0)
+        return;
+
+    auto& c = HostCounters()[static_cast<std::size_t>(idx)];
+    c.total_us.fetch_add(static_cast<std::int64_t>(std::llround(ms * 1000.0)),
+                         std::memory_order_relaxed);
+    c.calls.fetch_add(1, std::memory_order_relaxed);
 }
 
 inline void AddGpuSample(const std::string& name, double ms)
 {
     RegisterReporterOnce();
-    std::lock_guard<std::mutex> lock(StatsMutex());
-    auto& s = GpuStats()[name];
-    s.total_ms += ms;
-    s.calls++;
+    const int idx = FindGpuIndex(name);
+    if(idx < 0)
+        return;
+
+    auto& c = GpuCounters()[static_cast<std::size_t>(idx)];
+    c.total_us.fetch_add(static_cast<std::int64_t>(std::llround(ms * 1000.0)),
+                         std::memory_order_relaxed);
+    c.calls.fetch_add(1, std::memory_order_relaxed);
 }
 
 class ScopedTimer

@@ -275,10 +275,12 @@ struct verify_backward_pooling
         std::copy_n(out.desc.GetLengths().begin() + 2, SptDim, out_spatial_len.begin());
         auto ford_out = miopen::unpacker(miopen::ford)(out_spatial_len);
 
-        miopen::par_ford(out_n, out_c)([&](int o, int w) {
-            if(filter.GetMode() == miopenPoolingMax)
-            {
-                ford_out([&](auto... out_spatial_id_pack) {
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.main");
+            miopen::par_ford(out_n, out_c)([&](int o, int w) {
+                if(filter.GetMode() == miopenPoolingMax)
+                {
+                    ford_out([&](auto... out_spatial_id_pack) {
                     auto mx_idx = indices.at(dout.desc.GetIndex(o, w, out_spatial_id_pack...));
                     std::array<std::size_t, SptDim + 2> idx{};
                     bool in_cmp_idx = true;
@@ -333,17 +335,20 @@ struct verify_backward_pooling
                         idx[1] = w;
                         if(verify_index)
                         {
-                            // Compute input and output linear indices for verification
-                            std::size_t in_verify_idx  = o * in_n_stride + w * in_c_stride;
-                            std::size_t out_verify_idx = o * out_n_stride + w * out_c_stride;
-                            auto out_spatial_id        = make_array(out_spatial_id_pack...);
-                            for(int i = 0; i < SptDim; ++i)
                             {
-                                in_verify_idx += idx[i + 2] * in_spatial_strides[i];
-                                out_verify_idx += out_spatial_id[i] * out_spatial_strides[i];
+                                POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.index_verify");
+                                // Compute input and output linear indices for verification
+                                std::size_t in_verify_idx  = o * in_n_stride + w * in_c_stride;
+                                std::size_t out_verify_idx = o * out_n_stride + w * out_c_stride;
+                                auto out_spatial_id        = make_array(out_spatial_id_pack...);
+                                for(int i = 0; i < SptDim; ++i)
+                                {
+                                    in_verify_idx += idx[i + 2] * in_spatial_strides[i];
+                                    out_verify_idx += out_spatial_id[i] * out_spatial_strides[i];
+                                }
+                                CHECK(miopen::float_equal(input_ptr[in_verify_idx],
+                                                          out_ptr[out_verify_idx]));
                             }
-                            CHECK(miopen::float_equal(input_ptr[in_verify_idx],
-                                                      out_ptr[out_verify_idx]));
                         }
                         std::size_t din_idx = 0;
                         for(int i = 0; i < SptDim + 2; i++)
@@ -355,11 +360,11 @@ struct verify_backward_pooling
                             dout_linear_idx += out_spatial_id[i] * out_spatial_strides[i];
                         din_vec.at(din_idx) += dout_ptr[dout_linear_idx];
                     }
-                });
-            }
-            else
-            {
-                ford_out([&](auto... out_spatial_id_pack) {
+                    });
+                }
+                else
+                {
+                    ford_out([&](auto... out_spatial_id_pack) {
                     auto out_spatial_id = make_array(out_spatial_id_pack...);
                     std::array<int, SptDim> start_idx{};
                     std::array<int, SptDim> win_sz{};
@@ -407,9 +412,10 @@ struct verify_backward_pooling
                                 static_cast<double>(dout_ptr[dout_linear_idx]) / pool_size;
                         }
                     });
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
 
         miopen::unpacker(miopen::ford)(in_dim)([&](auto... in_id_pack) {
             auto in_id          = make_array(in_id_pack...);
@@ -433,12 +439,27 @@ struct verify_backward_pooling
         POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.total");
         auto&& handle = get_handle();
         auto dinput   = input;
-        auto in_dev   = handle.Write(input.data);
-        auto dout_dev = handle.Write(dout.data);
-        auto out_dev  = handle.Write(out.data);
-        auto din_dev  = handle.Create<T>(dinput.data.size());
+        auto in_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_input");
+            return handle.Write(input.data);
+        }();
+        auto dout_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_dout");
+            return handle.Write(dout.data);
+        }();
+        auto out_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_out");
+            return handle.Write(out.data);
+        }();
+        auto din_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.create_din");
+            return handle.Create<T>(dinput.data.size());
+        }();
         Workspace wspace{};
-        wspace.Write(indices);
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.workspace_write");
+            wspace.Write(indices);
+        }
 
         float alpha = 1, beta = 0;
         {
@@ -461,7 +482,10 @@ struct verify_backward_pooling
                             wspace.ptr());
         }
 
-        dinput.data = handle.Read<T>(din_dev, dinput.data.size());
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.read_dinput");
+            dinput.data = handle.Read<T>(din_dev, dinput.data.size());
+        }
         return dinput;
     }
 };
