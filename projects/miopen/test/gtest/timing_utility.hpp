@@ -42,7 +42,7 @@ struct TimerRow
     double total_ms;
 };
 
-constexpr std::array<const char*, 14> kHostNames = {
+constexpr std::array<const char*, 17> kHostNames = {
     "run_pooling_test_with_index_type.total",
     "run_pooling_test_with_index_type.forward",
     "run_pooling_test_with_index_type.backward",
@@ -51,6 +51,8 @@ constexpr std::array<const char*, 14> kHostNames = {
     "verify_backward_pooling.cpu.total",
     "verify_backward_pooling.gpu.total",
     "verify_backward_pooling.cpu.inner_loops.main",
+    "verify_backward_pooling.cpu.inner_loops.max_path",
+    "verify_backward_pooling.cpu.inner_loops.avg_path",
     "verify_backward_pooling.cpu.index_verify",
     "verify_backward_pooling.gpu.io.write_input",
     "verify_backward_pooling.gpu.io.write_dout",
@@ -132,7 +134,7 @@ inline std::vector<TimerRow> CollectGpuRows()
 inline void WriteTopReport(const std::string& path,
                            const std::string& title,
                            std::vector<TimerRow> rows,
-                           std::size_t top_n = 10)
+                           std::size_t top_n = 30)
 {
     std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) {
         return a.total_ms > b.total_ms;
@@ -161,8 +163,8 @@ inline void ReportAll()
 {
     const auto host_rows = CollectHostRows();
     const auto gpu_rows  = CollectGpuRows();
-    WriteTopReport("timing_per_function.txt", "Top host sections", host_rows, 10);
-    WriteTopReport("timing_gpu_sections.txt", "Top gpu sections", gpu_rows, 10);
+    WriteTopReport("timing_per_function.txt", "Top host sections", host_rows, 30);
+    WriteTopReport("timing_gpu_sections.txt", "Top gpu sections", gpu_rows, 30);
     std::ofstream summary("timing_summary.txt");
     if(summary.is_open())
     {

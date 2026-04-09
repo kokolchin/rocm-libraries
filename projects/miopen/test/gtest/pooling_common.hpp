@@ -280,6 +280,7 @@ struct verify_backward_pooling
             miopen::par_ford(out_n, out_c)([&](int o, int w) {
                 if(filter.GetMode() == miopenPoolingMax)
                 {
+                    POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.max_path");
                     ford_out([&](auto... out_spatial_id_pack) {
                     auto mx_idx = indices.at(dout.desc.GetIndex(o, w, out_spatial_id_pack...));
                     std::array<std::size_t, SptDim + 2> idx{};
@@ -364,6 +365,7 @@ struct verify_backward_pooling
                 }
                 else
                 {
+                    POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.avg_path");
                     ford_out([&](auto... out_spatial_id_pack) {
                     auto out_spatial_id = make_array(out_spatial_id_pack...);
                     std::array<int, SptDim> start_idx{};
