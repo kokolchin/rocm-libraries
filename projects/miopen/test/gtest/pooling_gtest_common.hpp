@@ -24,6 +24,7 @@
 #include "../verify.hpp"
 #include "../workspace.hpp"
 #include "get_handle.hpp"
+#include "timing_utility.hpp"
 
 #define TEST_PADDING_MODE 0
 
@@ -94,6 +95,7 @@ struct verify_forward_pooling
     tensor<T>
     cpu(const tensor<T>& input, const miopen::PoolingDescriptor& filter, std::vector<Index>&) const
     {
+        POOLING_TIMED_SCOPE("verify_forward_pooling.cpu.total");
         auto out = get_output_tensor(filter, input);
 
         const auto in_strides         = input.desc.GetStrides();
@@ -190,6 +192,7 @@ struct verify_forward_pooling
                   const miopen::PoolingDescriptor& filter,
                   std::vector<Index>& indices) const
     {
+        POOLING_TIMED_SCOPE("verify_forward_pooling.gpu.total");
         auto&& handle = get_handle();
         auto out      = get_output_tensor(filter, input);
         indices.resize(out.data.size(), 0);
@@ -200,16 +203,19 @@ struct verify_forward_pooling
         wspace.Write(indices);
 
         float alpha = 1, beta = 0;
-        filter.Forward(handle,
-                       &alpha,
-                       input.desc,
-                       in_dev.get(),
-                       &beta,
-                       out.desc,
-                       out_dev.get(),
-                       true,
-                       wspace.ptr(),
-                       wspace.size());
+        {
+            POOLING_GPU_TIMED_SCOPE("verify_forward_pooling.gpu.forward_kernel");
+            filter.Forward(handle,
+                           &alpha,
+                           input.desc,
+                           in_dev.get(),
+                           &beta,
+                           out.desc,
+                           out_dev.get(),
+                           true,
+                           wspace.ptr(),
+                           wspace.size());
+        }
 
         indices  = wspace.Read<std::vector<Index>>();
         out.data = handle.Read<T>(out_dev, out.data.size());
@@ -242,6 +248,7 @@ struct verify_backward_pooling
                   bool use_global_index,
                   bool verify_index) const
     {
+        POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.total");
         auto dinput = input;
         std::vector<double> din_vec(input.desc.GetElementSpace(), 0.0);
         CHECK(dout.desc == out.desc);
@@ -280,9 +287,12 @@ struct verify_backward_pooling
         std::copy_n(out.desc.GetLengths().begin() + 2, SptDim, out_spatial_len.begin());
         auto ford_out = miopen::unpacker(miopen::ford)(out_spatial_len);
 
-        miopen::par_ford(out_n, out_c)([&](int o, int w) {
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.main");
+            miopen::par_ford(out_n, out_c)([&](int o, int w) {
             if(filter.GetMode() == miopenPoolingMax)
             {
+                POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.max_path");
                 ford_out([&](auto... out_spatial_id_pack) {
                     auto mx_idx = indices.at(dout.desc.GetIndex(o, w, out_spatial_id_pack...));
                     std::array<std::size_t, SptDim + 2> idx{};
@@ -339,6 +349,7 @@ struct verify_backward_pooling
                         idx[1] = w;
                         if(verify_index)
                         {
+                            POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.index_verify");
                             // Compute input and output linear indices for verification
                             std::size_t in_verify_idx  = o * in_n_stride + w * in_c_stride;
                             auto out_spatial_id_verify = make_array(out_spatial_id_pack...);
@@ -369,6 +380,7 @@ struct verify_backward_pooling
             }
             else
             {
+                POOLING_TIMED_SCOPE("verify_backward_pooling.cpu.inner_loops.avg_path");
                 ford_out([&](auto... out_spatial_id_pack) {
                     auto out_spatial_id = make_array(out_spatial_id_pack...);
 
@@ -424,7 +436,8 @@ struct verify_backward_pooling
                     });
                 });
             }
-        });
+            });
+        }
 
         miopen::unpacker(miopen::ford)(in_dim)([&](auto... in_id_pack) {
             auto in_id          = make_array(in_id_pack...);
@@ -447,36 +460,58 @@ struct verify_backward_pooling
                   bool,
                   bool) const
     {
+        POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.total");
         auto&& handle = get_handle();
         auto dinput   = input;
 
-        auto in_dev   = handle.Write(input.data);
-        auto dout_dev = handle.Write(dout.data);
-        auto out_dev  = handle.Write(out.data);
-        auto din_dev  = handle.Create<T>(dinput.data.size());
+        auto in_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_input");
+            return handle.Write(input.data);
+        }();
+        auto dout_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_dout");
+            return handle.Write(dout.data);
+        }();
+        auto out_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.write_out");
+            return handle.Write(out.data);
+        }();
+        auto din_dev = [&] {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.create_din");
+            return handle.Create<T>(dinput.data.size());
+        }();
 
         Workspace wspace{};
-        wspace.Write(indices);
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.workspace_write");
+            wspace.Write(indices);
+        }
 
         float alpha = 1, beta = 0;
-        filter.Backward(handle,
-                        &alpha,
-                        // y
-                        out.desc,
-                        out_dev.get(),
-                        // dy
-                        dout.desc,
-                        dout_dev.get(),
-                        // x
-                        input.desc,
-                        in_dev.get(),
-                        &beta,
-                        // dx
-                        dinput.desc,
-                        din_dev.get(),
-                        wspace.ptr());
+        {
+            POOLING_GPU_TIMED_SCOPE("verify_backward_pooling.gpu.backward_kernel");
+            filter.Backward(handle,
+                            &alpha,
+                            // y
+                            out.desc,
+                            out_dev.get(),
+                            // dy
+                            dout.desc,
+                            dout_dev.get(),
+                            // x
+                            input.desc,
+                            in_dev.get(),
+                            &beta,
+                            // dx
+                            dinput.desc,
+                            din_dev.get(),
+                            wspace.ptr());
+        }
 
-        dinput.data = handle.Read<T>(din_dev, dinput.data.size());
+        {
+            POOLING_TIMED_SCOPE("verify_backward_pooling.gpu.io.read_dinput");
+            dinput.data = handle.Read<T>(din_dev, dinput.data.size());
+        }
         return dinput;
     }
 

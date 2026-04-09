@@ -22,6 +22,7 @@
 #include "get_handle.hpp"
 #include "gtest_common.hpp"
 #include "pooling_gtest_common.hpp"
+#include "timing_utility.hpp"
 
 // Configuration defines matching the original ctest behavior
 #define WORKAROUND_ISSUE_1670 1
@@ -387,6 +388,7 @@ inline void AddTestCasesForInput(const std::vector<int>& in_shape,
 template <typename T, typename Index>
 void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
 {
+    POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.total");
     // Create input tensor for 2D pooling (in_shape matches ctest)
     tensor<T> input{test_case.in_shape};
     input.generate(tensor_elem_gen_integer{
@@ -413,8 +415,13 @@ void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
     // Run forward pooling
     std::vector<Index> indices;
     verify_forward_pooling<2> forward_verifier;
-    auto forward_result     = forward_verifier.cpu(input, filter, indices);
-    auto forward_gpu_result = forward_verifier.gpu(input, filter, indices);
+    auto forward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.forward");
+        return std::make_pair(forward_verifier.cpu(input, filter, indices),
+                              forward_verifier.gpu(input, filter, indices));
+    }();
+    auto forward_result     = std::move(forward_results.first);
+    auto forward_gpu_result = std::move(forward_results.second);
 
     // Compare forward results
     EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
@@ -442,10 +449,15 @@ void RunPooling2dTestWithIndexType(const PoolingTestCase& test_case)
     // without causing test failure. Keep verification only for image index mode (wsidx!=0).
     const bool use_global_index = test_case.wsidx != 0;
     const bool verify_index     = use_global_index;
-    auto backward_result        = backward_verifier.cpu(
-        input, dout, forward_result, filter, indices, use_global_index, verify_index);
-    auto backward_gpu_result = backward_verifier.gpu(
-        input, dout, forward_result, filter, indices, use_global_index, verify_index);
+    auto backward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.backward");
+        return std::make_pair(backward_verifier.cpu(
+                                  input, dout, forward_result, filter, indices, use_global_index, verify_index),
+                              backward_verifier.gpu(
+                                  input, dout, forward_result, filter, indices, use_global_index, verify_index));
+    }();
+    auto backward_result     = std::move(backward_results.first);
+    auto backward_gpu_result = std::move(backward_results.second);
 
     // Compare backward results
     EXPECT_EQ(miopen::range_distance(backward_result), miopen::range_distance(backward_gpu_result));

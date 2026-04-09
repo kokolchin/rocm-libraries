@@ -17,6 +17,7 @@
 
 #include "pooling2d_common.hpp"
 #include "pooling_gtest_common.hpp"
+#include "timing_utility.hpp"
 
 namespace {
 
@@ -92,6 +93,7 @@ std::vector<PoolingTestCase> GetPooling3dTestCases()
 template <typename T, typename Index>
 void RunPooling3dTestWithIndexType(const PoolingTestCase& test_case)
 {
+    POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.total");
     // Create input tensor (in_shape matches ctest)
     tensor<T> input{test_case.in_shape};
     input.generate(tensor_elem_gen_integer{
@@ -118,8 +120,13 @@ void RunPooling3dTestWithIndexType(const PoolingTestCase& test_case)
     // Run forward pooling
     std::vector<Index> indices;
     verify_forward_pooling<3> forward_verifier;
-    auto forward_result     = forward_verifier.cpu(input, filter, indices);
-    auto forward_gpu_result = forward_verifier.gpu(input, filter, indices);
+    auto forward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.forward");
+        return std::make_pair(forward_verifier.cpu(input, filter, indices),
+                              forward_verifier.gpu(input, filter, indices));
+    }();
+    auto forward_result     = std::move(forward_results.first);
+    auto forward_gpu_result = std::move(forward_results.second);
 
     // Compare forward results
     EXPECT_EQ(miopen::range_distance(forward_result), miopen::range_distance(forward_gpu_result));
@@ -143,10 +150,15 @@ void RunPooling3dTestWithIndexType(const PoolingTestCase& test_case)
     }
 
     verify_backward_pooling<3> backward_verifier;
-    auto backward_result = backward_verifier.cpu(
-        input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
-    auto backward_gpu_result = backward_verifier.gpu(
-        input, dout, forward_result, filter, indices, test_case.wsidx != 0, true);
+    auto backward_results = [&] {
+        POOLING_TIMED_SCOPE("run_pooling_test_with_index_type.backward");
+        return std::make_pair(backward_verifier.cpu(
+                                  input, dout, forward_result, filter, indices, test_case.wsidx != 0, true),
+                              backward_verifier.gpu(
+                                  input, dout, forward_result, filter, indices, test_case.wsidx != 0, true));
+    }();
+    auto backward_result     = std::move(backward_results.first);
+    auto backward_gpu_result = std::move(backward_results.second);
 
     // Compare backward results
     EXPECT_EQ(miopen::range_distance(backward_result), miopen::range_distance(backward_gpu_result));
